@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, useCallback } from "react"
 import { type PurchaseItem, type VariantResult } from "@/components/ui/PurchaseModal"
 
@@ -31,8 +33,12 @@ export function usePurchaseList() {
         p.variants.map((v: any) => ({ ...v, product: { name: p.name } }))
       )
       setAllVariants(vs)
-      const ls = vs.filter((v) => (v as any).stock <= (v as any).lowStockThreshold)
-      setLowStock(ls as any)
+      const ls: LowStockVariant[] = data.products.flatMap((p: any) =>
+        p.variants
+          .filter((v: any) => v.stock <= v.lowStockThreshold)
+          .map((v: any) => ({ id: v.id, variantName: v.variantName, unit: v.unit, stock: v.stock, lowStockThreshold: v.lowStockThreshold, costPrice: v.costPrice ?? null, product: { name: p.name } }))
+      )
+      setLowStock(ls)
     })
   }, [])
 

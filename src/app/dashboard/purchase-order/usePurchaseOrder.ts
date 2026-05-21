@@ -1,3 +1,5 @@
+"use client"
+
 import { useState, useEffect, useCallback } from "react"
 import { type PurchaseItem, type VariantResult } from "@/components/ui/PurchaseModal"
 
