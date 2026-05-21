@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Modal } from "@/components/ui/Modal"
+import { Select } from "@/components/ui/Select"
 import { formatDateShort } from "@/lib/format"
 
 type User = { id: number; name: string; email: string; isActive: boolean; createdAt: string; role: { name: string } }
@@ -49,7 +50,7 @@ export default function PenggunaPage() {
             <tr key={u.id} className="hover:bg-gray-50">
               <Td className="font-medium">{u.name}</Td>
               <Td className="text-gray-500 text-sm">{u.email}</Td>
-              <Td><Badge variant={u.role.name === "ADMIN" ? "warning" : "default"}>{u.role.name}</Badge></Td>
+              <Td><Badge variant={u.role.name === "ADMIN" ? "warning" : "default"}>{u.role.name === "ADMIN" ? "Admin" : "Kasir"}</Badge></Td>
               <Td><Badge variant={u.isActive ? "success" : "danger"}>{u.isActive ? "Aktif" : "Nonaktif"}</Badge></Td>
               <Td className="text-gray-500 text-xs">{formatDateShort(u.createdAt)}</Td>
               <Td>
@@ -66,13 +67,12 @@ export default function PenggunaPage() {
           <Input label="Nama" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           <Input label="Password" type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-          <div>
-            <label className="text-sm font-medium text-gray-700">Role</label>
-            <select className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-              <option value="EMPLOYEE">Kasir (Employee)</option>
-              <option value="ADMIN">Admin</option>
-            </select>
-          </div>
+          <Select
+            label="Role"
+            value={form.role}
+            onChange={(v) => setForm({ ...form, role: v })}
+            options={[{ value: "EMPLOYEE", label: "Kasir (Employee)" }, { value: "ADMIN", label: "Admin" }]}
+          />
           <Button onClick={handleCreate} loading={loading} className="w-full">Buat Pengguna</Button>
         </div>
       </Modal>

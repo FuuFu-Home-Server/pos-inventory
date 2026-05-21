@@ -48,6 +48,17 @@ model Customer {
   transactions Transaction[]
 }
 
+model CategoryOption {
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  isActive Boolean @default(true)
+}
+
+model UnitOption {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+}
+
 model Product {
   id         Int              @id @default(autoincrement())
   name       String
@@ -69,11 +80,13 @@ model ProductVariant {
   stock              Int                 @default(0)
   lowStockThreshold  Int                 @default(5)
   unit               String
+  isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now())
   product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
   transactionItems   TransactionItem[]
   purchaseOrderItems PurchaseOrderItem[]
   stockOpnameItems   StockOpnameItem[]
+  purchaseListItems  PurchaseListItem[]
 
   @@index([productId])
 }
@@ -191,6 +204,35 @@ model PurchaseOrderItem {
 enum StockOpnameStatus {
   DRAFT
   CONFIRMED
+}
+
+enum PurchaseListStatus {
+  OPEN
+  DONE
+}
+
+model PurchaseList {
+  id        Int                @id @default(autoincrement())
+  title     String
+  notes     String?
+  status    PurchaseListStatus @default(OPEN)
+  createdAt DateTime           @default(now())
+  items     PurchaseListItem[]
+}
+
+model PurchaseListItem {
+  id               Int              @id @default(autoincrement())
+  purchaseListId   Int
+  productVariantId Int?
+  productName      String
+  variantName      String
+  unit             String
+  qty              Int
+  qtyPerUnit       Int              @default(1)
+  unitCost         Decimal          @db.Decimal(12, 2)
+  isPurchased      Boolean          @default(false)
+  purchaseList     PurchaseList     @relation(fields: [purchaseListId], references: [id], onDelete: Cascade)
+  productVariant   ProductVariant?  @relation(fields: [productVariantId], references: [id])
 }
 
 model StockOpname {

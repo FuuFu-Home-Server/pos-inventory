@@ -10,14 +10,21 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Number(searchParams.get("limit") ?? 20))
   const from = searchParams.get("from")
   const to = searchParams.get("to")
+  const paymentMethodId = searchParams.get("paymentMethodId")
+  const userId = searchParams.get("userId")
+  const customerId = searchParams.get("customerId")
 
-  const where = from && to
-    ? { createdAt: { gte: new Date(from), lte: new Date(to) } }
-    : undefined
+  const where: Record<string, unknown> = {}
+  if (from && to) where.createdAt = { gte: new Date(from), lte: new Date(`${to}T23:59:59`) }
+  if (paymentMethodId) where.paymentMethodId = Number(paymentMethodId)
+  if (userId) where.userId = Number(userId)
+  if (customerId) where.customerId = Number(customerId)
 
-  const [transactions, total] = await Promise.all([
+  const appliedWhere = Object.keys(where).length ? where : undefined
+
+  const [transactions, total, revenueAgg] = await Promise.all([
     prisma.transaction.findMany({
-      where,
+      where: appliedWhere,
       include: {
         user: { select: { name: true } },
         customer: { select: { name: true } },
@@ -28,10 +35,19 @@ export async function GET(req: NextRequest) {
       take: limit,
       orderBy: { createdAt: "desc" },
     }),
-    prisma.transaction.count({ where }),
+    prisma.transaction.count({ where: appliedWhere }),
+    prisma.transaction.aggregate({
+      where: { ...(appliedWhere ?? {}), status: "COMPLETED" },
+      _sum: { total: true },
+      _count: { id: true },
+    }),
   ])
 
-  return NextResponse.json({ transactions, total, page, limit })
+  return NextResponse.json({
+    transactions, total, page, limit,
+    totalRevenue: Number(revenueAgg._sum.total ?? 0),
+    completedCount: revenueAgg._count.id,
+  })
 }
 
 export async function POST(req: NextRequest) {

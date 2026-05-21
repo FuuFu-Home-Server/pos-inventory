@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     last30: { gte: subDays(now, 30), lte: now },
   }[period] ?? { gte: startOfDay(now), lte: endOfDay(now) }
 
-  const [transactions, topVariants, allLowCandidates] = await Promise.all([
+  const [transactions, topVariants, allLowCandidates, paymentBreakdown, topCustomers, categoryBreakdown] = await Promise.all([
     prisma.transaction.findMany({
       where: { createdAt: dateRange, status: "COMPLETED" },
       select: { total: true, createdAt: true },
@@ -30,6 +30,40 @@ export async function GET(req: NextRequest) {
       include: { product: { select: { name: true } } },
       orderBy: { stock: "asc" },
     }),
+    prisma.$queryRaw<{ name: string; count: bigint; revenue: string }[]>`
+      SELECT pm.name, COUNT(t.id)::bigint as count, SUM(t.total)::text as revenue
+      FROM "Transaction" t
+      JOIN "PaymentMethod" pm ON pm.id = t."paymentMethodId"
+      WHERE t.status = 'COMPLETED'
+        AND t."createdAt" >= ${dateRange.gte}
+        AND t."createdAt" <= ${dateRange.lte}
+      GROUP BY pm.id, pm.name
+      ORDER BY count DESC
+    `,
+    prisma.$queryRaw<{ name: string; count: bigint; spend: string }[]>`
+      SELECT c.name, COUNT(t.id)::bigint as count, SUM(t.total)::text as spend
+      FROM "Transaction" t
+      JOIN "Customer" c ON c.id = t."customerId"
+      WHERE t.status = 'COMPLETED'
+        AND t."createdAt" >= ${dateRange.gte}
+        AND t."createdAt" <= ${dateRange.lte}
+        AND t."customerId" IS NOT NULL
+      GROUP BY c.id, c.name
+      ORDER BY spend DESC
+      LIMIT 8
+    `,
+    prisma.$queryRaw<{ category: string; revenue: string; qty: bigint }[]>`
+      SELECT p.category, SUM(ti.subtotal)::text as revenue, SUM(ti.qty)::bigint as qty
+      FROM "TransactionItem" ti
+      JOIN "ProductVariant" pv ON pv.id = ti."productVariantId"
+      JOIN "Product" p ON p.id = pv."productId"
+      JOIN "Transaction" t ON t.id = ti."transactionId"
+      WHERE t.status = 'COMPLETED'
+        AND t."createdAt" >= ${dateRange.gte}
+        AND t."createdAt" <= ${dateRange.lte}
+      GROUP BY p.category
+      ORDER BY revenue DESC
+    `,
   ])
 
   const lowStock = allLowCandidates
@@ -52,5 +86,8 @@ export async function GET(req: NextRequest) {
       return { name: v ? `${v.product.name} ${v.variantName}` : `#${tv.productVariantId}`, qty: tv._sum.qty ?? 0, revenue: Number(tv._sum.subtotal ?? 0) }
     }),
     lowStock: lowStock.map((v) => ({ id: v.id, name: `${v.product.name} ${v.variantName}`, stock: v.stock, threshold: v.lowStockThreshold, unit: v.unit })),
+    paymentBreakdown: paymentBreakdown.map((p) => ({ name: p.name, count: Number(p.count), revenue: Number(p.revenue) })),
+    topCustomers: topCustomers.map((c) => ({ name: c.name, count: Number(c.count), spend: Number(c.spend) })),
+    categoryBreakdown: categoryBreakdown.map((c) => ({ category: c.category, revenue: Number(c.revenue), qty: Number(c.qty) })),
   })
 }

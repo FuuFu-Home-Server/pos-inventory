@@ -7,7 +7,7 @@ import { buildPoTotals } from "@/lib/purchase-order-service"
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, Number(searchParams.get("page") ?? 1))
-  const limit = 20
+  const limit = Math.min(100, Number(searchParams.get("limit") ?? 20))
 
   const [orders, total] = await Promise.all([
     prisma.purchaseOrder.findMany({

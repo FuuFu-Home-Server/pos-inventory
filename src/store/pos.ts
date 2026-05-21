@@ -22,6 +22,7 @@ type PosStore = {
   addItem: (item: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">) => void
   removeItem: (variantId: number) => void
   updateQty: (variantId: number, qty: number) => void
+  changeVariant: (oldVariantId: number, newItem: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">) => void
   setItemDiscount: (variantId: number, amount: number) => void
   setDiscount: (discountId: number | null, amount: number) => void
   setCustomer: (customerId: number | null) => void
@@ -65,6 +66,16 @@ export const usePosStore = create<PosStore>((set, get) => ({
 
   removeItem(variantId) {
     set((state) => ({ items: state.items.filter((i) => i.variantId !== variantId) }))
+  },
+
+  changeVariant(oldVariantId, newItem) {
+    set((state) => ({
+      items: state.items.map((i) =>
+        i.variantId === oldVariantId
+          ? { ...newItem, qty: i.qty, itemDiscountAmt: i.itemDiscountAmt, subtotal: i.qty * newItem.price - i.itemDiscountAmt }
+          : i
+      ),
+    }))
   },
 
   updateQty(variantId, qty) {

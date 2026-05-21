@@ -1,21 +1,24 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useRef } from "react"
 import { useSession } from "next-auth/react"
 import { usePosStore } from "@/store/pos"
 import { BarcodeListener } from "@/components/pos/BarcodeListener"
 import { ProductSearch } from "@/components/pos/ProductSearch"
 import { CartPanel } from "@/components/pos/CartPanel"
 import { PaymentPanel } from "@/components/pos/PaymentPanel"
-import { VariantPickerModal } from "@/components/pos/VariantPickerModal"
 import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptTemplate"
 import { Toast } from "@/components/ui/Toast"
 import { formatRupiah } from "@/lib/format"
+import { LayoutDashboard } from "lucide-react"
+import Link from "next/link"
+import { Select } from "@/components/ui/Select"
 
 type ToastState = { message: string; type: "success" | "error" | "info" } | null
 type PaymentMethod = { id: number; name: string }
 type Discount = { id: number; name: string; type: string; value: number; scope: string }
 type VariantResult = { id: number; productId: number; productName: string; variantName: string; price: number; stock: number; unit: string; barcode: string | null }
+type Customer = { id: number; name: string; phone: string | null }
 
 export default function KasirPage() {
   const { data: session } = useSession()
@@ -23,21 +26,44 @@ export default function KasirPage() {
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
+  const [customers, setCustomers] = useState<Customer[]>([])
   const [toast, setToast] = useState<ToastState>(null)
   const [loading, setLoading] = useState(false)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
-  const [pickerVariants, setPickerVariants] = useState<VariantResult[]>([])
-  const [pickerOpen, setPickerOpen] = useState(false)
+  const [skipPrint, setSkipPrint] = useState(false)
+
+  const checkoutRef = useRef<() => void>(() => {})
 
   useEffect(() => {
     Promise.all([
       fetch("/api/payment-methods").then((r) => r.json()),
       fetch("/api/discounts?active=true").then((r) => r.json()),
-    ]).then(([pms, disc]) => {
+      fetch("/api/customers").then((r) => r.json()),
+    ]).then(async ([pms, disc, cust]) => {
       setPaymentMethods(pms.filter((p: any) => p.isActive !== false))
       setDiscounts(disc.discounts ?? [])
+
+      let customerList: Customer[] = cust.customers ?? []
+      let umum = customerList.find((c) => c.name === "UMUM")
+      if (!umum) {
+        const res = await fetch("/api/customers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: "UMUM" }),
+        })
+        if (res.ok) {
+          umum = await res.json()
+          customerList = [umum!, ...customerList]
+        }
+      }
+      setCustomers(customerList)
+      if (umum && !store.customerId) store.setCustomer(umum.id)
     })
   }, [])
+
+  function toCartItem(v: VariantResult) {
+    return { variantId: v.id, productId: v.productId, productName: v.productName, variantName: v.variantName, price: v.price, stock: v.stock, unit: v.unit }
+  }
 
   const handleScan = useCallback(async (barcode: string) => {
     const res = await fetch("/api/variants/scan", {
@@ -50,22 +76,20 @@ export default function KasirPage() {
       setToast({ message: data.error ?? "Produk tidak ditemukan", type: "error" })
       return
     }
-    store.addItem(data)
+    store.addItem(toCartItem(data))
     setToast({ message: `${data.productName} ${data.variantName} ditambahkan`, type: "success" })
   }, [store])
 
-  const handleSearchSelect = useCallback((item: VariantResult, allResults: VariantResult[]) => {
-    const sameProduct = allResults.filter((v) => v.productId === item.productId)
-    if (sameProduct.length > 1) {
-      setPickerVariants(sameProduct)
-      setPickerOpen(true)
-    } else {
-      store.addItem(item)
-    }
+  const handleSearchSelect = useCallback((item: VariantResult) => {
+    store.addItem(toCartItem(item))
+    setToast({ message: `${item.productName} ${item.variantName} ditambahkan`, type: "success" })
   }, [store])
 
   async function handleCheckout() {
-    if (!store.paymentMethodId) return
+    if (!store.paymentMethodId || store.items.length === 0) return
+    const total = store.getTotal()
+    if (store.paymentAmount < total) return
+
     setLoading(true)
 
     const res = await fetch("/api/transactions", {
@@ -94,70 +118,143 @@ export default function KasirPage() {
     }
 
     const tx = await res.json()
-    const config = await fetch("/api/receipt-config").then((r) => r.json())
 
-    const receipt: ReceiptData = {
-      transactionId: tx.id,
-      createdAt: tx.createdAt,
-      cashierName: session?.user?.name ?? "-",
-      customerName: tx.customer?.name,
-      items: tx.items.map((item: any) => ({
-        productName: item.productVariant.product.name,
-        variantName: item.productVariant.variantName,
-        unit: item.productVariant.unit,
-        qty: item.qty,
-        unitPrice: Number(item.unitPrice),
-        itemDiscountAmt: Number(item.itemDiscountAmt),
-        subtotal: Number(item.subtotal),
-      })),
-      subtotal: Number(tx.subtotal),
-      discountAmount: Number(tx.discountAmount),
-      total: Number(tx.total),
-      paymentAmount: Number(tx.paymentAmount),
-      changeAmount: Number(tx.changeAmount),
-      paymentMethod: tx.paymentMethod.name,
-      config,
+    if (!skipPrint) {
+      const config = await fetch("/api/receipt-config").then((r) => r.json())
+      const receipt: ReceiptData = {
+        transactionId: tx.id,
+        createdAt: tx.createdAt,
+        cashierName: session?.user?.name ?? "-",
+        customerName: tx.customer?.name,
+        items: tx.items.map((item: any) => ({
+          productName: item.productVariant.product.name,
+          variantName: item.productVariant.variantName,
+          unit: item.productVariant.unit,
+          qty: item.qty,
+          unitPrice: Number(item.unitPrice),
+          itemDiscountAmt: Number(item.itemDiscountAmt),
+          subtotal: Number(item.subtotal),
+        })),
+        subtotal: Number(tx.subtotal),
+        discountAmount: Number(tx.discountAmount),
+        total: Number(tx.total),
+        paymentAmount: Number(tx.paymentAmount),
+        changeAmount: Number(tx.changeAmount),
+        paymentMethod: tx.paymentMethod.name,
+        config,
+      }
+      setReceiptData(receipt)
+      setTimeout(() => window.print(), 300)
     }
 
-    setReceiptData(receipt)
     store.reset()
-    setTimeout(() => window.print(), 300)
+    setToast({ message: "Transaksi berhasil disimpan", type: "success" })
+    document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
   }
 
+  checkoutRef.current = handleCheckout
+
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      const target = e.target as HTMLElement
+      const isEditable = ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName)
+
+      if (e.key === "/" && !isEditable) {
+        e.preventDefault()
+        document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
+        return
+      }
+      if (e.key === "F2") {
+        e.preventDefault()
+        document.querySelector<HTMLInputElement>("[data-payment-input]")?.focus()
+        return
+      }
+      if (e.key === "F8") {
+        e.preventDefault()
+        if (!loading) checkoutRef.current()
+        return
+      }
+      if (e.key === "Escape" && isEditable) {
+        target.blur()
+        document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
+        return
+      }
+      if (e.key === "Delete" && !isEditable && e.ctrlKey) {
+        e.preventDefault()
+        store.reset()
+        return
+      }
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [loading, store])
+
   return (
-    <div className="h-screen flex flex-col bg-gray-50">
-      <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
-        <h1 className="font-bold text-gray-900">Kasir</h1>
-        <div className="flex items-center gap-3">
-          <span className="text-sm text-gray-500">{session?.user?.name}</span>
+    <div className="h-screen flex flex-col bg-slate-100">
+      <header className="bg-slate-900 border-b border-slate-800 px-5 py-3 flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-4">
+          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs">
+            <LayoutDashboard size={14} />
+            Dashboard
+          </Link>
+          <div className="w-px h-4 bg-slate-700" />
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="font-bold text-white text-sm">Kasir</span>
+          </div>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="hidden md:flex items-center gap-3 text-xs text-slate-500">
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">/</kbd>
+            <span>Cari</span>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">F2</kbd>
+            <span>Bayar</span>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">F8</kbd>
+            <span>Selesai</span>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">Esc</kbd>
+            <span>Kembali</span>
+          </div>
+          <span className="text-sm text-slate-400">{session?.user?.name}</span>
           {store.items.length > 0 && (
-            <button onClick={() => store.reset()} className="text-sm text-red-500 hover:text-red-700">
+            <button
+              onClick={() => store.reset()}
+              className="text-xs text-red-400 hover:text-red-300 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-950/40 transition-colors"
+            >
               Kosongkan
             </button>
           )}
         </div>
-      </div>
+      </header>
 
       <BarcodeListener onScan={handleScan} />
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-hidden border-r border-gray-200 bg-white">
-          <div className="p-3 border-b border-gray-100">
-            <ProductSearch onSelect={handleSearchSelect} />
-          </div>
-          <div className="px-2 py-1 bg-gray-50 border-b border-gray-100 flex justify-between text-xs text-gray-500">
-            <span>{store.items.length} item</span>
-            <span>Subtotal: <strong>{formatRupiah(store.getSubtotal())}</strong></span>
+        <div className="flex-1 flex flex-col overflow-hidden bg-white border-r border-gray-200">
+          <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
+            <div className="flex-1">
+              <ProductSearch onSelect={handleSearchSelect} />
+            </div>
+            <div className="shrink-0">
+              <Select
+                value={store.customerId ? String(store.customerId) : ""}
+                onChange={(v) => store.setCustomer(v ? Number(v) : null)}
+                options={customers.map((c) => ({ value: String(c.id), label: c.name }))}
+                placeholder="Tanpa pelanggan"
+                className="min-w-[160px]"
+              />
+            </div>
           </div>
           <CartPanel />
         </div>
 
-        <div className="w-80 shrink-0 overflow-y-auto bg-white p-4">
+        <div className="w-[368px] shrink-0 overflow-y-auto bg-gray-50 p-5">
           <PaymentPanel
             paymentMethods={paymentMethods}
             discounts={discounts}
             onCheckout={handleCheckout}
             loading={loading}
+            skipPrint={skipPrint}
+            onSkipPrintChange={setSkipPrint}
           />
         </div>
       </div>
@@ -167,13 +264,6 @@ export default function KasirPage() {
           <ReceiptTemplate data={receiptData} />
         </div>
       )}
-
-      <VariantPickerModal
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        variants={pickerVariants}
-        onSelect={(v) => store.addItem(v)}
-      />
 
       {toast && (
         <Toast

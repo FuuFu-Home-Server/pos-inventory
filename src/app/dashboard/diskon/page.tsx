@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Modal } from "@/components/ui/Modal"
+import { Select } from "@/components/ui/Select"
 import { formatRupiah } from "@/lib/format"
 
 type Discount = { id: number; name: string; type: string; value: number; scope: string; isActive: boolean; minPurchase: number | null; product: { name: string } | null }
@@ -72,7 +73,7 @@ export default function DiskonPage() {
           {discounts.map((d) => (
             <tr key={d.id} className="hover:bg-gray-50">
               <Td className="font-medium">{d.name}</Td>
-              <Td><Badge>{d.type}</Badge></Td>
+              <Td><Badge>{d.type === "PERCENT" ? "Persen" : "Nominal"}</Badge></Td>
               <Td>{d.type === "PERCENT" ? `${d.value}%` : formatRupiah(Number(d.value))}</Td>
               <Td className="text-gray-500 text-xs">{d.scope === "PRODUCT" && d.product ? d.product.name : "Semua transaksi"}</Td>
               <Td className="text-gray-500 text-xs">{d.minPurchase ? formatRupiah(Number(d.minPurchase)) : "—"}</Td>
@@ -91,30 +92,28 @@ export default function DiskonPage() {
         <div className="space-y-3">
           <Input label="Nama Diskon" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-sm font-medium text-gray-700">Tipe</label>
-              <select className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value={form.type} onChange={(e) => setForm({ ...form, type: e.target.value })}>
-                <option value="PERCENT">Persen (%)</option>
-                <option value="FLAT">Nominal (Rp)</option>
-              </select>
-            </div>
+            <Select
+              label="Tipe"
+              value={form.type}
+              onChange={(v) => setForm({ ...form, type: v })}
+              options={[{ value: "PERCENT", label: "Persen (%)" }, { value: "FLAT", label: "Nominal (Rp)" }]}
+            />
             <Input label="Nilai" type="number" value={form.value} onChange={(e) => setForm({ ...form, value: e.target.value })} placeholder={form.type === "PERCENT" ? "10" : "5000"} />
           </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">Berlaku untuk</label>
-            <select className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value={form.scope} onChange={(e) => setForm({ ...form, scope: e.target.value, productId: "" })}>
-              <option value="TRANSACTION">Semua transaksi</option>
-              <option value="PRODUCT">Produk tertentu</option>
-            </select>
-          </div>
+          <Select
+            label="Berlaku untuk"
+            value={form.scope}
+            onChange={(v) => setForm({ ...form, scope: v, productId: "" })}
+            options={[{ value: "TRANSACTION", label: "Semua transaksi" }, { value: "PRODUCT", label: "Produk tertentu" }]}
+          />
           {form.scope === "PRODUCT" && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">Produk</label>
-              <select className="mt-1 w-full border border-gray-300 rounded-md px-3 py-2 text-sm" value={form.productId} onChange={(e) => setForm({ ...form, productId: e.target.value })}>
-                <option value="">Pilih produk...</option>
-                {products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-              </select>
-            </div>
+            <Select
+              label="Produk"
+              value={form.productId}
+              onChange={(v) => setForm({ ...form, productId: v })}
+              options={products.map((p) => ({ value: String(p.id), label: p.name }))}
+              placeholder="Pilih produk..."
+            />
           )}
           <Input label="Min. Belanja (opsional)" type="number" value={form.minPurchase} onChange={(e) => setForm({ ...form, minPurchase: e.target.value })} placeholder="0" />
           <Button onClick={handleCreate} loading={loading} className="w-full">Simpan Diskon</Button>

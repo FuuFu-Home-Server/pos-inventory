@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   if (!parsed.success) return NextResponse.json({ error: "Barcode tidak valid" }, { status: 400 })
 
   const variant = await prisma.productVariant.findUnique({
-    where: { barcode: parsed.data.barcode },
+    where: { barcode: parsed.data.barcode, isActive: true },
     include: { product: { select: { id: true, name: true } } },
   })
 

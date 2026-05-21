@@ -16,15 +16,34 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params
+  const productId = Number(id)
   const body = await req.json()
   const parsed = updateProductSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const product = await prisma.product.update({
-    where: { id: Number(id) },
-    data: parsed.data,
-    include: { variants: true },
+  const { variants, ...productFields } = parsed.data
+
+  const product = await prisma.$transaction(async (tx) => {
+    await tx.product.update({ where: { id: productId }, data: productFields })
+
+    if (variants && variants.length > 0) {
+      await Promise.all(
+        variants.map((v) => {
+          const { id: variantId, ...data } = v
+          if (variantId) {
+            return tx.productVariant.update({ where: { id: variantId }, data })
+          }
+          return tx.productVariant.create({ data: { ...data, productId } })
+        })
+      )
+    }
+
+    return tx.product.findUnique({
+      where: { id: productId },
+      include: { variants: true, supplier: { select: { id: true, name: true } } },
+    })
   })
+
   return NextResponse.json(product)
 }
 

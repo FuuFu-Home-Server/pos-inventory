@@ -115,7 +115,7 @@ export default function StockOpnamePage() {
               <Td className="text-gray-500 text-xs">{o.user.name}</Td>
               <Td className="text-gray-500 text-xs">{formatDate(o.createdAt)}</Td>
               <Td className="text-gray-500">{o._count.items} variant</Td>
-              <Td><Badge variant={o.status === "CONFIRMED" ? "success" : "warning"}>{o.status}</Badge></Td>
+              <Td><Badge variant={o.status === "CONFIRMED" ? "success" : "warning"}>{o.status === "CONFIRMED" ? "Dikonfirmasi" : "Draf"}</Badge></Td>
               <Td><Button variant="secondary" className="text-xs py-1 px-2" onClick={() => openDetail(o.id)}>Detail</Button></Td>
             </tr>
           ))}

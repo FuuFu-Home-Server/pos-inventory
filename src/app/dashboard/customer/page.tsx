@@ -5,7 +5,9 @@ import { Table, Thead, Tbody, Th, Td } from "@/components/ui/Table"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Modal } from "@/components/ui/Modal"
+import { Pagination } from "@/components/ui/Pagination"
 import { formatDateShort } from "@/lib/format"
+import { Users } from "lucide-react"
 
 type Customer = { id: number; name: string; phone: string | null; address: string | null; createdAt: string }
 
@@ -13,6 +15,9 @@ const emptyForm = { name: "", phone: "", address: "" }
 
 export default function CustomerPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
   const [search, setSearch] = useState("")
   const [modalOpen, setModalOpen] = useState(false)
   const [editing, setEditing] = useState<Customer | null>(null)
@@ -20,10 +25,11 @@ export default function CustomerPage() {
   const [loading, setLoading] = useState(false)
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/customers?q=${encodeURIComponent(search)}`)
+    const res = await fetch(`/api/customers?q=${encodeURIComponent(search)}&page=${page}&limit=${pageSize}`)
     const data = await res.json()
     setCustomers(data.customers)
-  }, [search])
+    setTotal(data.total ?? data.customers.length)
+  }, [search, page, pageSize])
 
   useEffect(() => { load() }, [load])
 
@@ -49,12 +55,27 @@ export default function CustomerPage() {
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Pelanggan</h1>
+        <div>
+          <h1 className="text-2xl font-black text-gray-900">Pelanggan</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{total} pelanggan terdaftar</p>
+        </div>
         <Button onClick={openCreate}>+ Tambah Pelanggan</Button>
       </div>
-      <div className="mb-4 max-w-sm">
-        <Input placeholder="Cari nama atau nomor HP..." value={search} onChange={(e) => setSearch(e.target.value)} />
+
+      <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3 mb-4 max-w-xs">
+        <div className="w-9 h-9 rounded-lg bg-emerald-100 flex items-center justify-center shrink-0">
+          <Users size={16} className="text-emerald-600" />
+        </div>
+        <div>
+          <p className="text-xs text-gray-500 font-medium">Total Pelanggan</p>
+          <p className="text-xl font-black text-gray-900 tabular-nums">{total}</p>
+        </div>
       </div>
+
+      <div className="mb-4 max-w-sm">
+        <Input placeholder="Cari nama atau nomor HP..." value={search} onChange={(e) => { setSearch(e.target.value); setPage(1) }} />
+      </div>
+
       <Table>
         <Thead><tr><Th>Nama</Th><Th>No. HP</Th><Th>Alamat</Th><Th>Terdaftar</Th><Th /></tr></Thead>
         <Tbody>
@@ -74,6 +95,15 @@ export default function CustomerPage() {
           ))}
         </Tbody>
       </Table>
+
+      <Pagination
+        page={page}
+        total={total}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+      />
+
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title={editing ? "Edit Pelanggan" : "Tambah Pelanggan"}>
         <div className="space-y-3">
           <Input label="Nama" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />

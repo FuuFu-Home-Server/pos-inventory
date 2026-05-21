@@ -28,8 +28,19 @@ const PRODUK_POOL = [
   { name: "Telur Ayam", category: "Sembako", variants: [{ name: "Butir", unit: "pcs" }, { name: "1 Tray (30)", unit: "tray" }] },
 ]
 
+const DEFAULT_CATEGORIES = ["Sembako", "Mie Instan", "Minuman", "Susu", "Rokok", "Bumbu", "Kebersihan", "Bahan Bakar", "Snack", "Obat-obatan", "Alat Tulis", "Lainnya"]
+const DEFAULT_UNITS = ["pcs", "kg", "gram", "liter", "ml", "botol", "bungkus", "karung", "dus", "krat", "kaleng", "tray", "slop", "jerigen", "sachet", "lembar", "lusin", "roll", "pak"]
+
 async function main() {
   console.log("Seeding database...")
+
+  await Promise.all([
+    ...DEFAULT_CATEGORIES.map((name) => prisma.categoryOption.upsert({ where: { name }, update: {}, create: { name } })),
+    ...DEFAULT_UNITS.map((name) => prisma.unitOption.upsert({ where: { name }, update: {}, create: { name } })),
+    prisma.customer.findFirst({ where: { name: "UMUM" } }).then((existing) =>
+      existing ? existing : prisma.customer.create({ data: { name: "UMUM" } })
+    ),
+  ])
 
   const [adminRole, empRole] = await Promise.all([
     prisma.role.upsert({ where: { name: "ADMIN" }, update: {}, create: { name: "ADMIN" } }),

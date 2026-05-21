@@ -3,19 +3,21 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
   const q = new URL(req.url).searchParams.get("q") ?? ""
-  if (q.length < 2) return NextResponse.json([])
 
   const variants = await prisma.productVariant.findMany({
     where: {
+      isActive: true,
       stock: { gt: 0 },
-      OR: [
-        { product: { name: { contains: q, mode: "insensitive" } } },
-        { variantName: { contains: q, mode: "insensitive" } },
-        { barcode: { contains: q } },
-      ],
+      ...(q.length >= 2 ? {
+        OR: [
+          { product: { name: { contains: q, mode: "insensitive" } } },
+          { variantName: { contains: q, mode: "insensitive" } },
+          { barcode: { contains: q } },
+        ],
+      } : {}),
     },
     include: { product: { select: { id: true, name: true } } },
-    take: 10,
+    take: 12,
     orderBy: [{ product: { name: "asc" } }, { variantName: "asc" }],
   })
 

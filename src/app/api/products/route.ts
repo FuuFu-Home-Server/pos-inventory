@@ -9,7 +9,7 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? ""
   const where = q ? { name: { contains: q, mode: "insensitive" as const } } : undefined
 
-  const [products, total] = await Promise.all([
+  const [products, total, activeVariants, lowStockRaw] = await Promise.all([
     prisma.product.findMany({
       where,
       include: { variants: true, supplier: { select: { id: true, name: true } } },
@@ -18,9 +18,17 @@ export async function GET(req: NextRequest) {
       orderBy: { name: "asc" },
     }),
     prisma.product.count({ where }),
+    prisma.productVariant.count({ where: { isActive: true } }),
+    prisma.$queryRaw<[{ count: bigint }]>`
+      SELECT COUNT(*)::bigint as count FROM "ProductVariant"
+      WHERE "isActive" = true AND stock <= "lowStockThreshold"
+    `,
   ])
 
-  return NextResponse.json({ products, total, page, limit })
+  return NextResponse.json({
+    products, total, page, limit,
+    stats: { activeVariants, lowStockCount: Number(lowStockRaw[0].count) },
+  })
 }
 
 export async function POST(req: NextRequest) {

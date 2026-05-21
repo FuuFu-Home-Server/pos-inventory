@@ -9,6 +9,7 @@ out/
 output-dir/
 .superpowers/
 source/
+.next/
 
 # Environment variables
 .env
