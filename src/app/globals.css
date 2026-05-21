@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@media print {
+  body > *:not(#receipt-print) {
+    display: none !important;
+  }
+  #receipt-print {
+    display: block !important;
+  }
+}
+
+.receipt-58mm {
+  font-size: 10px;
+  width: 58mm;
+}
+
+.receipt-80mm {
+  font-size: 12px;
+  width: 80mm;
+}
