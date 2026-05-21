@@ -1,29 +1,18 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { formatRupiah, formatDate } from "@/lib/format"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
-import { Modal } from "@/components/ui/Modal"
 import { Toggle } from "@/components/ui/Toggle"
-import { ChevronDown, AlertTriangle, X, Plus, ShoppingCart } from "lucide-react"
+import { PurchaseModal, PurchaseItem, VariantResult } from "@/components/ui/PurchaseModal"
+import { ChevronDown, AlertTriangle, Plus, ShoppingCart } from "lucide-react"
 
 type ListItem = { id: number; productName: string; variantName: string; unit: string; qtyPerUnit: number; qty: number; unitCost: number; isPurchased: boolean; productVariantId: number | null }
 type PurchaseList = { id: number; title: string; notes: string | null; status: string; createdAt: string; totalCost: number; purchasedCount: number; _count: { items: number } }
 type PurchaseListDetail = PurchaseList & { items: ListItem[] }
 type LowStockVariant = { id: number; variantName: string; unit: string; stock: number; lowStockThreshold: number; costPrice: number | null; product: { name: string } }
-type SearchVariant = { id: number; variantName: string; unit: string; price: number; costPrice: number | null; stock: number; product: { name: string } }
-
-type FormItem = {
-  productVariantId: number | null
-  productName: string
-  variantName: string
-  unit: string
-  qtyPerUnit: string
-  qty: string
-  unitCost: string
-}
 
 export default function DaftarBelanjaPage() {
   const [lists, setLists] = useState<PurchaseList[]>([])
@@ -34,13 +23,8 @@ export default function DaftarBelanjaPage() {
   const [lowStock, setLowStock] = useState<LowStockVariant[]>([])
   const [loading, setLoading] = useState(false)
 
-  const [form, setForm] = useState({ title: "", notes: "", items: [] as FormItem[] })
-  const [search, setSearch] = useState("")
-  const [searchResults, setSearchResults] = useState<SearchVariant[]>([])
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [allVariants, setAllVariants] = useState<SearchVariant[]>([])
-  const searchRef = useRef<HTMLDivElement>(null)
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [form, setForm] = useState({ title: "", notes: "", items: [] as PurchaseItem[] })
+  const [allVariants, setAllVariants] = useState<VariantResult[]>([])
 
   const load = useCallback(async () => {
     const res = await fetch("/api/purchase-lists")
@@ -51,81 +35,42 @@ export default function DaftarBelanjaPage() {
 
   useEffect(() => {
     fetch("/api/products?limit=200").then((r) => r.json()).then((data) => {
-      const vs: SearchVariant[] = data.products.flatMap((p: any) =>
+      const vs: VariantResult[] = data.products.flatMap((p: any) =>
         p.variants.map((v: any) => ({ ...v, product: { name: p.name } }))
       )
       setAllVariants(vs)
-      const ls = vs.filter((v) => v.stock <= (v as any).lowStockThreshold)
+      const ls = vs.filter((v) => (v as any).stock <= (v as any).lowStockThreshold)
       setLowStock(ls as any)
     })
   }, [])
 
-  useEffect(() => {
-    if (!searchOpen) return
-    function handleClick(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false)
-    }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [searchOpen])
-
-  function showVariants(q: string) {
-    if (!q.trim()) {
-      const results = allVariants.slice(0, 10)
-      setSearchResults(results)
-      setSearchOpen(results.length > 0)
-      return
-    }
-    const q2 = q.toLowerCase()
-    const results = allVariants.filter((v) =>
-      v.product.name.toLowerCase().includes(q2) || v.variantName.toLowerCase().includes(q2)
-    ).slice(0, 10)
-    setSearchResults(results)
-    setSearchOpen(results.length > 0)
-  }
-
-  function handleSearchInput(q: string) {
-    setSearch(q)
-    if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => showVariants(q), 150)
-  }
-
-  function addVariantToForm(v: SearchVariant) {
+  function handleAddVariant(v: VariantResult) {
     setForm((f) => ({
       ...f,
       items: [...f.items, {
-        productVariantId: v.id,
-        productName: v.product.name,
-        variantName: v.variantName,
+        variantId: v.id,
+        label: `${v.product.name} — ${v.variantName}`,
         unit: v.unit,
         qtyPerUnit: "1",
         qty: "1",
         unitCost: String(v.costPrice ?? ""),
       }],
     }))
-    setSearch("")
-    setSearchResults([])
-    setSearchOpen(false)
   }
 
   function addLowStockToForm(v: LowStockVariant) {
-    if (form.items.some((i) => i.productVariantId === v.id)) return
+    if (form.items.some((i) => i.variantId === v.id)) return
     setForm((f) => ({
       ...f,
       items: [...f.items, {
-        productVariantId: v.id,
-        productName: v.product.name,
-        variantName: v.variantName,
+        variantId: v.id,
+        label: `${v.product.name} — ${v.variantName}`,
         unit: v.unit,
         qtyPerUnit: "1",
         qty: String(Math.max(1, v.lowStockThreshold - v.stock + v.lowStockThreshold)),
         unitCost: String(v.costPrice ?? ""),
       }],
     }))
-  }
-
-  function removeItem(i: number) {
-    setForm((f) => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }))
   }
 
   async function toggleDetail(id: number) {
@@ -149,9 +94,9 @@ export default function DaftarBelanjaPage() {
         title: form.title,
         notes: form.notes || undefined,
         items: form.items.map((i) => ({
-          productVariantId: i.productVariantId,
-          productName: i.productName,
-          variantName: i.variantName,
+          productVariantId: i.variantId,
+          productName: i.label.split(" — ")[0],
+          variantName: i.label.split(" — ")[1] ?? "",
           unit: i.unit,
           qtyPerUnit: Number(i.qtyPerUnit) || 1,
           qty: Number(i.qty),
@@ -191,6 +136,14 @@ export default function DaftarBelanjaPage() {
       body: JSON.stringify({ status: "DONE" }),
     })
     load()
+  }
+
+  async function searchVariants(q: string): Promise<VariantResult[]> {
+    if (!q.trim()) return allVariants.slice(0, 10)
+    const q2 = q.toLowerCase()
+    return allVariants.filter((v) =>
+      v.product.name.toLowerCase().includes(q2) || v.variantName.toLowerCase().includes(q2)
+    ).slice(0, 10)
   }
 
   return (
@@ -318,8 +271,12 @@ export default function DaftarBelanjaPage() {
         })}
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Buat Daftar Belanja" className="max-w-2xl">
-        <div className="space-y-4">
+      <PurchaseModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Buat Daftar Belanja"
+        showQtyPerUnit
+        headerSlot={<>
           <Input
             label="Nama Daftar"
             placeholder="mis. Belanja Superindo 21 Mei"
@@ -332,101 +289,16 @@ export default function DaftarBelanjaPage() {
             value={form.notes}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
           />
-
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Cari Produk</p>
-            <div ref={searchRef} className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => handleSearchInput(e.target.value)}
-                onFocus={() => showVariants(search)}
-                placeholder="Ketik atau klik untuk pilih produk..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              {searchOpen && (
-                <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-xl mt-1 max-h-60 overflow-y-auto">
-                  {searchResults.map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => addVariantToForm(v)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 flex items-center justify-between text-sm transition-colors"
-                    >
-                      <div>
-                        <span className="font-medium text-gray-800">{v.product.name}</span>
-                        <span className="text-gray-500 ml-1">{v.variantName}</span>
-                        {v.stock <= 5 && <span className="ml-2 text-xs text-amber-600 font-semibold">⚠ Stok: {v.stock}</span>}
-                      </div>
-                      <span className="text-xs text-gray-400">{v.unit}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {form.items.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Item ({form.items.length})</p>
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {form.items.map((item, i) => {
-                  const fieldCls = "border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  return (
-                    <div key={i} className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0 text-sm text-gray-700 truncate bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">
-                          <span className="font-medium">{item.productName}</span>
-                          {item.variantName && <span className="text-gray-400 ml-1">{item.variantName}</span>}
-                        </div>
-                        <button onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 flex items-center justify-center w-7 shrink-0">
-                          <X size={15} />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          value={item.qty}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], qty: e.target.value }; setForm({ ...form, items: it }) }}
-                          placeholder="Jml"
-                          className={`${fieldCls} w-16 text-center shrink-0`}
-                        />
-                        <span className="text-xs font-medium text-gray-500 shrink-0 px-1">{item.unit}</span>
-                        <span className="text-gray-400 text-xs shrink-0">×</span>
-                        <input
-                          type="number"
-                          value={item.qtyPerUnit}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], qtyPerUnit: e.target.value }; setForm({ ...form, items: it }) }}
-                          placeholder="isi"
-                          className={`${fieldCls} w-16 text-center shrink-0`}
-                        />
-                        <span className="text-gray-400 text-xs shrink-0">pcs</span>
-                        <input
-                          type="number"
-                          value={item.unitCost}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], unitCost: e.target.value }; setForm({ ...form, items: it }) }}
-                          placeholder="Harga/sat."
-                          className={`${fieldCls} flex-1 min-w-0`}
-                        />
-                      </div>
-                    {Number(item.qtyPerUnit) > 1 && (
-                      <p className="text-[10px] text-indigo-600 font-medium pl-0.5">
-                        = {Number(item.qty) * Number(item.qtyPerUnit)} {item.variantName || "pcs"} total · {formatRupiah((Number(item.unitCost) || 0) * Number(item.qty))}
-                      </p>
-                    )}
-                  </div>
-                )})}
-              </div>
-              <p className="text-xs text-gray-500 mt-2 text-right">
-                Estimasi total: {formatRupiah(form.items.reduce((s, i) => s + (Number(i.unitCost) || 0) * (Number(i.qty) || 0), 0))}
-              </p>
-            </div>
-          )}
-
-          <Button onClick={handleCreate} loading={loading} disabled={!form.title || form.items.length === 0} className="w-full">
-            Buat Daftar Belanja
-          </Button>
-        </div>
-      </Modal>
+        </>}
+        items={form.items}
+        onItemsChange={(items) => setForm((f) => ({ ...f, items }))}
+        searchVariants={searchVariants}
+        onAddVariant={handleAddVariant}
+        onSubmit={handleCreate}
+        loading={loading}
+        submitLabel="Buat Daftar Belanja"
+        submitDisabled={!form.title || form.items.length === 0}
+      />
     </div>
   )
 }
