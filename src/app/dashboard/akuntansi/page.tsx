@@ -1,50 +1,11 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import { formatRupiah, formatDate } from "@/lib/format"
 import { TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft } from "lucide-react"
-
-type Entry = {
-  id: string
-  type: "income" | "expense"
-  amount: number
-  description: string
-  date: string
-  ref: { type: string; id: number }
-}
-
-type AccountingData = {
-  entries: Entry[]
-  totalIncome: number
-  totalExpense: number
-  balance: number
-}
-
-const EMPTY = ""
+import { useAccounting } from "./useAccounting"
 
 export default function AkuntansiPage() {
-  const [data, setData] = useState<AccountingData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [filterFrom, setFilterFrom] = useState(EMPTY)
-  const [filterTo, setFilterTo] = useState(EMPTY)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    const params = new URLSearchParams()
-    if (filterFrom) params.set("from", filterFrom)
-    if (filterTo) params.set("to", filterTo)
-    const res = await fetch(`/api/accounting?${params}`)
-    setData(await res.json())
-    setLoading(false)
-  }, [filterFrom, filterTo])
-
-  useEffect(() => { load() }, [load])
-
-  function resetFilters() {
-    setFilterFrom(EMPTY)
-    setFilterTo(EMPTY)
-  }
-
+  const { data, loading, filterFrom, setFilterFrom, filterTo, setFilterTo, resetFilters } = useAccounting()
   const hasFilters = filterFrom || filterTo
 
   return (

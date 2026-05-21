@@ -1,6 +1,5 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import { Table, Thead, Tbody, Th, Td } from "@/components/ui/Table"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -8,34 +7,10 @@ import { Input } from "@/components/ui/Input"
 import { Modal } from "@/components/ui/Modal"
 import { Select } from "@/components/ui/Select"
 import { formatDateShort } from "@/lib/format"
-
-type User = { id: number; name: string; email: string; isActive: boolean; createdAt: string; role: { name: string } }
+import { useUsers } from "./useUsers"
 
 export default function PenggunaPage() {
-  const [users, setUsers] = useState<User[]>([])
-  const [modalOpen, setModalOpen] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ name: "", email: "", password: "", role: "EMPLOYEE" })
-
-  const load = useCallback(async () => {
-    const res = await fetch("/api/users")
-    const data = await res.json()
-    setUsers(data.users)
-  }, [])
-
-  useEffect(() => { load() }, [load])
-
-  async function handleCreate() {
-    setLoading(true)
-    const res = await fetch("/api/users", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(form) })
-    setLoading(false)
-    if (res.ok) { setModalOpen(false); setForm({ name: "", email: "", password: "", role: "EMPLOYEE" }); load() }
-  }
-
-  async function handleToggle(id: number, isActive: boolean) {
-    await fetch(`/api/users/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !isActive }) })
-    load()
-  }
+  const { users, modalOpen, setModalOpen, loading, form, setForm, handleCreate, handleToggle } = useUsers()
 
   return (
     <div className="p-6">
