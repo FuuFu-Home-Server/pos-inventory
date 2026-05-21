@@ -34,7 +34,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
             return tx.productVariant.update({ where: { id: variantId }, data })
           }
           return tx.productVariant.create({ data: { ...data, productId } })
-        })
+        }),
       )
     }
 

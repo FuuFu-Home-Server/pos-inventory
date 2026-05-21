@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-export const createDiscountSchema = z.object({
+const discountBaseSchema = z.object({
   name: z.string().min(1, "Nama diskon wajib diisi"),
   type: z.enum(["PERCENT", "FLAT"]),
   value: z.number().positive("Nilai diskon harus lebih dari 0"),
@@ -10,9 +10,13 @@ export const createDiscountSchema = z.object({
   isActive: z.boolean().default(true),
   validFrom: z.string().datetime().optional().nullable(),
   validUntil: z.string().datetime().optional().nullable(),
-}).refine(
-  (d) => d.scope === "PRODUCT" ? d.productId != null : true,
-  { message: "productId wajib diisi untuk diskon PRODUCT", path: ["productId"] }
+})
+
+export const createDiscountSchema = discountBaseSchema.refine(
+  (d) => (d.scope === "PRODUCT" ? d.productId != null : true),
+  { message: "productId wajib diisi untuk diskon PRODUCT", path: ["productId"] },
 )
+
+export const updateDiscountSchema = discountBaseSchema.partial()
 
 export type CreateDiscountInput = z.infer<typeof createDiscountSchema>

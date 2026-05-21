@@ -5,9 +5,24 @@ import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import {
-  LayoutDashboard, ShoppingCart, Package, Truck, Users,
-  ShoppingBag, ClipboardList, Tag, BarChart2, Printer,
-  UserCog, Upload, LogOut, Receipt, Layers, Ruler, BookOpen, ListChecks,
+  LayoutDashboard,
+  ShoppingCart,
+  Package,
+  Truck,
+  Users,
+  ShoppingBag,
+  ClipboardList,
+  Tag,
+  BarChart2,
+  Printer,
+  UserCog,
+  Upload,
+  LogOut,
+  Receipt,
+  Layers,
+  Ruler,
+  BookOpen,
+  ListChecks,
 } from "lucide-react"
 
 type NavItem = { href: string; label: string; icon: React.ElementType; exact?: boolean }
@@ -103,7 +118,7 @@ export function Sidebar({ userName, userRole }: SidebarProps) {
                     "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-all mb-0.5",
                     active
                       ? "bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-900/40"
-                      : "text-slate-400 hover:text-white hover:bg-slate-800"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800",
                   )}
                 >
                   <item.icon size={15} className={active ? "text-white" : "text-slate-500"} />

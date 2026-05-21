@@ -10,7 +10,11 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:reset": "prisma migrate reset --force",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx,json,md}": "prettier --write"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -41,6 +45,9 @@
     "@vitejs/plugin-react": "^4.5.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
+    "prettier": "^3.8.3",
     "prisma": "^5.22.0",
     "tailwindcss": "^4",
     "tsx": "^4.19.4",

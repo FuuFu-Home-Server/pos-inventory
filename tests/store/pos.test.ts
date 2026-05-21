@@ -6,7 +6,14 @@ describe("usePosStore", () => {
     usePosStore.getState().reset()
   })
 
-  const item = { variantId: 1, productId: 1, productName: "Beras", variantName: "5kg", unit: "karung", price: 10_000 }
+  const item = {
+    variantId: 1,
+    productId: 1,
+    productName: "Beras",
+    variantName: "5kg",
+    unit: "karung",
+    price: 10_000,
+  }
 
   it("addItem adds new item with qty 1", () => {
     usePosStore.getState().addItem(item)

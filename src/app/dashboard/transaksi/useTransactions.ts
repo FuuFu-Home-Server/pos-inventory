@@ -75,7 +75,9 @@ export function useTransactions() {
     setCompletedCount(data.completedCount ?? 0)
   }, [buildQuery])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   useEffect(() => {
     Promise.all([
@@ -88,7 +90,10 @@ export function useTransactions() {
   }, [])
 
   async function toggleDetail(id: number) {
-    if (expandedId === id) { setExpandedId(null); return }
+    if (expandedId === id) {
+      setExpandedId(null)
+      return
+    }
     setExpandedId(id)
     if (details[id]) return
     setLoadingId(id)
@@ -129,7 +134,10 @@ export function useTransactions() {
   async function handleDownload() {
     if (!receiptPreviewRef.current || !previewReceipt) return
     const { toPng } = await import("html-to-image")
-    const dataUrl = await toPng(receiptPreviewRef.current, { pixelRatio: 3, backgroundColor: "#ffffff" })
+    const dataUrl = await toPng(receiptPreviewRef.current, {
+      pixelRatio: 3,
+      backgroundColor: "#ffffff",
+    })
     const a = document.createElement("a")
     a.href = dataUrl
     a.download = `struk-${previewReceipt.transactionId}.png`

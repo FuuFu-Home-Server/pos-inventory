@@ -73,9 +73,13 @@ export function ReceiptTemplate({ data }: { data: ReceiptData }) {
       <div className="border-t border-b border-dashed border-black py-2 mb-2 space-y-1">
         {data.items.map((item, i) => (
           <div key={i} className="text-xs">
-            <p className="font-medium">{item.productName} {item.variantName}</p>
+            <p className="font-medium">
+              {item.productName} {item.variantName}
+            </p>
             <div className="flex justify-between pl-2 text-gray-700">
-              <span>{item.qty} {item.unit} × {formatRupiah(item.unitPrice)}</span>
+              <span>
+                {item.qty} {item.unit} × {formatRupiah(item.unitPrice)}
+              </span>
               <span>{formatRupiah(item.subtotal)}</span>
             </div>
             {item.itemDiscountAmt > 0 && (
@@ -102,7 +106,7 @@ export function ReceiptTemplate({ data }: { data: ReceiptData }) {
         {config.showTax && (
           <div className="flex justify-between">
             <span>PPN 11%</span>
-            <span>{formatRupiah(Math.round(data.total * 0.11 / 1.11))}</span>
+            <span>{formatRupiah(Math.round((data.total * 0.11) / 1.11))}</span>
           </div>
         )}
         <div className="flex justify-between font-bold border-t border-dashed border-black pt-1 mt-1">

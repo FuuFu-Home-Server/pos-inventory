@@ -27,11 +27,13 @@ export async function GET() {
     },
     orderBy: { createdAt: "desc" },
   })
-  return NextResponse.json(lists.map((l) => ({
-    ...l,
-    totalCost: l.items.reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
-    purchasedCount: l.items.filter((i) => i.isPurchased).length,
-  })))
+  return NextResponse.json(
+    lists.map((l) => ({
+      ...l,
+      totalCost: l.items.reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
+      purchasedCount: l.items.filter((i) => i.isPurchased).length,
+    })),
+  )
 }
 
 export async function POST(req: NextRequest) {

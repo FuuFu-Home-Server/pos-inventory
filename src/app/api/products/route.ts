@@ -26,7 +26,10 @@ export async function GET(req: NextRequest) {
   ])
 
   return NextResponse.json({
-    products, total, page, limit,
+    products,
+    total,
+    page,
+    limit,
     stats: { activeVariants, lowStockCount: Number(lowStockRaw[0].count) },
   })
 }

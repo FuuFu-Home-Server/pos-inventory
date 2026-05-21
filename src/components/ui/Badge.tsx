@@ -10,13 +10,23 @@ const styles: Record<Variant, string> = {
   default: "bg-gray-100 text-gray-600 ring-1 ring-gray-200",
 }
 
-export function Badge({ children, variant = "default", className }: {
+export function Badge({
+  children,
+  variant = "default",
+  className,
+}: {
   children: React.ReactNode
   variant?: Variant
   className?: string
 }) {
   return (
-    <span className={cn("inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold", styles[variant], className)}>
+    <span
+      className={cn(
+        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold",
+        styles[variant],
+        className,
+      )}
+    >
       {children}
     </span>
   )

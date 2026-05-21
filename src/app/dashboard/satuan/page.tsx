@@ -17,7 +17,9 @@ export default function SatuanPage() {
     setUnits(await res.json())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   async function handleAdd() {
     if (!newName.trim()) return
@@ -50,12 +52,17 @@ export default function SatuanPage() {
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           className="flex-1"
         />
-        <Button onClick={handleAdd} loading={loading} disabled={!newName.trim()}>Tambah</Button>
+        <Button onClick={handleAdd} loading={loading} disabled={!newName.trim()}>
+          Tambah
+        </Button>
       </div>
 
       <Table>
         <Thead>
-          <tr><Th>Satuan</Th><Th /></tr>
+          <tr>
+            <Th>Satuan</Th>
+            <Th />
+          </tr>
         </Thead>
         <Tbody>
           {units.map((u) => (
@@ -72,7 +79,11 @@ export default function SatuanPage() {
             </tr>
           ))}
           {units.length === 0 && (
-            <tr><Td colSpan={2} className="text-center text-gray-400 py-6">Belum ada satuan</Td></tr>
+            <tr>
+              <Td colSpan={2} className="text-center text-gray-400 py-6">
+                Belum ada satuan
+              </Td>
+            </tr>
           )}
         </Tbody>
       </Table>

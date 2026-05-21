@@ -30,7 +30,9 @@ export function useReports() {
     setLoading(false)
   }, [period])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   const maxRevenue = report ? Math.max(...report.topProducts.map((p) => p.revenue), 1) : 1
   const maxPayCount = report ? Math.max(...report.paymentBreakdown.map((p) => p.count), 1) : 1

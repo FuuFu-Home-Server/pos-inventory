@@ -32,11 +32,13 @@ export function Modal({ open, onClose, title, children, className }: ModalProps)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn(
-        "relative bg-white rounded-2xl shadow-2xl w-full max-w-md",
-        "border border-gray-100",
-        className
-      )}>
+      <div
+        className={cn(
+          "relative bg-white rounded-2xl shadow-2xl w-full max-w-md",
+          "border border-gray-100",
+          className,
+        )}
+      >
         <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 bg-gray-50/60 rounded-t-2xl">
           <h2 className="text-base font-bold text-gray-900">{title}</h2>
           <button

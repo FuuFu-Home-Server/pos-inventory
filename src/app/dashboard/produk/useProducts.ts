@@ -34,7 +34,15 @@ export type EditVariantRow = {
 }
 
 export function blankVariantRow(): EditVariantRow {
-  return { variantName: "", barcode: "", price: "", stock: "", unit: "pcs", lowStockThreshold: "5", isActive: true }
+  return {
+    variantName: "",
+    barcode: "",
+    price: "",
+    stock: "",
+    unit: "pcs",
+    lowStockThreshold: "5",
+    isActive: true,
+  }
 }
 
 function productToEditForm(p: Product) {
@@ -71,23 +79,32 @@ export function useProducts() {
   const [loading, setLoading] = useState(false)
 
   const [createForm, setCreateForm] = useState({
-    name: "", category: "", supplierId: "",
+    name: "",
+    category: "",
+    supplierId: "",
     variants: [blankVariantRow()],
   })
 
   const [editForm, setEditForm] = useState<{
-    name: string; category: string; supplierId: string; variants: EditVariantRow[]
+    name: string
+    category: string
+    supplierId: string
+    variants: EditVariantRow[]
   }>({ name: "", category: "", supplierId: "", variants: [] })
 
   const load = useCallback(async () => {
-    const res = await fetch(`/api/products?page=${page}&limit=${pageSize}&q=${encodeURIComponent(search)}`)
+    const res = await fetch(
+      `/api/products?page=${page}&limit=${pageSize}&q=${encodeURIComponent(search)}`,
+    )
     const data = await res.json()
     setProducts(data.products)
     setTotal(data.total)
     if (data.stats) setStats(data.stats)
   }, [page, pageSize, search])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
   useEffect(() => {
     Promise.all([
       fetch("/api/suppliers").then((r) => r.json()),
@@ -173,7 +190,7 @@ export function useProducts() {
 
   async function toggleVariantActive(product: Product, variantId: number) {
     const variants = product.variants.map((v) =>
-      v.id === variantId ? { ...v, isActive: !v.isActive } : v
+      v.id === variantId ? { ...v, isActive: !v.isActive } : v,
     )
     await fetch(`/api/products/${product.id}`, {
       method: "PUT",

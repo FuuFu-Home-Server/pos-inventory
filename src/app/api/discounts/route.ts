@@ -6,10 +6,13 @@ export async function GET(req: NextRequest) {
   const active = new URL(req.url).searchParams.get("active")
   const now = new Date()
 
-  const where = active === "true" ? {
-    isActive: true,
-    OR: [{ validUntil: null }, { validUntil: { gte: now } }],
-  } : undefined
+  const where =
+    active === "true"
+      ? {
+          isActive: true,
+          OR: [{ validUntil: null }, { validUntil: { gte: now } }],
+        }
+      : undefined
 
   const discounts = await prisma.discount.findMany({
     where,

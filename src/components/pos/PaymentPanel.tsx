@@ -19,7 +19,14 @@ interface PaymentPanelProps {
 
 const QUICK_AMOUNTS = [5_000, 10_000, 20_000, 50_000, 100_000]
 
-export function PaymentPanel({ paymentMethods, discounts, onCheckout, loading, skipPrint, onSkipPrintChange }: PaymentPanelProps) {
+export function PaymentPanel({
+  paymentMethods,
+  discounts,
+  onCheckout,
+  loading,
+  skipPrint,
+  onSkipPrintChange,
+}: PaymentPanelProps) {
   const store = usePosStore()
   const subtotal = store.getSubtotal()
   const total = store.getTotal()
@@ -33,16 +40,18 @@ export function PaymentPanel({ paymentMethods, discounts, onCheckout, loading, s
   }, [paymentMethods])
 
   function handleDiscountChange(id: string) {
-    if (!id) { store.setDiscount(null, 0); return }
+    if (!id) {
+      store.setDiscount(null, 0)
+      return
+    }
     const d = discounts.find((x) => x.id === Number(id))
     if (!d) return
-    const amount = d.type === "PERCENT"
-      ? Math.round((subtotal * d.value) / 100)
-      : d.value
+    const amount = d.type === "PERCENT" ? Math.round((subtotal * d.value) / 100) : d.value
     store.setDiscount(d.id, amount)
   }
 
-  const canCheckout = store.items.length > 0 && !!store.paymentMethodId && store.paymentAmount >= total
+  const canCheckout =
+    store.items.length > 0 && !!store.paymentMethodId && store.paymentAmount >= total
 
   return (
     <div className="flex flex-col gap-4">
@@ -58,21 +67,27 @@ export function PaymentPanel({ paymentMethods, discounts, onCheckout, loading, s
 
       {discounts.length > 0 && (
         <div>
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Diskon</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+            Diskon
+          </label>
           <select
             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
             onChange={(e) => handleDiscountChange(e.target.value)}
           >
             <option value="">Tanpa diskon</option>
             {discounts.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
             ))}
           </select>
         </div>
       )}
 
       <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Metode Bayar</label>
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+          Metode Bayar
+        </label>
         <div className="grid grid-cols-2 gap-2">
           {paymentMethods.map((pm) => (
             <button
@@ -91,7 +106,9 @@ export function PaymentPanel({ paymentMethods, discounts, onCheckout, loading, s
       </div>
 
       <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">Nominal Diterima</label>
+        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+          Nominal Diterima
+        </label>
         <input
           type="number"
           value={store.paymentAmount || ""}
@@ -126,11 +143,17 @@ export function PaymentPanel({ paymentMethods, discounts, onCheckout, loading, s
       </div>
 
       {store.paymentAmount > 0 && (
-        <div className={`rounded-xl px-4 py-3 flex justify-between items-center ${change >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}>
-          <span className={`text-sm font-medium ${change >= 0 ? "text-green-700" : "text-red-700"}`}>
+        <div
+          className={`rounded-xl px-4 py-3 flex justify-between items-center ${change >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
+        >
+          <span
+            className={`text-sm font-medium ${change >= 0 ? "text-green-700" : "text-red-700"}`}
+          >
             {change >= 0 ? "Kembalian" : "Kurang"}
           </span>
-          <span className={`text-2xl font-black tabular-nums ${change >= 0 ? "text-green-800" : "text-red-800"}`}>
+          <span
+            className={`text-2xl font-black tabular-nums ${change >= 0 ? "text-green-800" : "text-red-800"}`}
+          >
             {formatRupiah(Math.abs(change))}
           </span>
         </div>

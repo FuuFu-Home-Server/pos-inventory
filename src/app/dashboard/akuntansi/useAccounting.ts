@@ -36,7 +36,9 @@ export function useAccounting() {
     setLoading(false)
   }, [filterFrom, filterTo])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   function resetFilters() {
     setFilterFrom(EMPTY)

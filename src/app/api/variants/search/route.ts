@@ -2,22 +2,36 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
-  const q = new URL(req.url).searchParams.get("q") ?? ""
+  const url = new URL(req.url)
+  const q = url.searchParams.get("q") ?? ""
+  const includeZeroStock = url.searchParams.get("includeZeroStock") === "true"
 
   const variants = await prisma.productVariant.findMany({
     where: {
       isActive: true,
-      stock: { gt: 0 },
-      ...(q.length >= 2 ? {
-        OR: [
-          { product: { name: { contains: q, mode: "insensitive" } } },
-          { variantName: { contains: q, mode: "insensitive" } },
-          { barcode: { contains: q } },
-        ],
-      } : {}),
+      ...(includeZeroStock ? {} : { stock: { gt: 0 } }),
+      ...(q.length >= 1
+        ? {
+            OR: [
+              { product: { name: { contains: q, mode: "insensitive" } } },
+              { variantName: { contains: q, mode: "insensitive" } },
+              { barcode: { contains: q } },
+            ],
+          }
+        : {}),
     },
-    include: { product: { select: { id: true, name: true } } },
-    take: 12,
+    select: {
+      id: true,
+      productId: true,
+      variantName: true,
+      price: true,
+      costPrice: true,
+      stock: true,
+      unit: true,
+      barcode: true,
+      product: { select: { id: true, name: true } },
+    },
+    take: 30,
     orderBy: [{ product: { name: "asc" } }, { variantName: "asc" }],
   })
 
@@ -28,9 +42,10 @@ export async function GET(req: NextRequest) {
       productName: v.product.name,
       variantName: v.variantName,
       price: Number(v.price),
+      costPrice: v.costPrice ? Number(v.costPrice) : null,
       stock: v.stock,
       unit: v.unit,
       barcode: v.barcode,
-    }))
+    })),
   )
 }

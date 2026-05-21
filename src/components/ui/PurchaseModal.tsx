@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useRef, useEffect, type ReactNode } from "react"
+import { createPortal } from "react-dom"
 import { X } from "lucide-react"
 import { Modal } from "./Modal"
 import { Button } from "./Button"
@@ -60,7 +61,9 @@ export function PurchaseModal({
   const [search, setSearch] = useState("")
   const [results, setResults] = useState<VariantResult[]>([])
   const [dropOpen, setDropOpen] = useState(false)
+  const [dropRect, setDropRect] = useState<DOMRect | null>(null)
   const searchRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -74,7 +77,12 @@ export function PurchaseModal({
     return () => document.removeEventListener("mousedown", handleMouseDown)
   }, [dropOpen])
 
+  function updateDropRect() {
+    if (inputRef.current) setDropRect(inputRef.current.getBoundingClientRect())
+  }
+
   async function doSearch(q: string) {
+    updateDropRect()
     const data = await searchVariants(q)
     setResults(data)
     if (data.length > 0) setDropOpen(true)
@@ -87,6 +95,7 @@ export function PurchaseModal({
   }
 
   function handleFocus() {
+    updateDropRect()
     doSearch(search)
   }
 
@@ -116,8 +125,9 @@ export function PurchaseModal({
 
         <div>
           <p className="text-sm font-semibold text-gray-700 mb-2">Cari Produk</p>
-          <div ref={searchRef} className="relative">
+          <div ref={searchRef}>
             <input
+              ref={inputRef}
               type="text"
               value={search}
               onChange={(e) => handleSearchChange(e.target.value)}
@@ -125,26 +135,41 @@ export function PurchaseModal({
               placeholder="Ketik atau klik untuk pilih produk..."
               className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
-            {dropOpen && (
-              <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-xl mt-1 max-h-60 overflow-y-auto">
+          </div>
+          {dropOpen &&
+            dropRect &&
+            typeof document !== "undefined" &&
+            createPortal(
+              <div
+                style={{
+                  position: "fixed",
+                  top: dropRect.bottom + 4,
+                  left: dropRect.left,
+                  width: dropRect.width,
+                  zIndex: 9999,
+                }}
+                className="bg-white border border-gray-200 rounded-xl shadow-xl max-h-60 overflow-y-auto"
+              >
                 {results.map((v) => (
                   <button
                     key={v.id}
-                    onClick={() => handleSelectVariant(v)}
+                    onMouseDown={(e) => {
+                      e.preventDefault()
+                      handleSelectVariant(v)
+                    }}
                     className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 flex items-center justify-between text-sm transition-colors border-b border-gray-50 last:border-0"
                   >
                     <span className="font-medium text-gray-800">
-                      {v.product.name}{" "}
-                      <span className="text-gray-500">{v.variantName}</span>
+                      {v.product.name} <span className="text-gray-500">{v.variantName}</span>
                     </span>
                     <span className="text-xs text-gray-400">
                       Stok: {v.stock} {v.unit}
                     </span>
                   </button>
                 ))}
-              </div>
+              </div>,
+              document.body,
             )}
-          </div>
         </div>
 
         {items.length > 0 && (
@@ -172,7 +197,9 @@ export function PurchaseModal({
                       onChange={(e) => updateItem(i, { qty: e.target.value })}
                       className={`${fieldCls} w-16 text-center shrink-0`}
                     />
-                    <span className="text-xs font-medium text-gray-500 shrink-0 px-1">{item.unit}</span>
+                    <span className="text-xs font-medium text-gray-500 shrink-0 px-1">
+                      {item.unit}
+                    </span>
                     {showQtyPerUnit && (
                       <>
                         <span className="text-gray-400 text-xs shrink-0">×</span>
@@ -205,12 +232,7 @@ export function PurchaseModal({
           </div>
         )}
 
-        <Button
-          onClick={onSubmit}
-          loading={loading}
-          disabled={submitDisabled}
-          className="w-full"
-        >
+        <Button onClick={onSubmit} loading={loading} disabled={submitDisabled} className="w-full">
           {submitLabel}
         </Button>
       </div>

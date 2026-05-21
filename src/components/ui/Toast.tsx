@@ -25,7 +25,12 @@ export function Toast({ message, type = "info", onDismiss, duration = 3000 }: To
   }, [onDismiss, duration])
 
   return (
-    <div className={cn("fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium max-w-sm", styles[type])}>
+    <div
+      className={cn(
+        "fixed top-4 right-4 z-50 px-4 py-3 rounded-lg shadow-lg text-sm font-medium max-w-sm",
+        styles[type],
+      )}
+    >
       {message}
     </div>
   )

@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react"
 
-export type Discount = { id: number; name: string; type: string; value: number; scope: string; isActive: boolean; minPurchase: number | null; product: { name: string } | null }
+export type Discount = {
+  id: number
+  name: string
+  type: string
+  value: number
+  scope: string
+  isActive: boolean
+  minPurchase: number | null
+  product: { name: string } | null
+}
 export type Product = { id: number; name: string }
 
 export function useDiscounts() {
@@ -10,7 +19,15 @@ export function useDiscounts() {
   const [products, setProducts] = useState<Product[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ name: "", type: "PERCENT", value: "", scope: "TRANSACTION", productId: "", minPurchase: "", isActive: true })
+  const [form, setForm] = useState({
+    name: "",
+    type: "PERCENT",
+    value: "",
+    scope: "TRANSACTION",
+    productId: "",
+    minPurchase: "",
+    isActive: true,
+  })
 
   const load = useCallback(async () => {
     const res = await fetch("/api/discounts")
@@ -18,9 +35,13 @@ export function useDiscounts() {
     setDiscounts(data.discounts)
   }, [])
 
-  useEffect(() => { load() }, [load])
   useEffect(() => {
-    fetch("/api/products?limit=100").then((r) => r.json()).then((d) => setProducts(d.products))
+    load()
+  }, [load])
+  useEffect(() => {
+    fetch("/api/products?limit=100")
+      .then((r) => r.json())
+      .then((d) => setProducts(d.products))
   }, [])
 
   async function handleCreate() {
@@ -44,7 +65,11 @@ export function useDiscounts() {
   }
 
   async function handleToggle(id: number, isActive: boolean) {
-    await fetch(`/api/discounts/${id}`, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isActive: !isActive }) })
+    await fetch(`/api/discounts/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isActive: !isActive }),
+    })
     load()
   }
 
@@ -54,5 +79,16 @@ export function useDiscounts() {
     load()
   }
 
-  return { discounts, products, modalOpen, setModalOpen, loading, form, setForm, handleCreate, handleToggle, handleDelete }
+  return {
+    discounts,
+    products,
+    modalOpen,
+    setModalOpen,
+    loading,
+    form,
+    setForm,
+    handleCreate,
+    handleToggle,
+    handleDelete,
+  }
 }

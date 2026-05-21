@@ -4,16 +4,39 @@ import { formatRupiah } from "@/lib/format"
 import { Badge } from "@/components/ui/Badge"
 import { useReports, PERIODS } from "./useReports"
 
-function Bar({ value, max, color = "bg-indigo-500" }: { value: number; max: number; color?: string }) {
+function Bar({
+  value,
+  max,
+  color = "bg-indigo-500",
+}: {
+  value: number
+  max: number
+  color?: string
+}) {
   const pct = max > 0 ? Math.max((value / max) * 100, 2) : 0
   return (
     <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden">
-      <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+      <div
+        className={`h-full ${color} rounded-full transition-all duration-500`}
+        style={{ width: `${pct}%` }}
+      />
     </div>
   )
 }
 
-function StatCard({ label, value, sub, color, accent }: { label: string; value: string; sub?: string; color: string; accent?: string }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  color,
+  accent,
+}: {
+  label: string
+  value: string
+  sub?: string
+  color: string
+  accent?: string
+}) {
   return (
     <div className={`bg-white border rounded-xl p-5 shadow-sm ${accent ?? "border-gray-200"}`}>
       <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">{label}</p>
@@ -24,7 +47,8 @@ function StatCard({ label, value, sub, color, accent }: { label: string; value: 
 }
 
 export default function LaporanPage() {
-  const { period, setPeriod, report, loading, maxRevenue, maxPayCount, maxCatRev, maxSpend } = useReports()
+  const { period, setPeriod, report, loading, maxRevenue, maxPayCount, maxCatRev, maxSpend } =
+    useReports()
 
   return (
     <div className="p-6">
@@ -39,7 +63,9 @@ export default function LaporanPage() {
               key={p.value}
               onClick={() => setPeriod(p.value)}
               className={`px-4 py-1.5 text-sm rounded-lg transition-all font-medium ${
-                period === p.value ? "bg-white text-indigo-700 shadow-sm" : "text-gray-500 hover:text-gray-800"
+                period === p.value
+                  ? "bg-white text-indigo-700 shadow-sm"
+                  : "text-gray-500 hover:text-gray-800"
               }`}
             >
               {p.label}
@@ -82,20 +108,26 @@ export default function LaporanPage() {
               value={String(report.lowStock.length)}
               sub={report.lowStock.length === 0 ? "Semua stok aman" : "produk perlu restok"}
               color={report.lowStock.length > 0 ? "text-amber-700" : "text-gray-500"}
-              accent={report.lowStock.length > 0 ? "border-amber-200 bg-amber-50" : "border-gray-200"}
+              accent={
+                report.lowStock.length > 0 ? "border-amber-200 bg-amber-50" : "border-gray-200"
+              }
             />
           </div>
 
           <div className="grid grid-cols-3 gap-6">
             <div className="col-span-2 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">10 Produk Terlaris</h2>
+              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
+                10 Produk Terlaris
+              </h2>
               {report.topProducts.length === 0 ? (
                 <p className="text-sm text-gray-400 py-8 text-center">Belum ada data penjualan</p>
               ) : (
                 <div className="space-y-2.5">
                   {report.topProducts.map((p, i) => (
                     <div key={i} className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0">{i + 1}</span>
+                      <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0">
+                        {i + 1}
+                      </span>
                       <div className="w-40 shrink-0">
                         <p className="text-xs font-semibold text-gray-800 truncate">{p.name}</p>
                         <p className="text-xs text-gray-400">{p.qty} terjual</p>
@@ -112,7 +144,9 @@ export default function LaporanPage() {
 
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Metode Pembayaran</h2>
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
+                  Metode Pembayaran
+                </h2>
                 {report.paymentBreakdown.length === 0 ? (
                   <p className="text-xs text-gray-400 text-center py-4">Tidak ada data</p>
                 ) : (
@@ -131,19 +165,27 @@ export default function LaporanPage() {
               </div>
 
               <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Top Pelanggan</h2>
+                <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
+                  Top Pelanggan
+                </h2>
                 {report.topCustomers.length === 0 ? (
-                  <p className="text-xs text-gray-400 text-center py-4">Tidak ada transaksi dengan pelanggan</p>
+                  <p className="text-xs text-gray-400 text-center py-4">
+                    Tidak ada transaksi dengan pelanggan
+                  </p>
                 ) : (
                   <div className="space-y-2">
                     {report.topCustomers.map((c, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-gray-300 w-4 text-right shrink-0">{i + 1}</span>
+                        <span className="text-xs font-bold text-gray-300 w-4 text-right shrink-0">
+                          {i + 1}
+                        </span>
                         <div className="flex-1 min-w-0">
                           <p className="text-xs font-semibold text-gray-800 truncate">{c.name}</p>
                           <p className="text-xs text-gray-400">{c.count} transaksi</p>
                         </div>
-                        <span className="text-xs font-bold text-gray-700 tabular-nums shrink-0">{formatRupiah(c.spend)}</span>
+                        <span className="text-xs font-bold text-gray-700 tabular-nums shrink-0">
+                          {formatRupiah(c.spend)}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -154,7 +196,9 @@ export default function LaporanPage() {
 
           <div className="grid grid-cols-2 gap-6">
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Pendapatan per Kategori</h2>
+              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
+                Pendapatan per Kategori
+              </h2>
               {report.categoryBreakdown.length === 0 ? (
                 <p className="text-xs text-gray-400 text-center py-4">Tidak ada data</p>
               ) : (
@@ -186,21 +230,38 @@ export default function LaporanPage() {
               </h2>
               {report.lowStock.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-8 text-gray-400 gap-2">
-                  <svg className="w-10 h-10 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  <svg
+                    className="w-10 h-10 opacity-40"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
                   </svg>
                   <p className="text-sm">Semua stok aman</p>
                 </div>
               ) : (
                 <div className="space-y-1.5 max-h-72 overflow-y-auto">
                   {report.lowStock.map((v) => (
-                    <div key={v.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+                    <div
+                      key={v.id}
+                      className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0"
+                    >
                       <div className="min-w-0 mr-3">
                         <p className="text-xs font-semibold text-gray-800 truncate">{v.name}</p>
-                        <p className="text-xs text-gray-400">min. {v.threshold} {v.unit}</p>
+                        <p className="text-xs text-gray-400">
+                          min. {v.threshold} {v.unit}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-sm font-bold text-gray-700 tabular-nums">{v.stock} {v.unit}</span>
+                        <span className="text-sm font-bold text-gray-700 tabular-nums">
+                          {v.stock} {v.unit}
+                        </span>
                         <Badge variant={v.stock === 0 ? "danger" : "warning"}>
                           {v.stock === 0 ? "Habis" : "Menipis"}
                         </Badge>
@@ -214,11 +275,15 @@ export default function LaporanPage() {
 
           {report.topCustomers.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Pengeluaran Top Pelanggan</h2>
+              <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">
+                Pengeluaran Top Pelanggan
+              </h2>
               <div className="space-y-2.5">
                 {report.topCustomers.map((c, i) => (
                   <div key={i} className="flex items-center gap-3">
-                    <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0">{i + 1}</span>
+                    <span className="text-xs font-bold text-gray-300 w-5 text-right shrink-0">
+                      {i + 1}
+                    </span>
                     <div className="w-36 shrink-0">
                       <p className="text-xs font-semibold text-gray-800 truncate">{c.name}</p>
                       <p className="text-xs text-gray-400">{c.count} transaksi</p>

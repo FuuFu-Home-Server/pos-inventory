@@ -13,7 +13,12 @@ export async function GET(req: NextRequest) {
     : undefined
 
   const [customers, total] = await Promise.all([
-    prisma.customer.findMany({ where, orderBy: { name: "asc" }, skip: (page - 1) * limit, take: limit }),
+    prisma.customer.findMany({
+      where,
+      orderBy: { name: "asc" },
+      skip: (page - 1) * limit,
+      take: limit,
+    }),
     prisma.customer.count({ where }),
   ])
 

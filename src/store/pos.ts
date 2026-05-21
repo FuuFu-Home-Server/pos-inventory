@@ -22,7 +22,10 @@ type PosStore = {
   addItem: (item: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">) => void
   removeItem: (variantId: number) => void
   updateQty: (variantId: number, qty: number) => void
-  changeVariant: (oldVariantId: number, newItem: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">) => void
+  changeVariant: (
+    oldVariantId: number,
+    newItem: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">,
+  ) => void
   setItemDiscount: (variantId: number, amount: number) => void
   setDiscount: (discountId: number | null, amount: number) => void
   setCustomer: (customerId: number | null) => void
@@ -54,7 +57,7 @@ export const usePosStore = create<PosStore>((set, get) => ({
           items: state.items.map((i) =>
             i.variantId === item.variantId
               ? { ...i, qty: i.qty + 1, subtotal: (i.qty + 1) * i.price - i.itemDiscountAmt }
-              : i
+              : i,
           ),
         }
       }
@@ -72,17 +75,25 @@ export const usePosStore = create<PosStore>((set, get) => ({
     set((state) => ({
       items: state.items.map((i) =>
         i.variantId === oldVariantId
-          ? { ...newItem, qty: i.qty, itemDiscountAmt: i.itemDiscountAmt, subtotal: i.qty * newItem.price - i.itemDiscountAmt }
-          : i
+          ? {
+              ...newItem,
+              qty: i.qty,
+              itemDiscountAmt: i.itemDiscountAmt,
+              subtotal: i.qty * newItem.price - i.itemDiscountAmt,
+            }
+          : i,
       ),
     }))
   },
 
   updateQty(variantId, qty) {
-    if (qty <= 0) { get().removeItem(variantId); return }
+    if (qty <= 0) {
+      get().removeItem(variantId)
+      return
+    }
     set((state) => ({
       items: state.items.map((i) =>
-        i.variantId === variantId ? { ...i, qty, subtotal: qty * i.price - i.itemDiscountAmt } : i
+        i.variantId === variantId ? { ...i, qty, subtotal: qty * i.price - i.itemDiscountAmt } : i,
       ),
     }))
   },
@@ -90,17 +101,35 @@ export const usePosStore = create<PosStore>((set, get) => ({
   setItemDiscount(variantId, amount) {
     set((state) => ({
       items: state.items.map((i) =>
-        i.variantId === variantId ? { ...i, itemDiscountAmt: amount, subtotal: i.qty * i.price - amount } : i
+        i.variantId === variantId
+          ? { ...i, itemDiscountAmt: amount, subtotal: i.qty * i.price - amount }
+          : i,
       ),
     }))
   },
 
-  setDiscount(discountId, amount) { set({ discountId, discountAmount: amount }) },
-  setCustomer(customerId) { set({ customerId }) },
-  setPaymentMethod(paymentMethodId) { set({ paymentMethodId }) },
-  setPaymentAmount(paymentAmount) { set({ paymentAmount }) },
-  reset() { set(initialState) },
-  getSubtotal() { return get().items.reduce((sum, i) => sum + i.subtotal, 0) },
-  getTotal() { return Math.max(0, get().getSubtotal() - get().discountAmount) },
-  getChange() { return Math.max(0, get().paymentAmount - get().getTotal()) },
+  setDiscount(discountId, amount) {
+    set({ discountId, discountAmount: amount })
+  },
+  setCustomer(customerId) {
+    set({ customerId })
+  },
+  setPaymentMethod(paymentMethodId) {
+    set({ paymentMethodId })
+  },
+  setPaymentAmount(paymentAmount) {
+    set({ paymentAmount })
+  },
+  reset() {
+    set(initialState)
+  },
+  getSubtotal() {
+    return get().items.reduce((sum, i) => sum + i.subtotal, 0)
+  },
+  getTotal() {
+    return Math.max(0, get().getSubtotal() - get().discountAmount)
+  },
+  getChange() {
+    return Math.max(0, get().paymentAmount - get().getTotal())
+  },
 }))

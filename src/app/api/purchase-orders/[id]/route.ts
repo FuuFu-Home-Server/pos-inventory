@@ -36,7 +36,10 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   })
   if (!order) return NextResponse.json({ error: "Tidak ditemukan" }, { status: 404 })
   if (order.status !== "DRAFT") {
-    return NextResponse.json({ error: `PO sudah ${order.status}, tidak bisa diubah` }, { status: 409 })
+    return NextResponse.json(
+      { error: `PO sudah ${order.status}, tidak bisa diubah` },
+      { status: 409 },
+    )
   }
 
   if (parsed.data.status === "RECEIVED") {
@@ -46,8 +49,8 @@ export async function PATCH(req: NextRequest, { params }: Params) {
           tx.productVariant.update({
             where: { id: item.productVariantId },
             data: { stock: { increment: item.qty } },
-          })
-        )
+          }),
+        ),
       )
       await tx.purchaseOrder.update({
         where: { id: Number(id) },

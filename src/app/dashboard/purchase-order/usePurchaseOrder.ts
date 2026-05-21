@@ -3,8 +3,22 @@
 import { useState, useEffect, useCallback } from "react"
 import { type PurchaseItem, type VariantResult } from "@/components/ui/PurchaseModal"
 
-type POItem = { id: number; qty: number; unitCost: number; subtotal: number; productVariant: { variantName: string; unit: string; product: { name: string } } }
-type PO = { id: number; status: string; supplier: { name: string }; user: { name: string }; createdAt: string; receivedAt: string | null; _count: { items: number } }
+type POItem = {
+  id: number
+  qty: number
+  unitCost: number
+  subtotal: number
+  productVariant: { variantName: string; unit: string; product: { name: string } }
+}
+type PO = {
+  id: number
+  status: string
+  supplier: { name: string }
+  user: { name: string }
+  createdAt: string
+  receivedAt: string | null
+  _count: { items: number }
+}
 type PODetail = PO & { items: POItem[] }
 type Supplier = { id: number; name: string }
 
@@ -20,7 +34,6 @@ export function usePurchaseOrder() {
   const [loadingId, setLoadingId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [variants, setVariants] = useState<VariantResult[]>([])
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ supplierId: "", notes: "", items: [] as PurchaseItem[] })
 
@@ -31,41 +44,42 @@ export function usePurchaseOrder() {
     setTotal(data.total)
   }, [page, pageSize])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   useEffect(() => {
-    Promise.all([
-      fetch("/api/suppliers").then((r) => r.json()),
-      fetch("/api/products?limit=200").then((r) => r.json()),
-    ]).then(([s, p]) => {
-      setSuppliers(s.suppliers)
-      setVariants(p.products.flatMap((prod: any) => prod.variants.map((v: any) => ({ ...v, product: { name: prod.name } }))))
-    })
+    fetch("/api/suppliers")
+      .then((r) => r.json())
+      .then((s) => setSuppliers(s.suppliers))
   }, [])
 
   async function searchVariants(q: string): Promise<VariantResult[]> {
-    if (!q.trim()) return variants.slice(0, 10)
-    const q2 = q.toLowerCase()
-    return variants.filter((v) =>
-      v.product.name.toLowerCase().includes(q2) || v.variantName.toLowerCase().includes(q2)
-    ).slice(0, 10)
+    const res = await fetch(`/api/variants/search?q=${encodeURIComponent(q)}&includeZeroStock=true`)
+    return res.json()
   }
 
   function handleAddVariant(v: VariantResult) {
     setForm((f) => ({
       ...f,
-      items: [...f.items, {
-        variantId: v.id,
-        label: `${v.product.name} — ${v.variantName}`,
-        unit: v.unit,
-        qty: "1",
-        unitCost: String(v.costPrice ?? ""),
-      }],
+      items: [
+        ...f.items,
+        {
+          variantId: v.id,
+          label: `${v.product.name} — ${v.variantName}`,
+          unit: v.unit,
+          qty: "1",
+          unitCost: String(v.costPrice ?? ""),
+        },
+      ],
     }))
   }
 
   async function toggleDetail(id: number) {
-    if (expandedId === id) { setExpandedId(null); return }
+    if (expandedId === id) {
+      setExpandedId(null)
+      return
+    }
     setExpandedId(id)
     if (details[id]) return
     setLoadingId(id)
@@ -84,7 +98,11 @@ export function usePurchaseOrder() {
       body: JSON.stringify({
         supplierId: Number(form.supplierId),
         notes: form.notes || undefined,
-        items: form.items.map((i) => ({ productVariantId: i.variantId, qty: Number(i.qty), unitCost: Number(i.unitCost) })),
+        items: form.items.map((i) => ({
+          productVariantId: i.variantId,
+          qty: Number(i.qty),
+          unitCost: Number(i.unitCost),
+        })),
       }),
     })
     setLoading(false)
@@ -93,23 +111,35 @@ export function usePurchaseOrder() {
     load()
   }
 
-  async function handleStatus(id: number, status: "RECEIVED" | "CANCELLED") {
-    if (!confirm(status === "RECEIVED" ? "Konfirmasi terima barang?" : "Batalkan PO ini?")) return
+  async function handleStatus(id: number, status: string) {
     await fetch(`/api/purchase-orders/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     })
-    setDetails((prev) => { const next = { ...prev }; delete next[id]; return next })
     load()
   }
 
   return {
-    orders, total, page, pageSize, setPage, setPageSize,
-    expandedId, details, loadingId,
-    modalOpen, setModalOpen,
-    suppliers, form, setForm, loading,
-    searchVariants, handleAddVariant,
-    toggleDetail, handleCreate, handleStatus,
+    orders,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    expandedId,
+    details,
+    loadingId,
+    modalOpen,
+    setModalOpen,
+    suppliers,
+    form,
+    setForm,
+    loading,
+    searchVariants,
+    handleAddVariant,
+    toggleDetail,
+    handleCreate,
+    handleStatus,
   }
 }

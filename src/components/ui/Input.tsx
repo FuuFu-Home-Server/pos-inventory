@@ -23,12 +23,12 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           "placeholder:text-gray-400",
           "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500",
           error ? "border-red-400 bg-red-50/30" : "border-gray-300 hover:border-gray-400",
-          className
+          className,
         )}
         {...props}
       />
       {error && <p className="text-xs text-red-600 flex items-center gap-1">⚠ {error}</p>}
     </div>
-  )
+  ),
 )
 Input.displayName = "Input"

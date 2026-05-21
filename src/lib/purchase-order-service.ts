@@ -1,4 +1,4 @@
-type PoItem = { qty: number; unitCost: number }
+type PoItem = { productVariantId: number; qty: number; unitCost: number }
 
 export function buildPoTotals(items: PoItem[]) {
   const itemsWithSubtotal = items.map((item) => ({

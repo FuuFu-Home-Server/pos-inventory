@@ -98,10 +98,11 @@ export function ProductSearch({ onSelect }: ProductSearchProps) {
     <div className="relative">
       <div className="relative">
         <div className="absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none">
-          {loading
-            ? <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
-            : <Search size={16} className="text-gray-400" />
-          }
+          {loading ? (
+            <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Search size={16} className="text-gray-400" />
+          )}
         </div>
         <input
           type="text"
@@ -109,7 +110,12 @@ export function ProductSearch({ onSelect }: ProductSearchProps) {
           value={query}
           onChange={(e) => handleChange(e.target.value)}
           onFocus={handleFocus}
-          onBlur={() => setTimeout(() => { setFocused(false); setActiveIndex(-1) }, 150)}
+          onBlur={() =>
+            setTimeout(() => {
+              setFocused(false)
+              setActiveIndex(-1)
+            }, 150)
+          }
           onKeyDown={handleKeyDown}
           className="w-full pl-11 pr-4 py-3 text-base border border-gray-300 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-gray-400 transition-all"
           autoComplete="off"
@@ -118,7 +124,12 @@ export function ProductSearch({ onSelect }: ProductSearchProps) {
         />
         {query && (
           <button
-            onMouseDown={() => { setQuery(""); setResults([]); setOpen(false); setActiveIndex(-1) }}
+            onMouseDown={() => {
+              setQuery("")
+              setResults([])
+              setOpen(false)
+              setActiveIndex(-1)
+            }}
             className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors text-lg leading-none"
           >
             ×
@@ -134,11 +145,11 @@ export function ProductSearch({ onSelect }: ProductSearchProps) {
         >
           <div className="px-3 py-2 border-b border-gray-100 flex items-center justify-between">
             <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
-              {query.length < 2 ? `${results.length} produk tersedia` : `${results.length} hasil ditemukan`}
+              {query.length < 2
+                ? `${results.length} produk tersedia`
+                : `${results.length} hasil ditemukan`}
             </span>
-            <span className="text-xs text-gray-400">
-              ↑↓ navigasi · Enter pilih
-            </span>
+            <span className="text-xs text-gray-400">↑↓ navigasi · Enter pilih</span>
           </div>
 
           {results.map((item, i) => {
@@ -149,37 +160,51 @@ export function ProductSearch({ onSelect }: ProductSearchProps) {
             return (
               <button
                 key={item.id}
-                ref={(el) => { itemRefs.current[i] = el }}
+                ref={(el) => {
+                  itemRefs.current[i] = el
+                }}
                 className={`w-full text-left px-4 py-3 flex items-center gap-4 border-b border-gray-50 last:border-0 transition-all duration-100 ${
-                  isActive
-                    ? "bg-indigo-600 text-white"
-                    : "hover:bg-indigo-50"
+                  isActive ? "bg-indigo-600 text-white" : "hover:bg-indigo-50"
                 }`}
                 onMouseDown={() => handleSelect(item)}
                 onMouseEnter={() => setActiveIndex(i)}
               >
-                <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
-                  isActive ? "bg-indigo-500" : "bg-gray-100"
-                }`}>
+                <div
+                  className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${
+                    isActive ? "bg-indigo-500" : "bg-gray-100"
+                  }`}
+                >
                   <Package size={15} className={isActive ? "text-white" : "text-gray-500"} />
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold leading-tight truncate ${isActive ? "text-white" : "text-gray-900"}`}>
+                  <p
+                    className={`text-sm font-bold leading-tight truncate ${isActive ? "text-white" : "text-gray-900"}`}
+                  >
                     {item.productName}
                   </p>
                   <div className="flex items-center gap-2 mt-0.5">
                     <span className={`text-xs ${isActive ? "text-indigo-200" : "text-gray-500"}`}>
                       {item.variantName}
                     </span>
-                    <span className={`text-xs ${isActive ? "text-indigo-300" : "text-gray-300"}`}>·</span>
-                    <span className={`text-xs flex items-center gap-1 ${
-                      isOutOfStock
-                        ? isActive ? "text-red-300" : "text-red-500"
-                        : isLowStock
-                          ? isActive ? "text-amber-300" : "text-amber-600"
-                          : isActive ? "text-indigo-200" : "text-gray-500"
-                    }`}>
+                    <span className={`text-xs ${isActive ? "text-indigo-300" : "text-gray-300"}`}>
+                      ·
+                    </span>
+                    <span
+                      className={`text-xs flex items-center gap-1 ${
+                        isOutOfStock
+                          ? isActive
+                            ? "text-red-300"
+                            : "text-red-500"
+                          : isLowStock
+                            ? isActive
+                              ? "text-amber-300"
+                              : "text-amber-600"
+                            : isActive
+                              ? "text-indigo-200"
+                              : "text-gray-500"
+                      }`}
+                    >
                       {isOutOfStock && <AlertCircle size={10} />}
                       {isOutOfStock ? "Stok habis" : `Stok: ${item.stock} ${item.unit}`}
                     </span>
@@ -187,7 +212,9 @@ export function ProductSearch({ onSelect }: ProductSearchProps) {
                 </div>
 
                 <div className="text-right shrink-0">
-                  <p className={`text-sm font-black tabular-nums ${isActive ? "text-white" : "text-indigo-600"}`}>
+                  <p
+                    className={`text-sm font-black tabular-nums ${isActive ? "text-white" : "text-indigo-600"}`}
+                  >
                     {formatRupiah(item.price)}
                   </p>
                   <p className={`text-xs ${isActive ? "text-indigo-300" : "text-gray-400"}`}>

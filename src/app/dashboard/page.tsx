@@ -3,20 +3,59 @@ import { prisma } from "@/lib/prisma"
 import { formatRupiah } from "@/lib/format"
 import Link from "next/link"
 import {
-  ShoppingCart, Package, ShoppingBag, BarChart2, ArrowRight,
-  TrendingUp, AlertTriangle, Boxes, Users, ClipboardList, Store,
+  ShoppingCart,
+  Package,
+  ShoppingBag,
+  BarChart2,
+  ArrowRight,
+  TrendingUp,
+  AlertTriangle,
+  Boxes,
+  Users,
+  ClipboardList,
+  Store,
 } from "lucide-react"
 import { TransactionChart, type ChartDataPoint } from "@/components/dashboard/TransactionChart"
 
 const quickLinks = [
-  { href: "/kasir", label: "Buka Kasir", desc: "Mulai transaksi penjualan", icon: ShoppingCart, color: "bg-indigo-500" },
-  { href: "/dashboard/produk", label: "Produk", desc: "Kelola katalog produk", icon: Package, color: "bg-emerald-500" },
-  { href: "/dashboard/purchase-order", label: "Pembelian", desc: "Buat & terima PO", icon: ShoppingBag, color: "bg-amber-500" },
-  { href: "/dashboard/laporan", label: "Laporan", desc: "Lihat laporan penjualan", icon: BarChart2, color: "bg-purple-500" },
+  {
+    href: "/kasir",
+    label: "Buka Kasir",
+    desc: "Mulai transaksi penjualan",
+    icon: ShoppingCart,
+    color: "bg-indigo-500",
+  },
+  {
+    href: "/dashboard/produk",
+    label: "Produk",
+    desc: "Kelola katalog produk",
+    icon: Package,
+    color: "bg-emerald-500",
+  },
+  {
+    href: "/dashboard/purchase-order",
+    label: "Pembelian",
+    desc: "Buat & terima PO",
+    icon: ShoppingBag,
+    color: "bg-amber-500",
+  },
+  {
+    href: "/dashboard/laporan",
+    label: "Laporan",
+    desc: "Lihat laporan penjualan",
+    icon: BarChart2,
+    color: "bg-purple-500",
+  },
 ]
 
 function StatCard({
-  label, value, sub, icon: Icon, color, href, alert,
+  label,
+  value,
+  sub,
+  icon: Icon,
+  color,
+  href,
+  alert,
 }: {
   label: string
   value: string
@@ -27,7 +66,9 @@ function StatCard({
   alert?: boolean
 }) {
   const inner = (
-    <div className={`bg-white border rounded-2xl p-5 flex flex-col gap-3 transition-all duration-200 ${href ? "hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 cursor-pointer" : ""} ${alert ? "border-amber-200 bg-amber-50/40" : "border-gray-200"}`}>
+    <div
+      className={`bg-white border rounded-2xl p-5 flex flex-col gap-3 transition-all duration-200 ${href ? "hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 cursor-pointer" : ""} ${alert ? "border-amber-200 bg-amber-50/40" : "border-gray-200"}`}
+    >
       <div className="flex items-center justify-between">
         <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center shrink-0`}>
           <Icon size={18} className="text-white" />
@@ -35,8 +76,14 @@ function StatCard({
         {href && <ArrowRight size={14} className="text-gray-300" />}
       </div>
       <div>
-        <p className={`text-2xl font-black tabular-nums ${alert ? "text-amber-700" : "text-gray-900"}`}>{value}</p>
-        <p className={`text-xs font-semibold mt-0.5 ${alert ? "text-amber-600" : "text-gray-500"}`}>{label}</p>
+        <p
+          className={`text-2xl font-black tabular-nums ${alert ? "text-amber-700" : "text-gray-900"}`}
+        >
+          {value}
+        </p>
+        <p className={`text-xs font-semibold mt-0.5 ${alert ? "text-amber-600" : "text-gray-500"}`}>
+          {label}
+        </p>
         {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
       </div>
     </div>
@@ -68,12 +115,21 @@ export default async function DashboardPage() {
     inventoryRaw,
     monthlyRaw,
   ] = await Promise.all([
-    prisma.transaction.aggregate({ where: { status: "COMPLETED", createdAt: { gte: todayStart } }, _sum: { total: true } }),
-    prisma.transaction.aggregate({ where: { status: "COMPLETED", createdAt: { gte: monthStart } }, _sum: { total: true } }),
+    prisma.transaction.aggregate({
+      where: { status: "COMPLETED", createdAt: { gte: todayStart } },
+      _sum: { total: true },
+    }),
+    prisma.transaction.aggregate({
+      where: { status: "COMPLETED", createdAt: { gte: monthStart } },
+      _sum: { total: true },
+    }),
     prisma.transaction.count({ where: { status: "COMPLETED", createdAt: { gte: todayStart } } }),
     prisma.transaction.count({ where: { status: "COMPLETED", createdAt: { gte: monthStart } } }),
     prisma.transaction.count({ where: { status: "COMPLETED" } }),
-    prisma.transaction.aggregate({ where: { status: "COMPLETED", createdAt: { gte: yesterdayStart, lt: todayStart } }, _sum: { total: true } }),
+    prisma.transaction.aggregate({
+      where: { status: "COMPLETED", createdAt: { gte: yesterdayStart, lt: todayStart } },
+      _sum: { total: true },
+    }),
     prisma.product.count(),
     prisma.productVariant.count({ where: { isActive: true } }),
     prisma.customer.count(),
@@ -105,10 +161,28 @@ export default async function DashboardPage() {
   const lowStockCount = Number(lowStockRaw[0]?.count ?? 0)
   const inventoryValue = Number(inventoryRaw[0]?.total ?? 0)
 
-  const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+  const MONTH_NAMES = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agu",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+  ]
   const currentMonthName = MONTH_NAMES[now.getMonth()]
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dailyMap = new Map(monthlyRaw.map((r) => [new Date(r.day).getDate(), { revenue: Number(r.revenue), count: Number(r.count) }]))
+  const dailyMap = new Map(
+    monthlyRaw.map((r) => [
+      new Date(r.day).getDate(),
+      { revenue: Number(r.revenue), count: Number(r.count) },
+    ]),
+  )
   const chartData: ChartDataPoint[] = Array.from({ length: daysInMonth }, (_, i) => {
     const d = i + 1
     const found = dailyMap.get(d)
@@ -116,11 +190,19 @@ export default async function DashboardPage() {
   })
 
   const hour = now.getHours()
-  const greeting = hour < 11 ? "Selamat pagi" : hour < 15 ? "Selamat siang" : hour < 18 ? "Selamat sore" : "Selamat malam"
+  const greeting =
+    hour < 11
+      ? "Selamat pagi"
+      : hour < 15
+        ? "Selamat siang"
+        : hour < 18
+          ? "Selamat sore"
+          : "Selamat malam"
 
-  const todayVsYesterday = revenueYesterday > 0
-    ? ((revenueToday - revenueYesterday) / revenueYesterday * 100).toFixed(1)
-    : null
+  const todayVsYesterday =
+    revenueYesterday > 0
+      ? (((revenueToday - revenueYesterday) / revenueYesterday) * 100).toFixed(1)
+      : null
 
   return (
     <div className="p-8">
@@ -133,12 +215,18 @@ export default async function DashboardPage() {
 
       {/* Revenue & Transactions */}
       <div className="mb-3">
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Penjualan</h2>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          Penjualan
+        </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Pendapatan Hari Ini"
             value={formatRupiah(revenueToday)}
-            sub={todayVsYesterday !== null ? `${Number(todayVsYesterday) >= 0 ? "+" : ""}${todayVsYesterday}% vs kemarin` : "Belum ada data kemarin"}
+            sub={
+              todayVsYesterday !== null
+                ? `${Number(todayVsYesterday) >= 0 ? "+" : ""}${todayVsYesterday}% vs kemarin`
+                : "Belum ada data kemarin"
+            }
             icon={TrendingUp}
             color="bg-indigo-500"
             href="/dashboard/transaksi"
@@ -172,7 +260,9 @@ export default async function DashboardPage() {
 
       {/* Inventory */}
       <div className="mb-3 mt-6">
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Inventori</h2>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          Inventori
+        </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             label="Produk Aktif"
@@ -239,7 +329,9 @@ export default async function DashboardPage() {
 
       {/* Quick Links */}
       <div>
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Akses Cepat</h2>
+        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
+          Akses Cepat
+        </h2>
         <div className="grid grid-cols-2 gap-4">
           {quickLinks.map((item) => (
             <Link
@@ -248,10 +340,15 @@ export default async function DashboardPage() {
               className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50 transition-all duration-200"
             >
               <div className="flex items-start justify-between mb-4">
-                <div className={`w-11 h-11 rounded-xl ${item.color} flex items-center justify-center shadow-sm`}>
+                <div
+                  className={`w-11 h-11 rounded-xl ${item.color} flex items-center justify-center shadow-sm`}
+                >
                   <item.icon size={20} className="text-white" />
                 </div>
-                <ArrowRight size={16} className="text-gray-300 group-hover:text-indigo-500 transition-colors mt-1" />
+                <ArrowRight
+                  size={16}
+                  className="text-gray-300 group-hover:text-indigo-500 transition-colors mt-1"
+                />
               </div>
               <p className="font-bold text-gray-900 mb-0.5">{item.label}</p>
               <p className="text-sm text-gray-500">{item.desc}</p>

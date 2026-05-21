@@ -15,7 +15,11 @@ export async function POST(req: NextRequest) {
   })
 
   if (!variant) return NextResponse.json({ error: "Produk tidak ditemukan" }, { status: 404 })
-  if (variant.stock <= 0) return NextResponse.json({ error: `Stok ${variant.product.name} ${variant.variantName} habis` }, { status: 409 })
+  if (variant.stock <= 0)
+    return NextResponse.json(
+      { error: `Stok ${variant.product.name} ${variant.variantName} habis` },
+      { status: 409 },
+    )
 
   return NextResponse.json({
     id: variant.id,

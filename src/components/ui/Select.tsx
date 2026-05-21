@@ -65,9 +65,18 @@ export function Select({
       }
       return
     }
-    if (e.key === "Escape") { setOpen(false); return }
-    if (e.key === "ArrowDown") { e.preventDefault(); setActiveIdx((i) => Math.min(i + 1, options.length - 1)) }
-    if (e.key === "ArrowUp") { e.preventDefault(); setActiveIdx((i) => Math.max(i - 1, 0)) }
+    if (e.key === "Escape") {
+      setOpen(false)
+      return
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault()
+      setActiveIdx((i) => Math.min(i + 1, options.length - 1))
+    }
+    if (e.key === "ArrowUp") {
+      e.preventDefault()
+      setActiveIdx((i) => Math.max(i - 1, 0))
+    }
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault()
       if (activeIdx >= 0 && options[activeIdx]) {
@@ -91,7 +100,9 @@ export function Select({
           className={cn(
             "w-full flex items-center justify-between gap-2 border rounded-lg px-3.5 py-2.5 text-sm bg-white text-left",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 transition-colors",
-            open ? "border-indigo-500 ring-2 ring-indigo-500" : "border-gray-300 hover:border-gray-400",
+            open
+              ? "border-indigo-500 ring-2 ring-indigo-500"
+              : "border-gray-300 hover:border-gray-400",
             error && "border-red-400",
             disabled && "opacity-50 cursor-not-allowed bg-gray-50",
           )}
@@ -101,7 +112,10 @@ export function Select({
           </span>
           <ChevronDown
             size={15}
-            className={cn("shrink-0 text-gray-400 transition-transform duration-150", open && "rotate-180")}
+            className={cn(
+              "shrink-0 text-gray-400 transition-transform duration-150",
+              open && "rotate-180",
+            )}
           />
         </button>
 
@@ -116,11 +130,17 @@ export function Select({
                 key={opt.value}
                 role="option"
                 aria-selected={opt.value === value}
-                onMouseDown={(e) => { e.preventDefault(); onChange(opt.value); setOpen(false) }}
+                onMouseDown={(e) => {
+                  e.preventDefault()
+                  onChange(opt.value)
+                  setOpen(false)
+                }}
                 onMouseEnter={() => setActiveIdx(i)}
                 className={cn(
                   "flex items-center justify-between gap-2 px-3.5 py-2 text-sm cursor-pointer transition-colors",
-                  i === activeIdx ? "bg-indigo-50 text-indigo-700" : "text-gray-800 hover:bg-gray-50",
+                  i === activeIdx
+                    ? "bg-indigo-50 text-indigo-700"
+                    : "text-gray-800 hover:bg-gray-50",
                   opt.value === value && "font-semibold",
                 )}
               >

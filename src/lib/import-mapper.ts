@@ -1,21 +1,38 @@
 export type OldBarang = {
-  IDBARANG: string; NAMA: string; SATUAN: string; STOCK: number
-  HRG_JUAL: number; HRG_BELI: number; BATAS1: number
-  KODE_LAIN: string; SUPLIER: string
+  IDBARANG: string
+  NAMA: string
+  SATUAN: string
+  STOCK: number
+  HRG_JUAL: number
+  HRG_BELI: number
+  BATAS1: number
+  KODE_LAIN: string
+  SUPLIER: string
 }
 export type OldIsian2 = {
-  IDBARANG: string; SATUAN: string; HRG_JUAL: number; ISI: number
+  IDBARANG: string
+  SATUAN: string
+  HRG_JUAL: number
+  ISI: number
 }
 export type OldSuplier = { IDSUPLIER: string; NAMA: string; ALAMAT: string; TELP: string }
 export type OldCustomer = { IDCUSTOMER: string; NAMA: string; ALAMAT: string; TELP: string }
-export type OldAspass  = { FNAMA: string; FNM: string; FLEVEL: string; FPASS: string }
+export type OldAspass = { FNAMA: string; FNM: string; FLEVEL: string; FPASS: string }
 
 export function mapSupplier(row: OldSuplier) {
-  return { name: row.NAMA.trim(), address: row.ALAMAT.trim() || null, phone: row.TELP.trim() || null }
+  return {
+    name: row.NAMA.trim(),
+    address: row.ALAMAT.trim() || null,
+    phone: row.TELP.trim() || null,
+  }
 }
 
 export function mapCustomer(row: OldCustomer) {
-  return { name: row.NAMA.trim(), address: row.ALAMAT.trim() || null, phone: row.TELP.trim() || null }
+  return {
+    name: row.NAMA.trim(),
+    address: row.ALAMAT.trim() || null,
+    phone: row.TELP.trim() || null,
+  }
 }
 
 export function mapUserRole(flevel: string): "ADMIN" | "EMPLOYEE" {

@@ -13,7 +13,15 @@ export async function GET(req: NextRequest, { params }: Params) {
       ...(activeOnly ? { isActive: true } : {}),
     },
     orderBy: { variantName: "asc" },
-    select: { id: true, variantName: true, price: true, stock: true, unit: true, barcode: true, isActive: true },
+    select: {
+      id: true,
+      variantName: true,
+      price: true,
+      stock: true,
+      unit: true,
+      barcode: true,
+      isActive: true,
+    },
   })
 
   return NextResponse.json(variants)

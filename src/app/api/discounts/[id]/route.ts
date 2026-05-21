@@ -1,16 +1,19 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { createDiscountSchema } from "@/lib/validations/discount"
+import { updateDiscountSchema } from "@/lib/validations/discount"
 
 type Params = { params: Promise<{ id: string }> }
 
 export async function PUT(req: NextRequest, { params }: Params) {
   const { id } = await params
   const body = await req.json()
-  const parsed = createDiscountSchema.partial().safeParse(body)
+  const parsed = updateDiscountSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const discount = await prisma.discount.update({ where: { id: Number(id) }, data: parsed.data as never })
+  const discount = await prisma.discount.update({
+    where: { id: Number(id) },
+    data: parsed.data as never,
+  })
   return NextResponse.json(discount)
 }
 

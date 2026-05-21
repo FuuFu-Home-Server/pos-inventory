@@ -10,7 +10,10 @@ const configSchema = z.object({
   footerText: z.string().optional().nullable(),
   showTax: z.boolean(),
   showCashier: z.boolean(),
-  paperWidth: z.number().int().refine((v) => v === 58 || v === 80, "Harus 58 atau 80"),
+  paperWidth: z
+    .number()
+    .int()
+    .refine((v) => v === 58 || v === 80, "Harus 58 atau 80"),
 })
 
 export async function GET() {

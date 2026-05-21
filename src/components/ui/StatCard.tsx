@@ -56,17 +56,17 @@ export function StatCard({
           "border rounded-xl p-4 flex items-center gap-3",
           v.cardBg,
           v.border,
-          className
+          className,
         )}
       >
-        <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", v.iconBg)}>
+        <div
+          className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", v.iconBg)}
+        >
           {icon}
         </div>
         <div>
           <p className="text-xs text-gray-500 font-medium">{label}</p>
-          <p className={cn("text-xl font-black tabular-nums", v.valueCls)}>
-            {value}
-          </p>
+          <p className={cn("text-xl font-black tabular-nums", v.valueCls)}>{value}</p>
           {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
         </div>
       </div>
@@ -74,18 +74,9 @@ export function StatCard({
   }
 
   return (
-    <div
-      className={cn(
-        "border rounded-xl p-4",
-        v.cardBg,
-        v.border,
-        className
-      )}
-    >
+    <div className={cn("border rounded-xl p-4", v.cardBg, v.border, className)}>
       <p className="text-xs text-gray-500 font-medium mb-1">{label}</p>
-      <p className={cn("text-xl font-black tabular-nums", v.valueCls)}>
-        {value}
-      </p>
+      <p className={cn("text-xl font-black tabular-nums", v.valueCls)}>{value}</p>
       {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
     </div>
   )

@@ -10,7 +10,9 @@ export async function GET() {
     prisma.product.groupBy({ by: ["category"], _count: { id: true } }),
   ])
   const countMap = new Map(productGroups.map((g) => [g.category, g._count.id]))
-  return NextResponse.json(categories.map((c) => ({ ...c, productCount: countMap.get(c.name) ?? 0 })))
+  return NextResponse.json(
+    categories.map((c) => ({ ...c, productCount: countMap.get(c.name) ?? 0 })),
+  )
 }
 
 export async function POST(req: NextRequest) {

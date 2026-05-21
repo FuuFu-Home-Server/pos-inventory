@@ -47,10 +47,14 @@ export default function LoginPage() {
 
         <div>
           <h2 className="text-4xl font-black text-white leading-tight mb-4">
-            POS & Manajemen<br />Inventori Modern
+            POS & Manajemen
+            <br />
+            Inventori Modern
           </h2>
           <p className="text-slate-400 text-base leading-relaxed">
-            Kelola penjualan, stok, dan laporan bisnis<br />dalam satu platform terintegrasi.
+            Kelola penjualan, stok, dan laporan bisnis
+            <br />
+            dalam satu platform terintegrasi.
           </p>
         </div>
 
@@ -112,9 +116,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="text-xs text-gray-400 text-center mt-6">
-            Sistem POS & Inventori · v1.0
-          </p>
+          <p className="text-xs text-gray-400 text-center mt-6">Sistem POS & Inventori · v1.0</p>
         </div>
       </div>
     </div>

@@ -68,6 +68,9 @@ model Product {
   supplier   Supplier?        @relation(fields: [supplierId], references: [id])
   variants   ProductVariant[]
   discounts  Discount[]
+
+  @@index([name])
+  @@index([category])
 }
 
 model ProductVariant {
@@ -89,6 +92,8 @@ model ProductVariant {
   purchaseListItems  PurchaseListItem[]
 
   @@index([productId])
+  @@index([isActive])
+  @@index([isActive, stock])
 }
 
 model PaymentMethod {

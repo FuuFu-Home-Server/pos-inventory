@@ -1,7 +1,14 @@
 "use client"
 
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Dot,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Dot,
 } from "recharts"
 import { formatRupiah } from "@/lib/format"
 import { useState } from "react"
@@ -19,7 +26,9 @@ function CustomTooltip({ active, payload, label }: any) {
       <p className="font-bold text-gray-700 mb-1.5">Tgl {label}</p>
       {payload.map((p: any) => (
         <div key={p.dataKey} className="flex justify-between gap-4">
-          <span className="text-gray-500">{p.dataKey === "revenue" ? "Pendapatan" : "Transaksi"}</span>
+          <span className="text-gray-500">
+            {p.dataKey === "revenue" ? "Pendapatan" : "Transaksi"}
+          </span>
           <span className="font-semibold" style={{ color: p.color }}>
             {p.dataKey === "revenue" ? formatRupiah(p.value) : `${p.value}×`}
           </span>
@@ -35,7 +44,13 @@ function CustomDot(props: any) {
   return <circle cx={cx} cy={cy} r={3} fill={props.stroke} stroke="white" strokeWidth={1.5} />
 }
 
-export function TransactionChart({ data, monthName }: { data: ChartDataPoint[]; monthName: string }) {
+export function TransactionChart({
+  data,
+  monthName,
+}: {
+  data: ChartDataPoint[]
+  monthName: string
+}) {
   const [view, setView] = useState<"revenue" | "count">("revenue")
 
   return (
@@ -43,7 +58,9 @@ export function TransactionChart({ data, monthName }: { data: ChartDataPoint[]; 
       <div className="flex items-center justify-between mb-5">
         <div>
           <h2 className="text-base font-black text-gray-900">Tren Penjualan</h2>
-          <p className="text-xs text-gray-400 mt-0.5">Harian — {monthName} {new Date().getFullYear()}</p>
+          <p className="text-xs text-gray-400 mt-0.5">
+            Harian — {monthName} {new Date().getFullYear()}
+          </p>
         </div>
         <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
           <button
@@ -80,13 +97,17 @@ export function TransactionChart({ data, monthName }: { data: ChartDataPoint[]; 
             axisLine={false}
             tickLine={false}
             interval={1}
-            tickFormatter={(v) => Number(v) % 2 === 1 ? v : ""}
+            tickFormatter={(v) => (Number(v) % 2 === 1 ? v : "")}
           />
           <YAxis
             tick={{ fontSize: 11, fill: "#94a3b8" }}
             axisLine={false}
             tickLine={false}
-            tickFormatter={view === "revenue" ? (v) => v === 0 ? "0" : `${(v / 1_000_000).toFixed(0)}jt` : undefined}
+            tickFormatter={
+              view === "revenue"
+                ? (v) => (v === 0 ? "0" : `${(v / 1_000_000).toFixed(0)}jt`)
+                : undefined
+            }
             width={view === "revenue" ? 44 : 32}
           />
           <Tooltip content={<CustomTooltip />} cursor={{ stroke: "#e2e8f0", strokeWidth: 1 }} />

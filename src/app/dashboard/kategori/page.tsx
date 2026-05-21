@@ -19,7 +19,9 @@ export default function KategoriPage() {
     setCategories(await res.json())
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+  }, [])
 
   async function handleAdd() {
     if (!newName.trim()) return
@@ -35,7 +37,7 @@ export default function KategoriPage() {
   }
 
   async function handleToggle(id: number, isActive: boolean) {
-    setCategories((prev) => prev.map((c) => c.id === id ? { ...c, isActive } : c))
+    setCategories((prev) => prev.map((c) => (c.id === id ? { ...c, isActive } : c)))
     await fetch(`/api/categories/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -61,7 +63,9 @@ export default function KategoriPage() {
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
           className="flex-1"
         />
-        <Button onClick={handleAdd} loading={loading} disabled={!newName.trim()}>Tambah</Button>
+        <Button onClick={handleAdd} loading={loading} disabled={!newName.trim()}>
+          Tambah
+        </Button>
       </div>
 
       <Table>
@@ -101,7 +105,11 @@ export default function KategoriPage() {
             </tr>
           ))}
           {categories.length === 0 && (
-            <tr><Td colSpan={4} className="text-center text-gray-400 py-6">Belum ada kategori</Td></tr>
+            <tr>
+              <Td colSpan={4} className="text-center text-gray-400 py-6">
+                Belum ada kategori
+              </Td>
+            </tr>
           )}
         </Tbody>
       </Table>

@@ -6,20 +6,27 @@ export async function GET(req: NextRequest) {
   const from = searchParams.get("from")
   const to = searchParams.get("to")
 
-  const dateFilter = from && to
-    ? { gte: new Date(from), lte: new Date(`${to}T23:59:59`) }
-    : undefined
+  const dateFilter =
+    from && to ? { gte: new Date(from), lte: new Date(`${to}T23:59:59`) } : undefined
 
   const [transactions, purchaseOrders, purchaseLists] = await Promise.all([
     prisma.transaction.findMany({
       where: { status: "COMPLETED", ...(dateFilter ? { createdAt: dateFilter } : {}) },
-      select: { id: true, total: true, createdAt: true, paymentMethod: { select: { name: true } }, _count: { select: { items: true } } },
+      select: {
+        id: true,
+        total: true,
+        createdAt: true,
+        paymentMethod: { select: { name: true } },
+        _count: { select: { items: true } },
+      },
       orderBy: { createdAt: "desc" },
     }),
     prisma.purchaseOrder.findMany({
       where: { status: "RECEIVED", ...(dateFilter ? { receivedAt: dateFilter } : {}) },
       select: {
-        id: true, createdAt: true, receivedAt: true,
+        id: true,
+        createdAt: true,
+        receivedAt: true,
         supplier: { select: { name: true } },
         items: { select: { qty: true, unitCost: true, subtotal: true } },
       },
@@ -49,18 +56,27 @@ export async function GET(req: NextRequest) {
       date: po.receivedAt ?? po.createdAt,
       ref: { type: "PURCHASE_ORDER", id: po.id },
     })),
-    ...purchaseLists.map((pl) => ({
-      id: `pl-${pl.id}`,
-      type: "expense" as const,
-      amount: pl.items.filter((i) => i.isPurchased).reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
-      description: `Belanja — ${pl.title} (${pl.items.filter((i) => i.isPurchased).length} item)`,
-      date: pl.createdAt,
-      ref: { type: "PURCHASE_LIST", id: pl.id },
-    })).filter((e) => e.amount > 0),
+    ...purchaseLists
+      .map((pl) => ({
+        id: `pl-${pl.id}`,
+        type: "expense" as const,
+        amount: pl.items
+          .filter((i) => i.isPurchased)
+          .reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
+        description: `Belanja — ${pl.title} (${pl.items.filter((i) => i.isPurchased).length} item)`,
+        date: pl.createdAt,
+        ref: { type: "PURCHASE_LIST", id: pl.id },
+      }))
+      .filter((e) => e.amount > 0),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
   const totalIncome = entries.filter((e) => e.type === "income").reduce((s, e) => s + e.amount, 0)
   const totalExpense = entries.filter((e) => e.type === "expense").reduce((s, e) => s + e.amount, 0)
 
-  return NextResponse.json({ entries, totalIncome, totalExpense, balance: totalIncome - totalExpense })
+  return NextResponse.json({
+    entries,
+    totalIncome,
+    totalExpense,
+    balance: totalIncome - totalExpense,
+  })
 }

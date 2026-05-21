@@ -1,24 +1,65 @@
 "use client"
 
-import { useState, useCallback, useEffect, useRef } from "react"
-import { useSession } from "next-auth/react"
-import { usePosStore } from "@/store/pos"
 import { BarcodeListener } from "@/components/pos/BarcodeListener"
-import { ProductSearch } from "@/components/pos/ProductSearch"
 import { CartPanel } from "@/components/pos/CartPanel"
 import { PaymentPanel } from "@/components/pos/PaymentPanel"
+import { ProductSearch } from "@/components/pos/ProductSearch"
 import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptTemplate"
-import { Toast } from "@/components/ui/Toast"
-import { formatRupiah } from "@/lib/format"
-import { LayoutDashboard } from "lucide-react"
-import Link from "next/link"
 import { Select } from "@/components/ui/Select"
+import { Toast } from "@/components/ui/Toast"
+import { usePosStore } from "@/store/pos"
+import { LayoutDashboard } from "lucide-react"
+import { useSession } from "next-auth/react"
+import Link from "next/link"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-type ToastState = { message: string; type: "success" | "error" | "info" } | null
+type ToastState = {
+  message: string
+  type: "success" | "error" | "info"
+} | null
 type PaymentMethod = { id: number; name: string }
-type Discount = { id: number; name: string; type: string; value: number; scope: string }
-type VariantResult = { id: number; productId: number; productName: string; variantName: string; price: number; stock: number; unit: string; barcode: string | null }
+type Discount = {
+  id: number
+  name: string
+  type: string
+  value: number
+  scope: string
+}
+type VariantResult = {
+  id: number
+  productId: number
+  productName: string
+  variantName: string
+  price: number
+  stock: number
+  unit: string
+  barcode: string | null
+}
 type Customer = { id: number; name: string; phone: string | null }
+
+function Clock() {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(id)
+  }, [])
+  return (
+    <div className="text-slate-400 text-xs tabular-nums">
+      <span>
+        {now.toLocaleDateString("id-ID", {
+          weekday: "short",
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        })}
+      </span>
+      <span className="mx-1.5 text-slate-600">·</span>
+      <span className="font-mono text-slate-300">
+        {now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+      </span>
+    </div>
+  )
+}
 
 export default function KasirPage() {
   const { data: session } = useSession()
@@ -29,10 +70,12 @@ export default function KasirPage() {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [toast, setToast] = useState<ToastState>(null)
   const [loading, setLoading] = useState(false)
+  const [initialLoading, setInitialLoading] = useState(true)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   const [skipPrint, setSkipPrint] = useState(false)
 
   const checkoutRef = useRef<() => void>(() => {})
+  const umumIdRef = useRef<number | null>(null)
 
   useEffect(() => {
     Promise.all([
@@ -57,33 +100,60 @@ export default function KasirPage() {
         }
       }
       setCustomers(customerList)
-      if (umum && !store.customerId) store.setCustomer(umum.id)
+      if (umum) {
+        umumIdRef.current = umum.id
+        if (!store.customerId) store.setCustomer(umum.id)
+      }
+      setInitialLoading(false)
     })
   }, [])
 
   function toCartItem(v: VariantResult) {
-    return { variantId: v.id, productId: v.productId, productName: v.productName, variantName: v.variantName, price: v.price, stock: v.stock, unit: v.unit }
+    return {
+      variantId: v.id,
+      productId: v.productId,
+      productName: v.productName,
+      variantName: v.variantName,
+      price: v.price,
+      stock: v.stock,
+      unit: v.unit,
+    }
   }
 
-  const handleScan = useCallback(async (barcode: string) => {
-    const res = await fetch("/api/variants/scan", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ barcode }),
-    })
-    const data = await res.json()
-    if (!res.ok) {
-      setToast({ message: data.error ?? "Produk tidak ditemukan", type: "error" })
-      return
-    }
-    store.addItem(toCartItem(data))
-    setToast({ message: `${data.productName} ${data.variantName} ditambahkan`, type: "success" })
-  }, [store])
+  const handleScan = useCallback(
+    async (barcode: string) => {
+      const res = await fetch("/api/variants/scan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ barcode }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        setToast({
+          message: data.error ?? "Produk tidak ditemukan",
+          type: "error",
+        })
+        return
+      }
+      store.addItem(toCartItem(data))
+      setToast({
+        message: `${data.productName} ${data.variantName} ditambahkan`,
+        type: "success",
+      })
+    },
+    [store],
+  )
 
-  const handleSearchSelect = useCallback((item: VariantResult) => {
-    store.addItem(toCartItem(item))
-    setToast({ message: `${item.productName} ${item.variantName} ditambahkan`, type: "success" })
-  }, [store])
+  const handleSearchSelect = useCallback(
+    (item: VariantResult) => {
+      store.addItem(toCartItem(item))
+      setToast({
+        message: `${item.productName} ${item.variantName} ditambahkan`,
+        type: "success",
+      })
+    },
+    [store],
+  )
 
   async function handleCheckout() {
     if (!store.paymentMethodId || store.items.length === 0) return
@@ -148,6 +218,7 @@ export default function KasirPage() {
     }
 
     store.reset()
+    if (umumIdRef.current) store.setCustomer(umumIdRef.current)
     setToast({ message: "Transaksi berhasil disimpan", type: "success" })
     document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
   }
@@ -182,6 +253,7 @@ export default function KasirPage() {
       if (e.key === "Delete" && !isEditable && e.ctrlKey) {
         e.preventDefault()
         store.reset()
+        if (umumIdRef.current) store.setCustomer(umumIdRef.current)
         return
       }
     }
@@ -189,11 +261,23 @@ export default function KasirPage() {
     return () => window.removeEventListener("keydown", handleKey)
   }, [loading, store])
 
+  if (initialLoading) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-slate-900 gap-4">
+        <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-slate-400 text-sm">Memuat kasir...</p>
+      </div>
+    )
+  }
+
   return (
     <div className="h-screen flex flex-col bg-slate-100">
       <header className="bg-slate-900 border-b border-slate-800 px-5 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs"
+          >
             <LayoutDashboard size={14} />
             Dashboard
           </Link>
@@ -202,22 +286,34 @@ export default function KasirPage() {
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-white text-sm">Kasir</span>
           </div>
+          <Clock />
         </div>
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-3 text-xs text-slate-500">
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">/</kbd>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+              /
+            </kbd>
             <span>Cari</span>
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">F2</kbd>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+              F2
+            </kbd>
             <span>Bayar</span>
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">F8</kbd>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+              F8
+            </kbd>
             <span>Selesai</span>
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">Esc</kbd>
+            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+              Esc
+            </kbd>
             <span>Kembali</span>
           </div>
           <span className="text-sm text-slate-400">{session?.user?.name}</span>
           {store.items.length > 0 && (
             <button
-              onClick={() => store.reset()}
+              onClick={() => {
+                store.reset()
+                if (umumIdRef.current) store.setCustomer(umumIdRef.current)
+              }}
               className="text-xs text-red-400 hover:text-red-300 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-950/40 transition-colors"
             >
               Kosongkan
@@ -238,7 +334,10 @@ export default function KasirPage() {
               <Select
                 value={store.customerId ? String(store.customerId) : ""}
                 onChange={(v) => store.setCustomer(v ? Number(v) : null)}
-                options={customers.map((c) => ({ value: String(c.id), label: c.name }))}
+                options={customers.map((c) => ({
+                  value: String(c.id),
+                  label: c.name,
+                }))}
                 placeholder="Tanpa pelanggan"
                 className="min-w-[160px]"
               />
@@ -266,11 +365,7 @@ export default function KasirPage() {
       )}
 
       {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onDismiss={() => setToast(null)}
-        />
+        <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}
     </div>
   )

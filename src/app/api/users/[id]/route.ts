@@ -23,7 +23,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
     delete data.password
   }
 
-  const user = await prisma.user.update({ where: { id: Number(id) }, data, include: { role: { select: { name: true } } } })
+  const user = await prisma.user.update({
+    where: { id: Number(id) },
+    data,
+    include: { role: { select: { name: true } } },
+  })
   const { passwordHash: _, ...safeUser } = user
   return NextResponse.json(safeUser)
 }

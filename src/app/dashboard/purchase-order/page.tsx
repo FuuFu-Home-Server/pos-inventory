@@ -22,12 +22,26 @@ const statusLabel: Record<string, string> = {
 
 export default function PurchaseOrderPage() {
   const {
-    orders, total, page, pageSize, setPage, setPageSize,
-    expandedId, details, loadingId,
-    modalOpen, setModalOpen,
-    suppliers, form, setForm, loading,
-    searchVariants, handleAddVariant,
-    toggleDetail, handleCreate, handleStatus,
+    orders,
+    total,
+    page,
+    pageSize,
+    setPage,
+    setPageSize,
+    expandedId,
+    details,
+    loadingId,
+    modalOpen,
+    setModalOpen,
+    suppliers,
+    form,
+    setForm,
+    loading,
+    searchVariants,
+    handleAddVariant,
+    toggleDetail,
+    handleCreate,
+    handleStatus,
   } = usePurchaseOrder()
 
   return (
@@ -67,20 +81,41 @@ export default function PurchaseOrderPage() {
                 >
                   <Td>
                     <div className="flex items-center gap-1.5">
-                      <ChevronDown size={13} className={`text-gray-400 transition-transform duration-150 shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
+                      <ChevronDown
+                        size={13}
+                        className={`text-gray-400 transition-transform duration-150 shrink-0 ${isExpanded ? "rotate-180" : ""}`}
+                      />
                       <span className="text-gray-400 font-mono text-xs">#{o.id}</span>
                     </div>
                   </Td>
                   <Td className="font-medium">{o.supplier.name}</Td>
                   <Td className="text-gray-500 text-xs">{o.user.name}</Td>
-                  <Td><Badge variant={statusVariant(o.status)}>{statusLabel[o.status] ?? o.status}</Badge></Td>
-                  <Td className="text-gray-500 text-xs">{o.receivedAt ? formatDateShort(o.receivedAt) : "—"}</Td>
+                  <Td>
+                    <Badge variant={statusVariant(o.status)}>
+                      {statusLabel[o.status] ?? o.status}
+                    </Badge>
+                  </Td>
+                  <Td className="text-gray-500 text-xs">
+                    {o.receivedAt ? formatDateShort(o.receivedAt) : "—"}
+                  </Td>
                   <Td className="text-gray-500">{o._count.items} item</Td>
                   <Td onClick={(e) => e.stopPropagation()}>
                     {o.status === "DRAFT" && (
                       <div className="flex gap-1">
-                        <Button variant="primary" size="sm" onClick={() => handleStatus(o.id, "RECEIVED")}>Terima</Button>
-                        <Button variant="danger" size="sm" onClick={() => handleStatus(o.id, "CANCELLED")}>Batal</Button>
+                        <Button
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleStatus(o.id, "RECEIVED")}
+                        >
+                          Terima
+                        </Button>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleStatus(o.id, "CANCELLED")}
+                        >
+                          Batal
+                        </Button>
                       </div>
                     )}
                   </Td>
@@ -111,11 +146,19 @@ export default function PurchaseOrderPage() {
                                   <tr key={item.id}>
                                     <td className="py-1.5 text-gray-800 font-medium">
                                       {item.productVariant.product.name}
-                                      <span className="text-gray-500 ml-1">{item.productVariant.variantName}</span>
+                                      <span className="text-gray-500 ml-1">
+                                        {item.productVariant.variantName}
+                                      </span>
                                     </td>
-                                    <td className="py-1.5 text-center text-gray-600">{item.qty} {item.productVariant.unit}</td>
-                                    <td className="py-1.5 text-right text-gray-600 tabular-nums">{formatRupiah(Number(item.unitCost))}</td>
-                                    <td className="py-1.5 text-right font-semibold tabular-nums">{formatRupiah(Number(item.subtotal))}</td>
+                                    <td className="py-1.5 text-center text-gray-600">
+                                      {item.qty} {item.productVariant.unit}
+                                    </td>
+                                    <td className="py-1.5 text-right text-gray-600 tabular-nums">
+                                      {formatRupiah(Number(item.unitCost))}
+                                    </td>
+                                    <td className="py-1.5 text-right font-semibold tabular-nums">
+                                      {formatRupiah(Number(item.subtotal))}
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -124,7 +167,9 @@ export default function PurchaseOrderPage() {
                               <div className="flex justify-between gap-6 font-black text-sm text-gray-900 border-t border-indigo-200 pt-1">
                                 <span>Total</span>
                                 <span className="tabular-nums">
-                                  {formatRupiah(detail.items.reduce((s, i) => s + Number(i.subtotal), 0))}
+                                  {formatRupiah(
+                                    detail.items.reduce((s, i) => s + Number(i.subtotal), 0),
+                                  )}
                                 </span>
                               </div>
                               <div className="flex justify-between gap-6 text-gray-500">
@@ -166,16 +211,22 @@ export default function PurchaseOrderPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title="Buat Purchase Order"
-        headerSlot={<>
-          <Select
-            label="Supplier"
-            value={form.supplierId}
-            onChange={(v) => setForm({ ...form, supplierId: v })}
-            options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
-            placeholder="Pilih supplier..."
-          />
-          <Input label="Catatan" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-        </>}
+        headerSlot={
+          <>
+            <Select
+              label="Supplier"
+              value={form.supplierId}
+              onChange={(v) => setForm({ ...form, supplierId: v })}
+              options={suppliers.map((s) => ({ value: String(s.id), label: s.name }))}
+              placeholder="Pilih supplier..."
+            />
+            <Input
+              label="Catatan"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
+          </>
+        }
         items={form.items}
         onItemsChange={(items) => setForm((f) => ({ ...f, items }))}
         searchVariants={searchVariants}

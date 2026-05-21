@@ -44,7 +44,10 @@ export async function GET(req: NextRequest) {
   ])
 
   return NextResponse.json({
-    transactions, total, page, limit,
+    transactions,
+    total,
+    page,
+    limit,
     totalRevenue: Number(revenueAgg._sum.total ?? 0),
     completedCount: revenueAgg._count.id,
   })
@@ -68,20 +71,31 @@ export async function POST(req: NextRequest) {
           tx.productVariant.findUnique({
             where: { id: item.variantId },
             include: { product: { select: { name: true } } },
-          })
-        )
+          }),
+        ),
       )
 
       for (let i = 0; i < items.length; i++) {
         const v = variants[i]
-        if (!v) { insufficient.push(`Variant ID ${items[i].variantId} tidak ditemukan`); continue }
+        if (!v) {
+          insufficient.push(`Variant ID ${items[i].variantId} tidak ditemukan`)
+          continue
+        }
         if (v.stock < items[i].qty) {
-          insufficient.push(`${v.product.name} ${v.variantName}: stok ${v.stock}, butuh ${items[i].qty}`)
+          insufficient.push(
+            `${v.product.name} ${v.variantName}: stok ${v.stock}, butuh ${items[i].qty}`,
+          )
         }
       }
-      if (insufficient.length > 0) throw Object.assign(new Error("INSUFFICIENT_STOCK"), { details: insufficient })
+      if (insufficient.length > 0)
+        throw Object.assign(new Error("INSUFFICIENT_STOCK"), { details: insufficient })
 
-      let discountData: { type: "PERCENT" | "FLAT"; value: number; scope: "TRANSACTION" | "PRODUCT"; minPurchase: number | null } | null = null
+      let discountData: {
+        type: "PERCENT" | "FLAT"
+        value: number
+        scope: "TRANSACTION" | "PRODUCT"
+        minPurchase: number | null
+      } | null = null
       if (discountId) {
         const d = await tx.discount.findUnique({ where: { id: discountId, isActive: true } })
         if (d) {
@@ -95,8 +109,12 @@ export async function POST(req: NextRequest) {
       }
 
       const { subtotal, discountAmount, total } = buildTransactionTotals(
-        items.map((i) => ({ qty: i.qty, unitPrice: i.unitPrice, itemDiscountAmt: i.itemDiscountAmt })),
-        discountData
+        items.map((i) => ({
+          qty: i.qty,
+          unitPrice: i.unitPrice,
+          itemDiscountAmt: i.itemDiscountAmt,
+        })),
+        discountData,
       )
       const changeAmount = Math.max(0, paymentAmount - total)
 
@@ -140,8 +158,8 @@ export async function POST(req: NextRequest) {
           tx.productVariant.update({
             where: { id: item.variantId },
             data: { stock: { decrement: item.qty } },
-          })
-        )
+          }),
+        ),
       )
 
       return transaction
@@ -150,7 +168,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(result, { status: 201 })
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "INSUFFICIENT_STOCK") {
-      return NextResponse.json({ error: "Stok tidak cukup", details: (err as any).details }, { status: 409 })
+      return NextResponse.json(
+        { error: "Stok tidak cukup", details: (err as any).details },
+        { status: 409 },
+      )
     }
     console.error(err)
     return NextResponse.json({ error: "Terjadi kesalahan server" }, { status: 500 })

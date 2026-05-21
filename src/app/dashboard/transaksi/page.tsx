@@ -58,17 +58,23 @@ export default function TransaksiPage() {
       <div className="grid grid-cols-3 gap-4 mb-5">
         <div className="bg-white border border-emerald-100 rounded-xl p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">Total Pendapatan</p>
-          <p className="text-xl font-black text-emerald-700 tabular-nums">{formatRupiah(totalRevenue)}</p>
+          <p className="text-xl font-black text-emerald-700 tabular-nums">
+            {formatRupiah(totalRevenue)}
+          </p>
           <p className="text-xs text-gray-400 mt-0.5">{completedCount} transaksi selesai</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">Total Transaksi</p>
-          <p className="text-xl font-black text-gray-900 tabular-nums">{total.toLocaleString("id-ID")}</p>
+          <p className="text-xl font-black text-gray-900 tabular-nums">
+            {total.toLocaleString("id-ID")}
+          </p>
           <p className="text-xs text-gray-400 mt-0.5">semua status</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">Rata-rata / Transaksi</p>
-          <p className="text-xl font-black text-gray-900 tabular-nums">{formatRupiah(completedCount > 0 ? totalRevenue / completedCount : 0)}</p>
+          <p className="text-xl font-black text-gray-900 tabular-nums">
+            {formatRupiah(completedCount > 0 ? totalRevenue / completedCount : 0)}
+          </p>
           <p className="text-xs text-gray-400 mt-0.5">per checkout selesai</p>
         </div>
       </div>
@@ -76,37 +82,57 @@ export default function TransaksiPage() {
       {/* Filters */}
       <div className="mb-4 bg-white border border-gray-200 rounded-xl p-4 flex flex-wrap items-end gap-3">
         <div>
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Dari</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Dari
+          </label>
           <input
             type="date"
             value={filterFrom}
-            onChange={(e) => { setFilterFrom(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setFilterFrom(e.target.value)
+              setPage(1)
+            }}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:border-gray-400 transition-colors"
           />
         </div>
         <div>
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Sampai</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Sampai
+          </label>
           <input
             type="date"
             value={filterTo}
-            onChange={(e) => { setFilterTo(e.target.value); setPage(1) }}
+            onChange={(e) => {
+              setFilterTo(e.target.value)
+              setPage(1)
+            }}
             className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 hover:border-gray-400 transition-colors"
           />
         </div>
         <div className="w-44">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Pembayaran</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Pembayaran
+          </label>
           <Select
             value={filterPayment}
-            onChange={(v) => { setFilterPayment(v); setPage(1) }}
+            onChange={(v) => {
+              setFilterPayment(v)
+              setPage(1)
+            }}
             options={paymentMethods.map((p) => ({ value: String(p.id), label: p.name }))}
             placeholder="Semua metode"
           />
         </div>
         <div className="w-44">
-          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">Kasir</label>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">
+            Kasir
+          </label>
           <Select
             value={filterUser}
-            onChange={(v) => { setFilterUser(v); setPage(1) }}
+            onChange={(v) => {
+              setFilterUser(v)
+              setPage(1)
+            }}
             options={users.map((u) => ({ value: String(u.id), label: u.name }))}
             placeholder="Semua kasir"
           />
@@ -148,16 +174,27 @@ export default function TransaksiPage() {
                 >
                   <Td>
                     <div className="flex items-center gap-1.5">
-                      <ChevronDown size={13} className={`text-gray-400 transition-transform duration-150 shrink-0 ${isExpanded ? "rotate-180" : ""}`} />
+                      <ChevronDown
+                        size={13}
+                        className={`text-gray-400 transition-transform duration-150 shrink-0 ${isExpanded ? "rotate-180" : ""}`}
+                      />
                       <span className="text-gray-400 font-mono text-xs">#{tx.id}</span>
                     </div>
                   </Td>
-                  <Td className="text-xs text-gray-600 whitespace-nowrap">{formatDate(tx.createdAt)}</Td>
+                  <Td className="text-xs text-gray-600 whitespace-nowrap">
+                    {formatDate(tx.createdAt)}
+                  </Td>
                   <Td className="text-sm">{tx.user.name}</Td>
-                  <Td className="text-sm text-gray-600">{tx.customer?.name ?? <span className="text-gray-300">—</span>}</Td>
-                  <Td><Badge variant="info">{tx._count.items} item</Badge></Td>
+                  <Td className="text-sm text-gray-600">
+                    {tx.customer?.name ?? <span className="text-gray-300">—</span>}
+                  </Td>
+                  <Td>
+                    <Badge variant="info">{tx._count.items} item</Badge>
+                  </Td>
                   <Td className="text-sm">{tx.paymentMethod.name}</Td>
-                  <Td className="text-right font-bold tabular-nums">{formatRupiah(Number(tx.total))}</Td>
+                  <Td className="text-right font-bold tabular-nums">
+                    {formatRupiah(Number(tx.total))}
+                  </Td>
                 </tr>
 
                 {isExpanded && (
@@ -175,19 +212,27 @@ export default function TransaksiPage() {
                             <div className="space-y-1 text-xs">
                               <div className="flex gap-3">
                                 <span className="text-gray-500 w-20">Kasir</span>
-                                <span className="font-medium text-gray-800">{detail.user.name}</span>
+                                <span className="font-medium text-gray-800">
+                                  {detail.user.name}
+                                </span>
                               </div>
                               <div className="flex gap-3">
                                 <span className="text-gray-500 w-20">Pelanggan</span>
-                                <span className="font-medium text-gray-800">{detail.customer?.name ?? "—"}</span>
+                                <span className="font-medium text-gray-800">
+                                  {detail.customer?.name ?? "—"}
+                                </span>
                               </div>
                               <div className="flex gap-3">
                                 <span className="text-gray-500 w-20">Metode</span>
-                                <span className="font-medium text-gray-800">{detail.paymentMethod.name}</span>
+                                <span className="font-medium text-gray-800">
+                                  {detail.paymentMethod.name}
+                                </span>
                               </div>
                               <div className="flex gap-3">
                                 <span className="text-gray-500 w-20">Waktu</span>
-                                <span className="font-medium text-gray-800">{formatDate(detail.createdAt)}</span>
+                                <span className="font-medium text-gray-800">
+                                  {formatDate(detail.createdAt)}
+                                </span>
                               </div>
                             </div>
 
@@ -206,11 +251,20 @@ export default function TransaksiPage() {
                                   {detail.items.map((item) => (
                                     <tr key={item.id}>
                                       <td className="py-1.5 text-gray-800 font-medium">
-                                        {item.productVariant.product.name} <span className="text-gray-500">{item.productVariant.variantName}</span>
+                                        {item.productVariant.product.name}{" "}
+                                        <span className="text-gray-500">
+                                          {item.productVariant.variantName}
+                                        </span>
                                       </td>
-                                      <td className="py-1.5 text-center text-gray-600">{item.qty} {item.productVariant.unit}</td>
-                                      <td className="py-1.5 text-right text-gray-600 tabular-nums">{formatRupiah(Number(item.unitPrice))}</td>
-                                      <td className="py-1.5 text-right font-semibold tabular-nums">{formatRupiah(Number(item.subtotal))}</td>
+                                      <td className="py-1.5 text-center text-gray-600">
+                                        {item.qty} {item.productVariant.unit}
+                                      </td>
+                                      <td className="py-1.5 text-right text-gray-600 tabular-nums">
+                                        {formatRupiah(Number(item.unitPrice))}
+                                      </td>
+                                      <td className="py-1.5 text-right font-semibold tabular-nums">
+                                        {formatRupiah(Number(item.subtotal))}
+                                      </td>
                                     </tr>
                                   ))}
                                 </tbody>
@@ -221,29 +275,42 @@ export default function TransaksiPage() {
                             <div className="text-xs space-y-1 text-right">
                               <div className="flex justify-between gap-6">
                                 <span className="text-gray-500">Subtotal</span>
-                                <span className="tabular-nums">{formatRupiah(Number(detail.subtotal))}</span>
+                                <span className="tabular-nums">
+                                  {formatRupiah(Number(detail.subtotal))}
+                                </span>
                               </div>
                               {Number(detail.discountAmount) > 0 && (
                                 <div className="flex justify-between gap-6 text-emerald-600">
                                   <span>Diskon</span>
-                                  <span className="tabular-nums">−{formatRupiah(Number(detail.discountAmount))}</span>
+                                  <span className="tabular-nums">
+                                    −{formatRupiah(Number(detail.discountAmount))}
+                                  </span>
                                 </div>
                               )}
                               <div className="flex justify-between gap-6 font-black text-sm text-gray-900 pt-1 border-t border-indigo-200">
                                 <span>Total</span>
-                                <span className="tabular-nums">{formatRupiah(Number(detail.total))}</span>
+                                <span className="tabular-nums">
+                                  {formatRupiah(Number(detail.total))}
+                                </span>
                               </div>
                               <div className="flex justify-between gap-6 text-gray-500">
                                 <span>Bayar</span>
-                                <span className="tabular-nums">{formatRupiah(Number(detail.paymentAmount))}</span>
+                                <span className="tabular-nums">
+                                  {formatRupiah(Number(detail.paymentAmount))}
+                                </span>
                               </div>
                               <div className="flex justify-between gap-6 text-gray-500">
                                 <span>Kembali</span>
-                                <span className="tabular-nums">{formatRupiah(Number(detail.changeAmount))}</span>
+                                <span className="tabular-nums">
+                                  {formatRupiah(Number(detail.changeAmount))}
+                                </span>
                               </div>
                               <div className="pt-3">
                                 <button
-                                  onClick={(e) => { e.stopPropagation(); handlePreview(detail) }}
+                                  onClick={(e) => {
+                                    e.stopPropagation()
+                                    handlePreview(detail)
+                                  }}
                                   className="flex items-center gap-1.5 text-xs text-indigo-600 hover:text-indigo-800 font-semibold border border-indigo-200 hover:border-indigo-400 rounded-lg px-3 py-1.5 transition-colors ml-auto"
                                 >
                                   <Eye size={12} />
@@ -278,13 +345,24 @@ export default function TransaksiPage() {
       )}
 
       {previewReceipt && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setPreviewReceipt(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          onClick={() => setPreviewReceipt(null)}
+        >
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
-          <div className="relative flex flex-col items-center gap-4" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="relative flex flex-col items-center gap-4"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
-                <span className="text-sm font-bold text-gray-800">Preview Struk #{previewReceipt.transactionId}</span>
-                <button onClick={() => setPreviewReceipt(null)} className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors">
+                <span className="text-sm font-bold text-gray-800">
+                  Preview Struk #{previewReceipt.transactionId}
+                </span>
+                <button
+                  onClick={() => setPreviewReceipt(null)}
+                  className="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors"
+                >
                   <X size={15} />
                 </button>
               </div>
@@ -296,7 +374,10 @@ export default function TransaksiPage() {
             </div>
             <div className="flex gap-3">
               <button
-                onClick={() => { setPreviewReceipt(null); setTimeout(() => window.print(), 100) }}
+                onClick={() => {
+                  setPreviewReceipt(null)
+                  setTimeout(() => window.print(), 100)
+                }}
                 className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow transition-colors"
               >
                 <Printer size={15} />

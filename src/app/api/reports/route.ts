@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subDays } from "date-fns"
+import {
+  startOfDay,
+  endOfDay,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+  subDays,
+} from "date-fns"
 
 export async function GET(req: NextRequest) {
   const period = new URL(req.url).searchParams.get("period") ?? "today"
@@ -13,7 +21,14 @@ export async function GET(req: NextRequest) {
     last30: { gte: subDays(now, 30), lte: now },
   }[period] ?? { gte: startOfDay(now), lte: endOfDay(now) }
 
-  const [transactions, topVariants, allLowCandidates, paymentBreakdown, topCustomers, categoryBreakdown] = await Promise.all([
+  const [
+    transactions,
+    topVariants,
+    allLowCandidates,
+    paymentBreakdown,
+    topCustomers,
+    categoryBreakdown,
+  ] = await Promise.all([
     prisma.transaction.findMany({
       where: { createdAt: dateRange, status: "COMPLETED" },
       select: { total: true, createdAt: true },
@@ -66,9 +81,7 @@ export async function GET(req: NextRequest) {
     `,
   ])
 
-  const lowStock = allLowCandidates
-    .filter((v) => v.stock <= v.lowStockThreshold)
-    .slice(0, 20)
+  const lowStock = allLowCandidates.filter((v) => v.stock <= v.lowStockThreshold).slice(0, 20)
 
   const topVariantIds = topVariants.map((v) => v.productVariantId)
   const variantDetails = await prisma.productVariant.findMany({
@@ -80,14 +93,40 @@ export async function GET(req: NextRequest) {
   const totalTransactions = transactions.length
 
   return NextResponse.json({
-    summary: { totalRevenue, totalTransactions, averageTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0 },
+    summary: {
+      totalRevenue,
+      totalTransactions,
+      averageTransaction: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+    },
     topProducts: topVariants.map((tv) => {
       const v = variantDetails.find((vd) => vd.id === tv.productVariantId)
-      return { name: v ? `${v.product.name} ${v.variantName}` : `#${tv.productVariantId}`, qty: tv._sum.qty ?? 0, revenue: Number(tv._sum.subtotal ?? 0) }
+      return {
+        name: v ? `${v.product.name} ${v.variantName}` : `#${tv.productVariantId}`,
+        qty: tv._sum.qty ?? 0,
+        revenue: Number(tv._sum.subtotal ?? 0),
+      }
     }),
-    lowStock: lowStock.map((v) => ({ id: v.id, name: `${v.product.name} ${v.variantName}`, stock: v.stock, threshold: v.lowStockThreshold, unit: v.unit })),
-    paymentBreakdown: paymentBreakdown.map((p) => ({ name: p.name, count: Number(p.count), revenue: Number(p.revenue) })),
-    topCustomers: topCustomers.map((c) => ({ name: c.name, count: Number(c.count), spend: Number(c.spend) })),
-    categoryBreakdown: categoryBreakdown.map((c) => ({ category: c.category, revenue: Number(c.revenue), qty: Number(c.qty) })),
+    lowStock: lowStock.map((v) => ({
+      id: v.id,
+      name: `${v.product.name} ${v.variantName}`,
+      stock: v.stock,
+      threshold: v.lowStockThreshold,
+      unit: v.unit,
+    })),
+    paymentBreakdown: paymentBreakdown.map((p) => ({
+      name: p.name,
+      count: Number(p.count),
+      revenue: Number(p.revenue),
+    })),
+    topCustomers: topCustomers.map((c) => ({
+      name: c.name,
+      count: Number(c.count),
+      spend: Number(c.spend),
+    })),
+    categoryBreakdown: categoryBreakdown.map((c) => ({
+      category: c.category,
+      revenue: Number(c.revenue),
+      qty: Number(c.qty),
+    })),
   })
 }

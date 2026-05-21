@@ -31,10 +31,15 @@ export function VariantPickerModal({ open, onClose, variants, onSelect }: Varian
             key={v.id}
             variant="secondary"
             className="w-full justify-between text-left"
-            onClick={() => { onSelect(v); onClose() }}
+            onClick={() => {
+              onSelect(v)
+              onClose()
+            }}
           >
             <span>{v.variantName}</span>
-            <span className="text-blue-700 font-semibold">{formatRupiah(v.price)} / {v.unit}</span>
+            <span className="text-blue-700 font-semibold">
+              {formatRupiah(v.price)} / {v.unit}
+            </span>
           </Button>
         ))}
       </div>
