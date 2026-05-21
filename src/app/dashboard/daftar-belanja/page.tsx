@@ -371,7 +371,6 @@ export default function DaftarBelanjaPage() {
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {form.items.map((item, i) => {
                   const fieldCls = "border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  const unitLen = Math.max(4, item.unit.length + 2)
                   return (
                     <div key={i} className="space-y-1.5">
                       <div className="flex items-center gap-2">
@@ -391,13 +390,7 @@ export default function DaftarBelanjaPage() {
                           placeholder="Jml"
                           className={`${fieldCls} w-16 text-center shrink-0`}
                         />
-                        <input
-                          value={item.unit}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], unit: e.target.value }; setForm({ ...form, items: it }) }}
-                          placeholder="sat."
-                          style={{ width: `${unitLen}ch` }}
-                          className={`${fieldCls} text-center shrink-0`}
-                        />
+                        <span className="text-xs font-medium text-gray-500 shrink-0 px-1">{item.unit}</span>
                         <span className="text-gray-400 text-xs shrink-0">×</span>
                         <input
                           type="number"

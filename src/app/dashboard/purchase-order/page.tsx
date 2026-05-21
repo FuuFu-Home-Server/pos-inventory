@@ -26,7 +26,7 @@ const statusLabel: Record<string, string> = {
   CANCELLED: "Dibatalkan",
 }
 
-type FormItem = { productVariantId: string; qty: string; unitCost: string; _label?: string; _unit?: string }
+type FormItem = { productVariantId: string; qty: string; unitCost: string; _label?: string; unit: string }
 
 export default function PurchaseOrderPage() {
   const [orders, setOrders] = useState<PO[]>([])
@@ -103,7 +103,7 @@ export default function PurchaseOrderPage() {
         qty: "1",
         unitCost: String(v.costPrice ?? ""),
         _label: `${v.product.name} — ${v.variantName}`,
-        _unit: v.unit,
+        unit: v.unit,
       }],
     }))
     setSearch("")
@@ -332,7 +332,6 @@ export default function PurchaseOrderPage() {
               <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
                 {form.items.map((item, i) => {
                   const fieldCls = "border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  const unitLen = Math.max(4, (item._unit?.length ?? 0) + 2)
                   return (
                     <div key={i} className="space-y-1.5">
                       <div className="flex items-center gap-2">
@@ -349,13 +348,7 @@ export default function PurchaseOrderPage() {
                           onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], qty: e.target.value }; setForm({ ...form, items: it }) }}
                           className={`${fieldCls} w-16 text-center shrink-0`}
                         />
-                        <input
-                          value={item._unit ?? ""}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], _unit: e.target.value }; setForm({ ...form, items: it }) }}
-                          placeholder="sat."
-                          style={{ width: `${unitLen}ch` }}
-                          className={`${fieldCls} text-center shrink-0`}
-                        />
+                        <span className="text-xs font-medium text-gray-500 shrink-0 px-1">{item.unit}</span>
                         <input
                           type="number"
                           placeholder="Harga beli"
