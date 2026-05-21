@@ -1,20 +1,19 @@
 "use client"
 
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Table, Thead, Tbody, Th, Td } from "@/components/ui/Table"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
-import { Modal } from "@/components/ui/Modal"
 import { Input } from "@/components/ui/Input"
 import { Select } from "@/components/ui/Select"
 import { formatDateShort, formatRupiah } from "@/lib/format"
-import { ChevronDown, X } from "lucide-react"
+import { ChevronDown } from "lucide-react"
 import { Pagination } from "@/components/ui/Pagination"
+import { PurchaseModal, PurchaseItem, VariantResult } from "@/components/ui/PurchaseModal"
 
 type POItem = { id: number; qty: number; unitCost: number; subtotal: number; productVariant: { variantName: string; unit: string; product: { name: string } } }
 type PO = { id: number; status: string; supplier: { name: string }; user: { name: string }; createdAt: string; receivedAt: string | null; _count: { items: number } }
 type PODetail = PO & { items: POItem[] }
-type Variant = { id: number; variantName: string; unit: string; price: number; costPrice: number | null; stock: number; product: { name: string } }
 type Supplier = { id: number; name: string }
 
 const statusVariant = (s: string): "success" | "danger" | "warning" =>
@@ -26,8 +25,6 @@ const statusLabel: Record<string, string> = {
   CANCELLED: "Dibatalkan",
 }
 
-type FormItem = { productVariantId: string; qty: string; unitCost: string; _label?: string; unit: string }
-
 export default function PurchaseOrderPage() {
   const [orders, setOrders] = useState<PO[]>([])
   const [total, setTotal] = useState(0)
@@ -38,14 +35,9 @@ export default function PurchaseOrderPage() {
   const [loadingId, setLoadingId] = useState<number | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
-  const [variants, setVariants] = useState<Variant[]>([])
+  const [variants, setVariants] = useState<VariantResult[]>([])
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ supplierId: "", notes: "", items: [] as FormItem[] })
-  const [search, setSearch] = useState("")
-  const [searchResults, setSearchResults] = useState<Variant[]>([])
-  const [searchOpen, setSearchOpen] = useState(false)
-  const searchRef = useRef<HTMLDivElement>(null)
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [form, setForm] = useState({ supplierId: "", notes: "", items: [] as PurchaseItem[] })
 
   const load = useCallback(async () => {
     const res = await fetch(`/api/purchase-orders?page=${page}&limit=${pageSize}`)
@@ -65,54 +57,25 @@ export default function PurchaseOrderPage() {
     })
   }, [])
 
-  useEffect(() => {
-    if (!searchOpen) return
-    function handleClick(e: MouseEvent) {
-      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setSearchOpen(false)
-    }
-    document.addEventListener("mousedown", handleClick)
-    return () => document.removeEventListener("mousedown", handleClick)
-  }, [searchOpen])
-
-  function showVariants(q: string) {
-    if (!q.trim()) {
-      const results = variants.slice(0, 10)
-      setSearchResults(results)
-      setSearchOpen(results.length > 0)
-      return
-    }
+  async function searchVariants(q: string): Promise<VariantResult[]> {
+    if (!q.trim()) return variants.slice(0, 10)
     const q2 = q.toLowerCase()
-    const results = variants.filter((v) =>
+    return variants.filter((v) =>
       v.product.name.toLowerCase().includes(q2) || v.variantName.toLowerCase().includes(q2)
     ).slice(0, 10)
-    setSearchResults(results)
-    setSearchOpen(results.length > 0)
   }
 
-  function handleSearchInput(q: string) {
-    setSearch(q)
-    if (searchTimer.current) clearTimeout(searchTimer.current)
-    searchTimer.current = setTimeout(() => showVariants(q), 150)
-  }
-
-  function addVariantToForm(v: Variant) {
+  function handleAddVariant(v: VariantResult) {
     setForm((f) => ({
       ...f,
       items: [...f.items, {
-        productVariantId: String(v.id),
+        variantId: v.id,
+        label: `${v.product.name} — ${v.variantName}`,
+        unit: v.unit,
         qty: "1",
         unitCost: String(v.costPrice ?? ""),
-        _label: `${v.product.name} — ${v.variantName}`,
-        unit: v.unit,
       }],
     }))
-    setSearch("")
-    setSearchResults([])
-    setSearchOpen(false)
-  }
-
-  function removeItem(i: number) {
-    setForm((f) => ({ ...f, items: f.items.filter((_, idx) => idx !== i) }))
   }
 
   async function toggleDetail(id: number) {
@@ -135,7 +98,7 @@ export default function PurchaseOrderPage() {
       body: JSON.stringify({
         supplierId: Number(form.supplierId),
         notes: form.notes || undefined,
-        items: form.items.map((i) => ({ productVariantId: Number(i.productVariantId), qty: Number(i.qty), unitCost: Number(i.unitCost) })),
+        items: form.items.map((i) => ({ productVariantId: i.variantId, qty: Number(i.qty), unitCost: Number(i.unitCost) })),
       }),
     })
     setLoading(false)
@@ -287,8 +250,11 @@ export default function PurchaseOrderPage() {
         onPageSizeChange={setPageSize}
       />
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Buat Purchase Order" className="max-w-2xl">
-        <div className="space-y-4">
+      <PurchaseModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        title="Buat Purchase Order"
+        headerSlot={<>
           <Select
             label="Supplier"
             value={form.supplierId}
@@ -297,78 +263,16 @@ export default function PurchaseOrderPage() {
             placeholder="Pilih supplier..."
           />
           <Input label="Catatan" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} />
-
-          <div>
-            <p className="text-sm font-semibold text-gray-700 mb-2">Cari Produk</p>
-            <div ref={searchRef} className="relative">
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => handleSearchInput(e.target.value)}
-                onFocus={() => showVariants(search)}
-                placeholder="Ketik atau klik untuk pilih produk..."
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-              {searchOpen && (
-                <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-200 rounded-xl shadow-xl mt-1 max-h-60 overflow-y-auto">
-                  {searchResults.map((v) => (
-                    <button
-                      key={v.id}
-                      onClick={() => addVariantToForm(v)}
-                      className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 flex items-center justify-between text-sm transition-colors border-b border-gray-50 last:border-0"
-                    >
-                      <span className="font-medium text-gray-800">{v.product.name} <span className="text-gray-500">{v.variantName}</span></span>
-                      <span className="text-xs text-gray-400">Stok: {v.stock} {v.unit}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {form.items.length > 0 && (
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-2">Item ({form.items.length})</p>
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {form.items.map((item, i) => {
-                  const fieldCls = "border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  return (
-                    <div key={i} className="space-y-1.5">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 min-w-0 text-sm text-gray-700 truncate bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5">{item._label}</div>
-                        <button onClick={() => removeItem(i)} className="text-gray-400 hover:text-red-500 flex items-center justify-center w-7 shrink-0">
-                          <X size={15} />
-                        </button>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="number"
-                          placeholder="Qty"
-                          value={item.qty}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], qty: e.target.value }; setForm({ ...form, items: it }) }}
-                          className={`${fieldCls} w-16 text-center shrink-0`}
-                        />
-                        <span className="text-xs font-medium text-gray-500 shrink-0 px-1">{item.unit}</span>
-                        <input
-                          type="number"
-                          placeholder="Harga beli"
-                          value={item.unitCost}
-                          onChange={(e) => { const it = [...form.items]; it[i] = { ...it[i], unitCost: e.target.value }; setForm({ ...form, items: it }) }}
-                          className={`${fieldCls} flex-1 min-w-0`}
-                        />
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          <Button onClick={handleCreate} loading={loading} disabled={!form.supplierId || form.items.length === 0} className="w-full">
-            Buat PO
-          </Button>
-        </div>
-      </Modal>
+        </>}
+        items={form.items}
+        onItemsChange={(items) => setForm((f) => ({ ...f, items }))}
+        searchVariants={searchVariants}
+        onAddVariant={handleAddVariant}
+        onSubmit={handleCreate}
+        loading={loading}
+        submitLabel="Buat PO"
+        submitDisabled={!form.supplierId || form.items.length === 0}
+      />
     </div>
   )
 }
