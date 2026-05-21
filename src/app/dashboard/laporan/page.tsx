@@ -1,24 +1,8 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
 import { formatRupiah } from "@/lib/format"
 import { Badge } from "@/components/ui/Badge"
-
-type Report = {
-  summary: { totalRevenue: number; totalTransactions: number; averageTransaction: number }
-  topProducts: { name: string; qty: number; revenue: number }[]
-  lowStock: { id: number; name: string; stock: number; threshold: number; unit: string }[]
-  paymentBreakdown: { name: string; count: number; revenue: number }[]
-  topCustomers: { name: string; count: number; spend: number }[]
-  categoryBreakdown: { category: string; revenue: number; qty: number }[]
-}
-
-const PERIODS = [
-  { value: "today", label: "Hari Ini" },
-  { value: "week", label: "Minggu Ini" },
-  { value: "month", label: "Bulan Ini" },
-  { value: "last30", label: "30 Hari Terakhir" },
-]
+import { useReports, PERIODS } from "./useReports"
 
 function Bar({ value, max, color = "bg-indigo-500" }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.max((value / max) * 100, 2) : 0
@@ -40,23 +24,7 @@ function StatCard({ label, value, sub, color, accent }: { label: string; value: 
 }
 
 export default function LaporanPage() {
-  const [period, setPeriod] = useState("today")
-  const [report, setReport] = useState<Report | null>(null)
-  const [loading, setLoading] = useState(false)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    const res = await fetch(`/api/reports?period=${period}`)
-    setReport(await res.json())
-    setLoading(false)
-  }, [period])
-
-  useEffect(() => { load() }, [load])
-
-  const maxRevenue = report ? Math.max(...report.topProducts.map((p) => p.revenue), 1) : 1
-  const maxPayCount = report ? Math.max(...report.paymentBreakdown.map((p) => p.count), 1) : 1
-  const maxCatRev = report ? Math.max(...report.categoryBreakdown.map((c) => c.revenue), 1) : 1
-  const maxSpend = report ? Math.max(...report.topCustomers.map((c) => c.spend), 1) : 1
+  const { period, setPeriod, report, loading, maxRevenue, maxPayCount, maxCatRev, maxSpend } = useReports()
 
   return (
     <div className="p-6">
@@ -89,7 +57,6 @@ export default function LaporanPage() {
 
       {report && (
         <div className="space-y-6">
-          {/* Summary cards */}
           <div className="grid grid-cols-4 gap-4">
             <StatCard
               label="Total Pendapatan"
@@ -119,9 +86,7 @@ export default function LaporanPage() {
             />
           </div>
 
-          {/* Main grid: products + right sidebar */}
           <div className="grid grid-cols-3 gap-6">
-            {/* Top products */}
             <div className="col-span-2 bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">10 Produk Terlaris</h2>
               {report.topProducts.length === 0 ? (
@@ -145,7 +110,6 @@ export default function LaporanPage() {
               )}
             </div>
 
-            {/* Right sidebar: payment + customers */}
             <div className="space-y-4">
               <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                 <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Metode Pembayaran</h2>
@@ -188,7 +152,6 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          {/* Category + Low Stock */}
           <div className="grid grid-cols-2 gap-6">
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Pendapatan per Kategori</h2>
@@ -249,7 +212,6 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          {/* Top customers by spend bar chart */}
           {report.topCustomers.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
               <h2 className="text-sm font-bold text-gray-700 uppercase tracking-wide mb-4">Pengeluaran Top Pelanggan</h2>
