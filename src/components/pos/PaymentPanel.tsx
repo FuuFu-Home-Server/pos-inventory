@@ -53,6 +53,10 @@ export function PaymentPanel({
     }
   }, [paymentMethods])
 
+  useEffect(() => {
+    if (isQris) store.setPaymentAmount(total)
+  }, [isQris, total])
+
   function handleDiscountChange(id: string) {
     if (!id) {
       store.setDiscount(null, 0)
@@ -228,15 +232,17 @@ export function PaymentPanel({
         </>
       )}
 
-      <label className="flex items-center gap-2.5 cursor-pointer select-none">
-        <input
-          type="checkbox"
-          checked={skipPrint}
-          onChange={(e) => onSkipPrintChange(e.target.checked)}
-          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-        />
-        <span className="text-sm text-gray-600">Simpan tanpa cetak struk</span>
-      </label>
+      {!isQris && (
+        <label className="flex items-center gap-2.5 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={skipPrint}
+            onChange={(e) => onSkipPrintChange(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-600">Simpan tanpa cetak struk</span>
+        </label>
+      )}
 
       <Button
         onClick={onCheckout}
