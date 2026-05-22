@@ -1,12 +1,16 @@
 import { app, BrowserWindow, ipcMain } from "electron"
 import path from "path"
 import { spawn, ChildProcess } from "child_process"
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+import ElectronStore from "electron-store"
 
 const isDev = process.env.ELECTRON_DEV === "true"
 const PORT = 3000
 
 let mainWindow: BrowserWindow | null = null
 let nextProcess: ChildProcess | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const store = new (ElectronStore as any)({ defaults: { remoteUrl: "" } })
 
 export function getDbPath(): string {
   return path.join(app.getPath("userData"), "kasir.db")
@@ -53,12 +57,29 @@ function startNextServer(): Promise<void> {
       nextProcess = spawn(process.execPath, [serverScript], { cwd: appRoot, env, stdio: "pipe" })
     }
 
+    let resolved = false
+    const fallbackTimer = setTimeout(() => {
+      if (!resolved) {
+        resolved = true
+        resolve()
+      }
+    }, 15000)
+
     nextProcess.stdout?.on("data", (chunk: Buffer) => {
-      if (chunk.toString().includes(String(PORT))) resolve()
+      if (!resolved && chunk.toString().includes(String(PORT))) {
+        resolved = true
+        clearTimeout(fallbackTimer)
+        resolve()
+      }
     })
 
-    nextProcess.on("error", () => resolve())
-    setTimeout(resolve, 15000)
+    nextProcess.on("error", () => {
+      if (!resolved) {
+        resolved = true
+        clearTimeout(fallbackTimer)
+        resolve()
+      }
+    })
   })
 }
 
@@ -118,17 +139,11 @@ ipcMain.handle("sync:getStatus", async () => {
   return getSyncStatus()
 })
 
-ipcMain.handle("config:getRemoteUrl", async () => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Store = (await import("electron-store")).default as any
-  const store = new Store({ defaults: { remoteUrl: "" } })
+ipcMain.handle("config:getRemoteUrl", () => {
   return store.get("remoteUrl") as string
 })
 
 ipcMain.handle("config:setRemoteUrl", async (_event, url: string) => {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const Store = (await import("electron-store")).default as any
-  const store = new Store({ defaults: { remoteUrl: "" } })
   store.set("remoteUrl", url)
   const { setRemoteUrl } = await import("./sync")
   setRemoteUrl(url)
