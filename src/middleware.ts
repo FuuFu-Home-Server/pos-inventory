@@ -14,7 +14,7 @@ const ADMIN_ONLY_PREFIXES = [
   "/api/import",
 ]
 
-const PUBLIC_PATHS = ["/login", "/api/auth"]
+const PUBLIC_PATHS = ["/login", "/api/auth", "/api/webhooks/midtrans"]
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
