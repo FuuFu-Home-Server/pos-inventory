@@ -205,7 +205,7 @@ export default async function DashboardPage() {
       : null
 
   return (
-    <div className="p-8">
+    <div className="p-4 md:p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-black text-gray-900 mb-1">
           {greeting}, {session?.user.name?.split(" ")[0]} 👋

@@ -47,8 +47,8 @@ export default function TransaksiPage() {
   } = useTransactions()
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-5">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-5">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Riwayat Transaksi</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} transaksi</p>

@@ -95,7 +95,7 @@ export default function StrukPage() {
   const previewData = { ...PREVIEW_DATA, config }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Konfigurasi Struk</h1>
       <div className="flex gap-6">
         <div className="flex-1 space-y-4 max-w-md">

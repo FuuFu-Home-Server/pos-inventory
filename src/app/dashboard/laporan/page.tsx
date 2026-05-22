@@ -51,8 +51,8 @@ export default function LaporanPage() {
     useReports()
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-start mb-6">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-black text-gray-900">Laporan Penjualan</h1>
           <p className="text-sm text-gray-500 mt-0.5">Analisis performa toko</p>
@@ -83,7 +83,7 @@ export default function LaporanPage() {
 
       {report && (
         <div className="space-y-6">
-          <div className="grid grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               label="Total Pendapatan"
               value={formatRupiah(report.summary.totalRevenue)}

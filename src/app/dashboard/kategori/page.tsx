@@ -52,7 +52,7 @@ export default function KategoriPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <h1 className="text-2xl font-black text-gray-900 mb-5">Kategori Produk</h1>
 
       <div className="flex gap-2 mb-6">

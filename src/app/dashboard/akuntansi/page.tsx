@@ -10,7 +10,7 @@ export default function AkuntansiPage() {
   const hasFilters = filterFrom || filterTo
 
   return (
-    <div className="p-6">
+    <div className="p-4 md:p-6">
       <div className="mb-5">
         <h1 className="text-2xl font-black text-gray-900">Akuntansi</h1>
         <p className="text-sm text-gray-500 mt-0.5">Arus uang masuk dan keluar</p>

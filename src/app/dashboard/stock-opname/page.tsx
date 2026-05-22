@@ -109,8 +109,8 @@ export default function StockOpnamePage() {
 
   if (meta) {
     return (
-      <div className="p-6">
-        <div className="flex justify-between items-center mb-4">
+      <div className="p-4 md:p-6">
+        <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
           <div>
             <button
               onClick={() => setMeta(null)}
@@ -393,8 +393,8 @@ export default function StockOpnamePage() {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex justify-between items-center mb-4">
+    <div className="p-4 md:p-6">
+      <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Stock Opname</h1>
         <Button onClick={handleCreate} loading={loading}>
           + Buat Opname Baru
