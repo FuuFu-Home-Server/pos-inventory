@@ -6,12 +6,13 @@ const BASE_URL =
     : "https://api.sandbox.midtrans.com/v2"
 
 function authHeader(): string {
-  const key = process.env.MIDTRANS_SERVER_KEY!
+  const key = process.env.MIDTRANS_SERVER_KEY
+  if (!key) throw new Error("MIDTRANS_SERVER_KEY is not set")
   return "Basic " + Buffer.from(key + ":").toString("base64")
 }
 
 export function generateOrderId(): string {
-  return `KASIR-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`
+  return `KASIR-${Date.now()}-${crypto.randomBytes(4).toString("hex").toUpperCase()}`
 }
 
 export type QrisChargeResult = {
@@ -56,7 +57,12 @@ export async function getQrisStatus(orderId: string): Promise<QrisStatusResult> 
   const res = await fetch(`${BASE_URL}/${encodeURIComponent(orderId)}/status`, {
     headers: { Authorization: authHeader(), Accept: "application/json" },
   })
-  if (!res.ok) throw new Error("Midtrans status check failed")
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(
+      (err as { status_message?: string }).status_message ?? "Midtrans status check failed",
+    )
+  }
   return res.json()
 }
 
@@ -66,7 +72,8 @@ export function verifyWebhookSignature(
   grossAmount: string,
   receivedSignature: string,
 ): boolean {
-  const serverKey = process.env.MIDTRANS_SERVER_KEY!
+  const serverKey = process.env.MIDTRANS_SERVER_KEY
+  if (!serverKey) throw new Error("MIDTRANS_SERVER_KEY is not set")
   const expected = crypto
     .createHash("sha512")
     .update(orderId + statusCode + grossAmount + serverKey)
