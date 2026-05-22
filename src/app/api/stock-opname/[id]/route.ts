@@ -89,39 +89,45 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       select: { id: true, systemQty: true },
     })
     const sysMap = Object.fromEntries(rows.map((r) => [r.id, r.systemQty]))
-    const vals = parsed.data.items
-      .map(
-        ({ itemId, physicalQty }) =>
-          `(${itemId}, ${physicalQty}, ${physicalQty - (sysMap[itemId] ?? 0)})`,
-      )
-      .join(", ")
-    await prisma.$executeRawUnsafe(`
-      UPDATE "StockOpnameItem" AS s
-      SET "physicalQty" = v.physical, difference = v.diff
-      FROM (VALUES ${vals}) AS v(id, physical, diff)
-      WHERE s.id = v.id AND s."opnameId" = ${opnameId}
-    `)
+    await prisma.$transaction(
+      parsed.data.items.map(({ itemId, physicalQty }) =>
+        prisma.stockOpnameItem.update({
+          where: { id: itemId },
+          data: {
+            physicalQty,
+            difference: physicalQty - (sysMap[itemId] ?? 0),
+          },
+        }),
+      ),
+    )
     return NextResponse.json({ ok: true })
   }
 
   if (parsed.data.action === "set-all") {
     const { qty, q } = parsed.data
     if (q) {
-      await prisma.$executeRawUnsafe(`
-        UPDATE "StockOpnameItem" s
-        SET "physicalQty" = ${qty}, difference = ${qty} - s."systemQty"
-        FROM "ProductVariant" pv
-        JOIN "Product" p ON p.id = pv."productId"
-        WHERE s."productVariantId" = pv.id
-          AND s."opnameId" = ${opnameId}
-          AND (p.name ILIKE ${`%${q}%`} OR pv."variantName" ILIKE ${`%${q}%`})
-      `)
+      await prisma.$executeRawUnsafe(
+        `UPDATE StockOpnameItem
+         SET physicalQty = ?, difference = ? - systemQty
+         WHERE opnameId = ?
+           AND productVariantId IN (
+             SELECT pv.id FROM ProductVariant pv
+             JOIN Product p ON p.id = pv.productId
+             WHERE p.name LIKE ? OR pv.variantName LIKE ?
+           )`,
+        qty,
+        qty,
+        opnameId,
+        `%${q}%`,
+        `%${q}%`,
+      )
     } else {
-      await prisma.$executeRawUnsafe(`
-        UPDATE "StockOpnameItem"
-        SET "physicalQty" = ${qty}, difference = ${qty} - "systemQty"
-        WHERE "opnameId" = ${opnameId}
-      `)
+      await prisma.$executeRawUnsafe(
+        `UPDATE StockOpnameItem SET physicalQty = ?, difference = ? - systemQty WHERE opnameId = ?`,
+        qty,
+        qty,
+        opnameId,
+      )
     }
     return NextResponse.json({ ok: true })
   }
@@ -184,13 +190,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
   })
   if (items.length === 0) return NextResponse.json({ error: "Tidak ada item" }, { status: 400 })
 
-  const vals = items.map((i) => `(${i.productVariantId}, ${i.physicalQty})`).join(", ")
   await prisma.$transaction([
-    prisma.$executeRawUnsafe(`
-      UPDATE "ProductVariant" AS pv SET stock = v.stock
-      FROM (VALUES ${vals}) AS v(id, stock)
-      WHERE pv.id = v.id
-    `),
+    ...items.map((i) =>
+      prisma.productVariant.update({
+        where: { id: i.productVariantId },
+        data: { stock: i.physicalQty },
+      }),
+    ),
     prisma.stockOpname.update({ where: { id: opnameId }, data: { status: "CONFIRMED" } }),
   ])
   return NextResponse.json({ ok: true })
