@@ -87,6 +87,11 @@ export default function KasirPage() {
   const [skipPrint, setSkipPrint] = useState(true)
   const [activeTab, setActiveTab] = useState<"cart" | "payment">("cart")
   const [qrisOpen, setQrisOpen] = useState(false)
+  const [receiptConfig, setReceiptConfig] = useState<{
+    paperWidth?: number
+    staticQrisImage?: string | null
+    [key: string]: unknown
+  } | null>(null)
   const receiptConfigRef = useRef<ReceiptData["config"] | null>(null)
   const serialPortRef = useRef<SerialPort | null>(null)
   const [printerConnected, setPrinterConnected] = useState(false)
@@ -245,6 +250,7 @@ export default function KasirPage() {
       fetch("/api/receipt-config").then((r) => r.json()),
     ]).then(async ([pms, disc, cust, config]) => {
       receiptConfigRef.current = config
+      setReceiptConfig(config)
       const activePms: PaymentMethod[] = pms.filter((p: any) => p.isActive !== false)
       setPaymentMethods(activePms)
       const tunai = activePms.find((pm) => pm.name.toLowerCase().includes("tunai"))
@@ -632,6 +638,8 @@ export default function KasirPage() {
           onConfirm={handleQrisConfirm}
           onCancel={() => setQrisOpen(false)}
           loading={loading}
+          isOffline={!isOnline}
+          staticQrisImage={receiptConfig?.staticQrisImage ?? null}
         />
       )}
 

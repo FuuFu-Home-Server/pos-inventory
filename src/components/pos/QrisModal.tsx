@@ -2,7 +2,7 @@
 
 import { formatRupiah } from "@/lib/format"
 import { QRCodeSVG } from "qrcode.react"
-import { QrCode } from "lucide-react"
+import { QrCode, WifiOff } from "lucide-react"
 
 interface QrisModalProps {
   qrString: string
@@ -10,9 +10,19 @@ interface QrisModalProps {
   onConfirm: () => Promise<void>
   onCancel: () => void
   loading: boolean
+  isOffline?: boolean
+  staticQrisImage?: string | null
 }
 
-export function QrisModal({ qrString, total, onConfirm, onCancel, loading }: QrisModalProps) {
+export function QrisModal({
+  qrString,
+  total,
+  onConfirm,
+  onCancel,
+  loading,
+  isOffline = false,
+  staticQrisImage,
+}: QrisModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
@@ -21,18 +31,41 @@ export function QrisModal({ qrString, total, onConfirm, onCancel, loading }: Qri
             <QrCode size={18} className="text-indigo-400" />
             <div>
               <p className="font-bold text-white text-sm">Bayar via QRIS</p>
-              <p className="text-xs text-slate-400">Scan dengan e-wallet atau m-banking</p>
+              <p className="text-xs text-slate-400">
+                {isOffline
+                  ? "Mode offline — konfirmasi manual"
+                  : "Scan dengan e-wallet atau m-banking"}
+              </p>
             </div>
           </div>
+          {isOffline && (
+            <span className="flex items-center gap-1 text-xs text-amber-400 font-medium">
+              <WifiOff size={12} /> Offline
+            </span>
+          )}
         </div>
 
         <div className="p-6 flex flex-col items-center gap-5">
-          {qrString ? (
+          {isOffline ? (
+            staticQrisImage ? (
+              <img
+                src={staticQrisImage}
+                alt="QRIS"
+                className="w-52 h-52 object-contain rounded-xl border-4 border-indigo-100"
+              />
+            ) : (
+              <div className="w-52 h-52 border-4 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
+                <p className="text-xs text-gray-400 text-center px-4">
+                  Gambar QRIS statis belum diatur. Upload di Konfigurasi Struk.
+                </p>
+              </div>
+            )
+          ) : qrString ? (
             <div className="p-3 border-4 border-indigo-100 rounded-xl">
               <QRCodeSVG value={qrString} size={200} level="M" />
             </div>
           ) : (
-            <div className="w-50 h-50 border-4 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
+            <div className="w-52 h-52 border-4 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
               <p className="text-xs text-gray-400 text-center px-4">Set NEXT_PUBLIC_QRIS_STRING</p>
             </div>
           )}
