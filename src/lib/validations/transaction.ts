@@ -13,6 +13,7 @@ export const completeTransactionSchema = z.object({
   discountId: z.number().int().positive().optional().nullable(),
   paymentMethodId: z.number().int().positive("Pilih metode pembayaran"),
   paymentAmount: z.number().positive("Nominal bayar wajib diisi"),
+  localId: z.string().uuid().optional(),
 })
 
 export type CompleteTransactionInput = z.infer<typeof completeTransactionSchema>

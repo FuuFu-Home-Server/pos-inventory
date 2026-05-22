@@ -9,6 +9,8 @@ import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptT
 import { Toast } from "@/components/ui/Toast"
 import { cn } from "@/lib/utils"
 import { usePosStore } from "@/store/pos"
+import { useOnlineStatus } from "@/hooks/useOnlineStatus"
+import { useSyncStatus } from "@/hooks/useSyncStatus"
 import { printEscPos } from "@/lib/receipt-printer"
 import {
   LayoutDashboard,
@@ -72,6 +74,8 @@ function Clock() {
 export default function KasirPage() {
   const { data: session } = useSession()
   const store = usePosStore()
+  const isOnline = useOnlineStatus()
+  const { failedCount, pendingCount, syncing, triggerSync } = useSyncStatus()
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
@@ -176,6 +180,7 @@ export default function KasirPage() {
   async function handleQrisConfirm() {
     if (!store.paymentMethodId || store.items.length === 0) return
     setLoading(true)
+    const localId = crypto.randomUUID()
     const res = await fetch("/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -190,6 +195,7 @@ export default function KasirPage() {
         discountId: store.discountId,
         paymentMethodId: store.paymentMethodId,
         paymentAmount: store.getTotal(),
+        localId,
       }),
     })
     setLoading(false)
@@ -325,6 +331,7 @@ export default function KasirPage() {
 
     setLoading(true)
 
+    const localId = crypto.randomUUID()
     const res = await fetch("/api/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -339,6 +346,7 @@ export default function KasirPage() {
         discountId: store.discountId,
         paymentMethodId: store.paymentMethodId,
         paymentAmount: store.paymentAmount,
+        localId,
       }),
     })
 
@@ -448,6 +456,35 @@ export default function KasirPage() {
             <span className="font-bold text-white text-sm">Kasir</span>
           </div>
         </div>
+        <div className="flex items-center gap-2">
+          {!isOnline && (
+            <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/30">
+              OFFLINE
+            </span>
+          )}
+          {pendingCount > 0 && (
+            <span className="px-2 py-0.5 rounded text-xs text-slate-400 bg-slate-800">
+              {pendingCount} pending
+            </span>
+          )}
+          {failedCount > 0 && (
+            <a
+              href="/kasir/sync-failures"
+              className="px-2 py-0.5 rounded text-xs font-semibold bg-red-500/20 text-red-400 border border-red-500/30"
+            >
+              {failedCount} gagal
+            </a>
+          )}
+          {isOnline && typeof window !== "undefined" && window.electronAPI && (
+            <button
+              onClick={triggerSync}
+              disabled={syncing}
+              className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1 disabled:opacity-40"
+            >
+              {syncing ? "Sync..." : "Sync"}
+            </button>
+          )}
+        </div>
       </header>
 
       {/* Shortcut hint bar — lg+ only */}
@@ -516,6 +553,11 @@ export default function KasirPage() {
           <div className="p-3 bg-gray-50 border-b border-gray-200">
             <ProductSearch onSelect={handleSearchSelect} />
           </div>
+          {!isOnline && (
+            <p className="text-xs text-amber-400 text-center py-1 bg-amber-500/10">
+              Stok mungkin tidak akurat (mode offline)
+            </p>
+          )}
           <CartPanel
             onClear={
               store.items.length > 0

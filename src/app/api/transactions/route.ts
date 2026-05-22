@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
   const parsed = completeTransactionSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
 
-  const { items, customerId, discountId, paymentMethodId, paymentAmount } = parsed.data
+  const { items, customerId, discountId, paymentMethodId, paymentAmount, localId } = parsed.data
 
   try {
     const result = await prisma.$transaction(async (tx) => {
@@ -132,6 +132,8 @@ export async function POST(req: NextRequest) {
           paymentAmount,
           changeAmount,
           status: "COMPLETED",
+          syncStatus: "SYNCED",
+          localId: localId ?? null,
           items: {
             create: items.map((item) => ({
               productVariantId: item.variantId,
