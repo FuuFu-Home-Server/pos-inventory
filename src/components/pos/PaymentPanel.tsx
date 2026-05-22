@@ -3,7 +3,7 @@
 import { usePosStore } from "@/store/pos"
 import { formatRupiah } from "@/lib/format"
 import { Button } from "@/components/ui/Button"
-import { ChevronLeft } from "lucide-react"
+import { ChevronLeft, QrCode } from "lucide-react"
 import { useEffect, useState } from "react"
 
 type PaymentMethod = { id: number; name: string }
@@ -19,6 +19,7 @@ interface PaymentPanelProps {
   skipPrint: boolean
   onSkipPrintChange: (v: boolean) => void
   onBack?: () => void
+  isQris?: boolean
 }
 
 const QUICK_AMOUNTS = [5_000, 10_000, 20_000, 50_000, 100_000]
@@ -33,6 +34,7 @@ export function PaymentPanel({
   skipPrint,
   onSkipPrintChange,
   onBack,
+  isQris = false,
 }: PaymentPanelProps) {
   const store = usePosStore()
   const subtotal = store.getSubtotal()
@@ -62,8 +64,9 @@ export function PaymentPanel({
     store.setDiscount(d.id, amount)
   }
 
-  const canCheckout =
-    store.items.length > 0 && !!store.paymentMethodId && store.paymentAmount >= total
+  const canCheckout = isQris
+    ? store.items.length > 0 && !!store.paymentMethodId
+    : store.items.length > 0 && !!store.paymentMethodId && store.paymentAmount >= total
 
   return (
     <div className="flex flex-col gap-4">
@@ -152,65 +155,77 @@ export function PaymentPanel({
         </div>
       </div>
 
-      <div>
-        <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
-          Nominal Diterima
-        </label>
-        <input
-          type="text"
-          inputMode="numeric"
-          value={paymentDisplay}
-          onChange={(e) => {
-            const raw = e.target.value.replace(/\D/g, "")
-            const num = raw ? Number(raw) : 0
-            setPaymentDisplay(num ? num.toLocaleString("id-ID") : "")
-            store.setPaymentAmount(num)
-          }}
-          onFocus={(e) => e.target.select()}
-          placeholder={total.toLocaleString("id-ID")}
-          className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-xl font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums"
-          data-payment-input
-        />
-        <div className="grid grid-cols-3 gap-1.5 mt-2">
-          <button
-            onClick={() => store.setPaymentAmount(total)}
-            className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg py-1.5 hover:bg-green-100 font-semibold transition-colors"
-          >
-            Pas
-          </button>
-          <button
-            onClick={() => store.setPaymentAmount(0)}
-            className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg py-1.5 hover:bg-red-100 font-semibold transition-colors"
-          >
-            Reset
-          </button>
-          {QUICK_AMOUNTS.map((amt) => (
-            <button
-              key={amt}
-              onClick={() => store.setPaymentAmount((store.paymentAmount || 0) + amt)}
-              className="text-xs bg-gray-50 border border-gray-200 text-gray-700 rounded-lg py-1.5 hover:bg-gray-100 transition-colors"
-            >
-              +{formatRupiah(amt)}
-            </button>
-          ))}
+      {isQris ? (
+        <div className="bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 flex items-center gap-3">
+          <QrCode size={18} className="text-indigo-500 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-indigo-700">Bayar dengan QRIS</p>
+            <p className="text-xs text-indigo-400 mt-0.5">QR akan muncul setelah klik Selesai</p>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+              Nominal Diterima
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={paymentDisplay}
+              onChange={(e) => {
+                const raw = e.target.value.replace(/\D/g, "")
+                const num = raw ? Number(raw) : 0
+                setPaymentDisplay(num ? num.toLocaleString("id-ID") : "")
+                store.setPaymentAmount(num)
+              }}
+              onFocus={(e) => e.target.select()}
+              placeholder={total.toLocaleString("id-ID")}
+              className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-xl font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums"
+              data-payment-input
+            />
+            <div className="grid grid-cols-3 gap-1.5 mt-2">
+              <button
+                onClick={() => store.setPaymentAmount(total)}
+                className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg py-1.5 hover:bg-green-100 font-semibold transition-colors"
+              >
+                Pas
+              </button>
+              <button
+                onClick={() => store.setPaymentAmount(0)}
+                className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg py-1.5 hover:bg-red-100 font-semibold transition-colors"
+              >
+                Reset
+              </button>
+              {QUICK_AMOUNTS.map((amt) => (
+                <button
+                  key={amt}
+                  onClick={() => store.setPaymentAmount((store.paymentAmount || 0) + amt)}
+                  className="text-xs bg-gray-50 border border-gray-200 text-gray-700 rounded-lg py-1.5 hover:bg-gray-100 transition-colors"
+                >
+                  +{formatRupiah(amt)}
+                </button>
+              ))}
+            </div>
+          </div>
 
-      {store.paymentAmount > 0 && (
-        <div
-          className={`rounded-xl px-4 py-3 flex justify-between items-center ${change >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
-        >
-          <span
-            className={`text-sm font-medium ${change >= 0 ? "text-green-700" : "text-red-700"}`}
-          >
-            {change >= 0 ? "Kembalian" : "Kurang"}
-          </span>
-          <span
-            className={`text-2xl font-black tabular-nums ${change >= 0 ? "text-green-800" : "text-red-800"}`}
-          >
-            {formatRupiah(Math.abs(change))}
-          </span>
-        </div>
+          {store.paymentAmount > 0 && (
+            <div
+              className={`rounded-xl px-4 py-3 flex justify-between items-center ${change >= 0 ? "bg-green-50 border border-green-200" : "bg-red-50 border border-red-200"}`}
+            >
+              <span
+                className={`text-sm font-medium ${change >= 0 ? "text-green-700" : "text-red-700"}`}
+              >
+                {change >= 0 ? "Kembalian" : "Kurang"}
+              </span>
+              <span
+                className={`text-2xl font-black tabular-nums ${change >= 0 ? "text-green-800" : "text-red-800"}`}
+              >
+                {formatRupiah(Math.abs(change))}
+              </span>
+            </div>
+          )}
+        </>
       )}
 
       <label className="flex items-center gap-2.5 cursor-pointer select-none">
@@ -229,7 +244,11 @@ export function PaymentPanel({
         disabled={!canCheckout}
         className="w-full py-4 text-base font-black rounded-xl tracking-wide"
       >
-        {skipPrint ? "✓  SELESAI TRANSAKSI" : "🖨  SELESAI & CETAK STRUK"}
+        {isQris
+          ? "📱  TAMPILKAN QRIS"
+          : skipPrint
+            ? "✓  SELESAI TRANSAKSI"
+            : "🖨  SELESAI & CETAK STRUK"}
       </Button>
     </div>
   )
