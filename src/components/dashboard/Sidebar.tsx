@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -84,6 +85,15 @@ interface SidebarProps {
 export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
   const pathname = usePathname()
 
+  useEffect(() => {
+    if (open) {
+      document.body.style.overflow = "hidden"
+    }
+    return () => {
+      document.body.style.overflow = ""
+    }
+  }, [open])
+
   function isActive(item: NavItem) {
     if (item.exact) return pathname === item.href
     return pathname.startsWith(item.href)
@@ -95,6 +105,7 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
       {open && <div className="fixed inset-0 bg-black/50 z-30 lg:hidden" onClick={onClose} />}
 
       <aside
+        aria-label="Navigasi"
         className={cn(
           "flex flex-col bg-slate-900 h-screen",
           // Mobile: fixed overlay, full sidebar width
@@ -122,6 +133,7 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
           {/* Close button — mobile overlay only */}
           <button
             onClick={onClose}
+            aria-label="Tutup menu"
             className="lg:hidden w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
           >
             <X size={15} />
