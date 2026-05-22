@@ -1,0 +1,143 @@
+import { NextRequest, NextResponse } from "next/server"
+import { auth } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { buildTransactionTotals } from "@/lib/transaction-service"
+import { z } from "zod"
+
+const flushSchema = z.object({
+  transactions: z.array(
+    z.object({
+      localId: z.string(),
+      items: z
+        .array(
+          z.object({
+            variantId: z.number().int().positive(),
+            qty: z.number().int().positive(),
+            unitPrice: z.number().min(0),
+            itemDiscountAmt: z.number().min(0),
+          }),
+        )
+        .min(1),
+      customerId: z.number().int().positive().optional(),
+      discountId: z.number().int().positive().optional(),
+      paymentMethodId: z.number().int().positive(),
+      paymentAmount: z.number().min(0),
+      createdAt: z.string(),
+    }),
+  ),
+})
+
+export async function POST(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
+  const body = await req.json()
+  const parsed = flushSchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+
+  const synced: string[] = []
+  const failed: { localId: string; reason: string }[] = []
+
+  for (const tx of parsed.data.transactions) {
+    const existing = await prisma.transaction.findUnique({ where: { localId: tx.localId } })
+    if (existing) {
+      synced.push(tx.localId)
+      continue
+    }
+
+    try {
+      await prisma.$transaction(async (db) => {
+        const variants = await Promise.all(
+          tx.items.map((item) =>
+            db.productVariant.findUnique({
+              where: { id: item.variantId },
+              include: { product: { select: { name: true } } },
+            }),
+          ),
+        )
+        const insufficient: string[] = []
+        for (let i = 0; i < variants.length; i++) {
+          const v = variants[i]
+          if (!v || !v.isActive)
+            insufficient.push(`Produk id ${tx.items[i].variantId} tidak ditemukan`)
+          else if (v.stock < tx.items[i].qty)
+            insufficient.push(
+              `${v.product.name} ${v.variantName}: stok ${v.stock}, butuh ${tx.items[i].qty}`,
+            )
+        }
+        if (insufficient.length > 0)
+          throw Object.assign(new Error("INSUFFICIENT"), { details: insufficient.join("; ") })
+
+        let discountData: {
+          type: "PERCENT" | "FLAT"
+          value: number
+          scope: "TRANSACTION" | "PRODUCT"
+          minPurchase: number | null
+        } | null = null
+        if (tx.discountId) {
+          const d = await db.discount.findUnique({ where: { id: tx.discountId, isActive: true } })
+          if (d)
+            discountData = {
+              type: d.type as "PERCENT" | "FLAT",
+              value: Number(d.value),
+              scope: d.scope as "TRANSACTION" | "PRODUCT",
+              minPurchase: d.minPurchase ? Number(d.minPurchase) : null,
+            }
+        }
+
+        const { subtotal, discountAmount, total } = buildTransactionTotals(
+          tx.items.map((i) => ({
+            qty: i.qty,
+            unitPrice: i.unitPrice,
+            itemDiscountAmt: i.itemDiscountAmt,
+          })),
+          discountData,
+        )
+        const changeAmount = Math.max(0, tx.paymentAmount - total)
+
+        await db.transaction.create({
+          data: {
+            userId: Number(session.user.id),
+            customerId: tx.customerId ?? null,
+            discountId: tx.discountId ?? null,
+            paymentMethodId: tx.paymentMethodId,
+            discountAmount,
+            subtotal,
+            total,
+            paymentAmount: tx.paymentAmount,
+            changeAmount,
+            status: "COMPLETED",
+            syncStatus: "SYNCED",
+            localId: tx.localId,
+            createdAt: new Date(tx.createdAt),
+            items: {
+              create: tx.items.map((item) => ({
+                productVariantId: item.variantId,
+                qty: item.qty,
+                unitPrice: item.unitPrice,
+                itemDiscountAmt: item.itemDiscountAmt,
+                subtotal: item.qty * item.unitPrice - item.itemDiscountAmt,
+              })),
+            },
+          },
+        })
+
+        await Promise.all(
+          tx.items.map((item) =>
+            db.productVariant.update({
+              where: { id: item.variantId },
+              data: { stock: { decrement: item.qty } },
+            }),
+          ),
+        )
+      })
+      synced.push(tx.localId)
+    } catch (err: unknown) {
+      const details = (err as { details?: string })?.details
+      const msg = err instanceof Error ? err.message : "Kesalahan server"
+      failed.push({ localId: tx.localId, reason: details ?? msg })
+    }
+  }
+
+  return NextResponse.json({ synced, failed })
+}

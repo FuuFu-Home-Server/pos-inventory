@@ -19,6 +19,8 @@ export async function GET(req: NextRequest) {
   if (paymentMethodId) where.paymentMethodId = Number(paymentMethodId)
   if (userId) where.userId = Number(userId)
   if (customerId) where.customerId = Number(customerId)
+  const syncStatus = searchParams.get("syncStatus")
+  if (syncStatus) where.syncStatus = syncStatus
 
   const appliedWhere = Object.keys(where).length ? where : undefined
 
