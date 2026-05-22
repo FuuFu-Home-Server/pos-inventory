@@ -18,7 +18,7 @@ export function getDbPath(): string {
 }
 
 function runPrismaPush(): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const dbPath = getDbPath()
     const appRoot = isDev ? process.cwd() : path.join(process.resourcesPath, "app")
     const prismaBin = path.join(appRoot, "node_modules", ".bin", "prisma")
