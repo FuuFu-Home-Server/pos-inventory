@@ -1,0 +1,46 @@
+appId: com.kasir.desktop
+productName: Kasir
+copyright: Copyright © 2026
+
+directories:
+  output: dist
+  buildResources: build
+
+files:
+  - ".next/standalone/**"
+  - ".next/static/**"
+  - "public/**"
+  - "prisma/schema.prisma"
+  - "electron-dist/**"
+  - "package.json"
+  - "node_modules/**"
+  - "!node_modules/.cache/**"
+  - "!node_modules/.bin/**"
+  - "!src/**"
+  - "!electron/**"
+  - "!docs/**"
+  - "!tests/**"
+  - "!.env*"
+
+win:
+  target:
+    - target: nsis
+      arch: [x64]
+  icon: build/icon.ico
+
+linux:
+  target:
+    - target: AppImage
+      arch: [x64]
+  icon: build/icon.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  runAfterFinish: true
+
+publish:
+  provider: generic
+  url: "${env.UPDATE_SERVER_URL}/updates/"
