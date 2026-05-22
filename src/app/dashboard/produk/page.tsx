@@ -11,7 +11,13 @@ import { Modal } from "@/components/ui/Modal"
 import { formatRupiah } from "@/lib/format"
 import { ChevronDown, Package, Activity, AlertTriangle } from "lucide-react"
 import { Pagination } from "@/components/ui/Pagination"
-import { useProducts, blankVariantRow, type EditVariantRow, type Option } from "./useProducts"
+import {
+  useProducts,
+  blankVariantRow,
+  type EditVariantRow,
+  type Option,
+  type Product,
+} from "./useProducts"
 
 export default function ProdukPage() {
   const {
@@ -43,7 +49,23 @@ export default function ProdukPage() {
     handleDelete,
     toggleExpand,
     toggleVariantActive,
+    filterCategory,
+    setFilterCategory,
+    filterSupplierId,
+    setFilterSupplierId,
+    filterStockStatus,
+    setFilterStockStatus,
+    filterDataStatus,
+    setFilterDataStatus,
+    sortBy,
+    setSortBy,
+    sortDir,
+    setSortDir,
   } = useProducts()
+
+  function isIncomplete(p: Product): boolean {
+    return p.category === "" || p.variants.some((v) => v.isActive && v.price === 0)
+  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [importing, setImporting] = useState(false)
@@ -255,6 +277,90 @@ export default function ProdukPage() {
         />
       </div>
 
+      <div className="flex flex-wrap gap-2 mb-4">
+        <select
+          value={filterCategory}
+          onChange={(e) => setFilterCategory(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          <option value="">Semua Kategori</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={filterSupplierId}
+          onChange={(e) => setFilterSupplierId(e.target.value)}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          <option value="">Semua Supplier</option>
+          {suppliers.map((s) => (
+            <option key={s.id} value={String(s.id)}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+
+        <select
+          value={filterStockStatus}
+          onChange={(e) => setFilterStockStatus(e.target.value as "all" | "low" | "out")}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          <option value="all">Semua Stok</option>
+          <option value="low">Stok Menipis</option>
+          <option value="out">Stok Habis</option>
+        </select>
+
+        <select
+          value={filterDataStatus}
+          onChange={(e) => setFilterDataStatus(e.target.value as "all" | "incomplete")}
+          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+        >
+          <option value="all">Semua Data</option>
+          <option value="incomplete">
+            Data Tidak Lengkap{stats.incompleteCount > 0 ? ` (${stats.incompleteCount})` : ""}
+          </option>
+        </select>
+
+        <div className="flex items-center gap-1 ml-auto">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "name" | "category" | "createdAt")}
+            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="name">Urut: Nama</option>
+            <option value="category">Urut: Kategori</option>
+            <option value="createdAt">Urut: Terbaru</option>
+          </select>
+          <button
+            onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
+            className="border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-sm"
+            title={sortDir === "asc" ? "A→Z / Lama→Baru" : "Z→A / Baru→Lama"}
+          >
+            {sortDir === "asc" ? "↑" : "↓"}
+          </button>
+        </div>
+      </div>
+
+      {stats.incompleteCount > 0 && filterDataStatus !== "incomplete" && (
+        <div className="flex items-center gap-2 mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5 text-sm text-amber-800">
+          <AlertTriangle size={15} className="text-amber-600 shrink-0" />
+          <span>
+            <span className="font-bold">{stats.incompleteCount} produk</span> dengan data tidak
+            lengkap (kategori kosong atau harga Rp 0).{" "}
+          </span>
+          <button
+            onClick={() => setFilterDataStatus("incomplete")}
+            className="ml-auto font-semibold underline hover:no-underline shrink-0"
+          >
+            Tampilkan
+          </button>
+        </div>
+      )}
+
       <Table>
         <Thead>
           <tr>
@@ -283,6 +389,11 @@ export default function ProdukPage() {
                         className={`text-gray-400 transition-transform duration-150 shrink-0 ${expanded ? "rotate-180" : ""}`}
                       />
                       <span className="font-semibold text-gray-900">{p.name}</span>
+                      {isIncomplete(p) && (
+                        <span title="Data tidak lengkap: kategori kosong atau harga Rp 0">
+                          <AlertTriangle size={12} className="inline ml-1 text-amber-500" />
+                        </span>
+                      )}
                     </div>
                   </Td>
                   <Td>

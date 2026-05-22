@@ -68,8 +68,14 @@ export function useProducts() {
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(20)
-  const [stats, setStats] = useState({ activeVariants: 0, lowStockCount: 0 })
+  const [stats, setStats] = useState({ activeVariants: 0, lowStockCount: 0, incompleteCount: 0 })
   const [search, setSearch] = useState("")
+  const [filterCategory, setFilterCategory] = useState("")
+  const [filterSupplierId, setFilterSupplierId] = useState("")
+  const [filterStockStatus, setFilterStockStatus] = useState<"all" | "low" | "out">("all")
+  const [filterDataStatus, setFilterDataStatus] = useState<"all" | "incomplete">("all")
+  const [sortBy, setSortBy] = useState<"name" | "category" | "createdAt">("name")
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [categories, setCategories] = useState<Option[]>([])
   const [units, setUnits] = useState<Option[]>([])
@@ -93,18 +99,48 @@ export function useProducts() {
   }>({ name: "", category: "", supplierId: "", variants: [] })
 
   const load = useCallback(async () => {
-    const res = await fetch(
-      `/api/products?page=${page}&limit=${pageSize}&q=${encodeURIComponent(search)}`,
-    )
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(pageSize),
+      q: search,
+      category: filterCategory,
+      supplierId: filterSupplierId,
+      stockStatus: filterStockStatus,
+      dataStatus: filterDataStatus,
+      sortBy,
+      sortDir,
+    })
+    const res = await fetch(`/api/products?${params}`)
     const data = await res.json()
     setProducts(data.products)
     setTotal(data.total)
     if (data.stats) setStats(data.stats)
-  }, [page, pageSize, search])
+  }, [
+    page,
+    pageSize,
+    search,
+    filterCategory,
+    filterSupplierId,
+    filterStockStatus,
+    filterDataStatus,
+    sortBy,
+    sortDir,
+  ])
 
   useEffect(() => {
     load()
   }, [load])
+  useEffect(() => {
+    setPage(1)
+  }, [
+    search,
+    filterCategory,
+    filterSupplierId,
+    filterStockStatus,
+    filterDataStatus,
+    sortBy,
+    sortDir,
+  ])
   useEffect(() => {
     Promise.all([
       fetch("/api/suppliers").then((r) => r.json()),
@@ -236,6 +272,18 @@ export function useProducts() {
     stats,
     search,
     setSearch,
+    filterCategory,
+    setFilterCategory,
+    filterSupplierId,
+    setFilterSupplierId,
+    filterStockStatus,
+    setFilterStockStatus,
+    filterDataStatus,
+    setFilterDataStatus,
+    sortBy,
+    setSortBy,
+    sortDir,
+    setSortDir,
     suppliers,
     categories,
     units,
