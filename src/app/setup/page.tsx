@@ -45,7 +45,7 @@ export default function SetupPage() {
               value={form.name}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               required
-              minLength={2}
+              minLength={1}
             />
           </div>
           <div>
