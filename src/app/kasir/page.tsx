@@ -185,27 +185,31 @@ export default function KasirPage() {
   async function handleQrisConfirm() {
     if (!store.paymentMethodId || store.items.length === 0) return
     setLoading(true)
-    const localId = crypto.randomUUID()
-    const res = await fetch("/api/transactions", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: store.items.map((i) => ({
-          variantId: i.variantId,
-          qty: i.qty,
-          unitPrice: i.price,
-          itemDiscountAmt: i.itemDiscountAmt,
-        })),
-        customerId: store.customerId,
-        discountId: store.discountId,
-        paymentMethodId: store.paymentMethodId,
-        paymentAmount: store.getTotal(),
-        localId,
-      }),
-    })
-    setLoading(false)
-    if (!res.ok) {
-      const err = await res.json()
+    let res: Response
+    try {
+      const localId = crypto.randomUUID()
+      res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: store.items.map((i) => ({
+            variantId: i.variantId,
+            qty: i.qty,
+            unitPrice: i.price,
+            itemDiscountAmt: i.itemDiscountAmt,
+          })),
+          customerId: store.customerId,
+          discountId: store.discountId,
+          paymentMethodId: store.paymentMethodId,
+          paymentAmount: store.getTotal(),
+          localId,
+        }),
+      })
+    } finally {
+      setLoading(false)
+    }
+    if (!res!.ok) {
+      const err = await res!.json()
       setToast({ message: (err as { error?: string }).error ?? "Transaksi gagal", type: "error" })
       return
     }
