@@ -18,6 +18,11 @@ type PollStatus = "pending" | "settlement" | "expire" | "cancel" | "deny"
 export function QrisModal({ qrString, orderId, total, onSuccess, onCancel }: QrisModalProps) {
   const [status, setStatus] = useState<PollStatus>("pending")
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const onSuccessRef = useRef(onSuccess)
+  useEffect(() => {
+    onSuccessRef.current = onSuccess
+  }, [onSuccess])
 
   useEffect(() => {
     intervalRef.current = setInterval(async () => {
@@ -27,9 +32,13 @@ export function QrisModal({ qrString, orderId, total, onSuccess, onCancel }: Qri
         const data: { status: string; transactionId?: number } = await res.json()
 
         if (data.status === "settlement" || data.status === "capture") {
+          if (!data.transactionId) return
           clearInterval(intervalRef.current!)
           setStatus("settlement")
-          setTimeout(() => onSuccess(data.transactionId!), 1500)
+          successTimerRef.current = setTimeout(
+            () => onSuccessRef.current(data.transactionId!),
+            1500,
+          )
         } else if (data.status === "expire" || data.status === "cancel" || data.status === "deny") {
           clearInterval(intervalRef.current!)
           setStatus(data.status as PollStatus)
@@ -39,8 +48,9 @@ export function QrisModal({ qrString, orderId, total, onSuccess, onCancel }: Qri
 
     return () => {
       if (intervalRef.current) clearInterval(intervalRef.current)
+      if (successTimerRef.current) clearTimeout(successTimerRef.current)
     }
-  }, [orderId, onSuccess])
+  }, [orderId])
 
   const isTerminal = status !== "pending"
 
