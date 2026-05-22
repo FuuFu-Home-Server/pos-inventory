@@ -19,45 +19,53 @@ export async function POST(_req: NextRequest, { params }: Params) {
   if (list.status === "DONE") return NextResponse.json({ error: "Sudah selesai" }, { status: 409 })
   if (list.items.length === 0) return NextResponse.json({ error: "List kosong" }, { status: 400 })
 
-  const po = await prisma.$transaction(async (tx) => {
-    const purchaseOrder = await tx.purchaseOrder.create({
-      data: {
-        supplierId: null,
-        userId: Number(session.user!.id),
-        status: "RECEIVED",
-        notes: `Dari daftar belanja: ${list.title}`,
-        receivedAt: new Date(),
-        items: {
-          create: list.items
-            .filter((item) => item.productVariantId !== null)
-            .map((item) => ({
+  let po: { id: number; skippedItems: number }
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const linkedItems = list.items.filter((item) => item.productVariantId !== null)
+      const skippedCount = list.items.length - linkedItems.length
+
+      const purchaseOrder = await tx.purchaseOrder.create({
+        data: {
+          supplierId: null,
+          userId: Number(session.user!.id),
+          status: "RECEIVED",
+          notes: `Dari daftar belanja: ${list.title}`,
+          receivedAt: new Date(),
+          items: {
+            create: linkedItems.map((item) => ({
               productVariantId: item.productVariantId!,
               qty: item.qty,
               unitCost: item.unitCost,
               subtotal: item.qty * Number(item.unitCost),
             })),
+          },
         },
-      },
-    })
+      })
 
-    await Promise.all(
-      list.items
-        .filter((item) => item.productVariantId !== null)
-        .map((item) =>
+      await Promise.all(
+        linkedItems.map((item) =>
           tx.productVariant.update({
             where: { id: item.productVariantId! },
             data: { stock: { increment: item.qty } },
           }),
         ),
-    )
+      )
 
-    await tx.purchaseList.update({
-      where: { id: listId },
-      data: { status: "DONE" },
+      await tx.purchaseList.update({
+        where: { id: listId },
+        data: { status: "DONE" },
+      })
+
+      return { purchaseOrder, skippedItems: skippedCount }
     })
+    po = { id: result.purchaseOrder.id, skippedItems: result.skippedItems }
+  } catch (err) {
+    return NextResponse.json({ error: "Gagal membuat PO" }, { status: 500 })
+  }
 
-    return purchaseOrder
-  })
-
-  return NextResponse.json({ purchaseOrderId: po.id }, { status: 201 })
+  return NextResponse.json(
+    { purchaseOrderId: po.id, skippedItems: po.skippedItems },
+    { status: 201 },
+  )
 }

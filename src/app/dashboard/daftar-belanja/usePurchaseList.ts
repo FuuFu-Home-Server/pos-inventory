@@ -174,12 +174,14 @@ export function usePurchaseList() {
     load()
   }
 
-  async function completeToPO(id: number): Promise<number | null> {
+  async function completeToPO(
+    id: number,
+  ): Promise<{ purchaseOrderId: number; skippedItems: number } | null> {
     const res = await fetch(`/api/purchase-lists/${id}/complete`, { method: "POST" })
     if (!res.ok) return null
-    const data: { purchaseOrderId: number } = await res.json()
+    const data: { purchaseOrderId: number; skippedItems: number } = await res.json()
     load()
-    return data.purchaseOrderId
+    return data
   }
 
   async function createProductForList(data: {

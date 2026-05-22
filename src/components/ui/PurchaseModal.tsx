@@ -82,6 +82,13 @@ export function PurchaseModal({
   })
   const [creatingProduct, setCreatingProduct] = useState(false)
 
+  useEffect(() => {
+    if (!open) {
+      setShowNewProduct(false)
+      setNewProductForm({ name: "", category: "", variantName: "", unit: "pcs", costPrice: 0 })
+    }
+  }, [open])
+
   async function handleCreateProduct() {
     if (!onCreateProduct || !newProductForm.name) return
     setCreatingProduct(true)

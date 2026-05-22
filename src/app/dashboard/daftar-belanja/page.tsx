@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import { formatRupiah, formatDate } from "@/lib/format"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -10,6 +11,7 @@ import { ChevronDown, AlertTriangle, Plus, ShoppingCart } from "lucide-react"
 import { usePurchaseList } from "./usePurchaseList"
 
 export default function DaftarBelanjaPage() {
+  const [completing, setCompleting] = useState<number | null>(null)
   const {
     lists,
     expandedId,
@@ -118,8 +120,18 @@ export default function DaftarBelanjaPage() {
                       <Button
                         variant="primary"
                         size="sm"
+                        loading={completing === list.id}
+                        disabled={completing !== null}
                         onClick={async () => {
-                          await completeToPO(list.id)
+                          setCompleting(list.id)
+                          try {
+                            const result = await completeToPO(list.id)
+                            if (!result) {
+                              alert("Gagal membuat PO. Coba lagi.")
+                            }
+                          } finally {
+                            setCompleting(null)
+                          }
                         }}
                       >
                         Selesai & Buat PO
