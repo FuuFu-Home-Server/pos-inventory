@@ -86,9 +86,8 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
   const pathname = usePathname()
 
   useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden"
-    }
+    if (!open) return
+    document.body.style.overflow = "hidden"
     return () => {
       document.body.style.overflow = ""
     }

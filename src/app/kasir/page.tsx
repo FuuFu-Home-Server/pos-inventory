@@ -7,6 +7,7 @@ import { ProductSearch } from "@/components/pos/ProductSearch"
 import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptTemplate"
 import { Select } from "@/components/ui/Select"
 import { Toast } from "@/components/ui/Toast"
+import { cn } from "@/lib/utils"
 import { usePosStore } from "@/store/pos"
 import { printEscPos } from "@/lib/receipt-printer"
 import {
@@ -435,9 +436,10 @@ export default function KasirPage() {
 
       <div className="flex flex-1 overflow-hidden">
         <div
-          className={`flex-col overflow-hidden bg-white border-r border-gray-200 flex-1 ${
-            activeTab === "cart" ? "flex" : "hidden md:flex"
-          }`}
+          className={cn(
+            "flex-col overflow-hidden bg-white border-r border-gray-200 flex-1",
+            activeTab === "cart" ? "flex" : "hidden md:flex",
+          )}
         >
           <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
             <div className="flex-1">
@@ -470,9 +472,10 @@ export default function KasirPage() {
         </div>
 
         <div
-          className={`shrink-0 overflow-y-auto bg-gray-50 p-4 md:p-5 w-full md:w-70 xl:w-92 ${
-            activeTab === "payment" ? "flex flex-col" : "hidden md:flex md:flex-col"
-          }`}
+          className={cn(
+            "shrink-0 overflow-y-auto bg-gray-50 p-4 md:p-5 w-full md:w-70 xl:w-92",
+            activeTab === "payment" ? "flex flex-col" : "hidden md:flex md:flex-col",
+          )}
         >
           <PaymentPanel
             paymentMethods={paymentMethods}
