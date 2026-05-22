@@ -10,16 +10,15 @@ const setupSchema = z.object({
 })
 
 export async function GET() {
-  const count = await prisma.user.count()
-  return NextResponse.json({ needsSetup: count === 0 })
+  try {
+    const count = await prisma.user.count()
+    return NextResponse.json({ needsSetup: count === 0 })
+  } catch {
+    return NextResponse.json({ error: "Database tidak tersedia" }, { status: 503 })
+  }
 }
 
 export async function POST(req: NextRequest) {
-  const count = await prisma.user.count()
-  if (count > 0) {
-    return NextResponse.json({ error: "Setup sudah selesai" }, { status: 403 })
-  }
-
   const body = await req.json()
   const parsed = setupSchema.safeParse(body)
   if (!parsed.success) {
@@ -29,27 +28,39 @@ export async function POST(req: NextRequest) {
   const { name, email, password } = parsed.data
   const passwordHash = await hash(password, 10)
 
-  const adminRole = await prisma.role.upsert({
-    where: { name: "ADMIN" },
-    update: {},
-    create: { name: "ADMIN" },
-  })
-  await prisma.role.upsert({
-    where: { name: "EMPLOYEE" },
-    update: {},
-    create: { name: "EMPLOYEE" },
-  })
+  try {
+    await prisma.$transaction(async (tx) => {
+      const count = await tx.user.count()
+      if (count > 0) throw new Error("already_setup")
 
-  await prisma.user.create({
-    data: {
-      name,
-      email,
-      passwordHash,
-      roleId: adminRole.id,
-      isActive: true,
-      isDefaultCredential: false,
-    },
-  })
+      const adminRole = await tx.role.upsert({
+        where: { name: "ADMIN" },
+        update: {},
+        create: { name: "ADMIN" },
+      })
+      await tx.role.upsert({
+        where: { name: "EMPLOYEE" },
+        update: {},
+        create: { name: "EMPLOYEE" },
+      })
+
+      await tx.user.create({
+        data: {
+          name,
+          email,
+          passwordHash,
+          roleId: adminRole.id,
+          isActive: true,
+          isDefaultCredential: false,
+        },
+      })
+    })
+  } catch (err) {
+    if (err instanceof Error && err.message === "already_setup") {
+      return NextResponse.json({ error: "Setup sudah selesai" }, { status: 403 })
+    }
+    return NextResponse.json({ error: "Gagal membuat akun" }, { status: 500 })
+  }
 
   return NextResponse.json({ message: "Setup complete" }, { status: 201 })
 }
