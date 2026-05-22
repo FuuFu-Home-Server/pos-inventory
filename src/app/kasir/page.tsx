@@ -8,7 +8,14 @@ import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptT
 import { Select } from "@/components/ui/Select"
 import { Toast } from "@/components/ui/Toast"
 import { usePosStore } from "@/store/pos"
-import { LayoutDashboard } from "lucide-react"
+import { printEscPos } from "@/lib/receipt-printer"
+import {
+  LayoutDashboard,
+  Printer,
+  Unplug,
+  ShoppingCart as CartIcon,
+  CreditCard,
+} from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
 import { useCallback, useEffect, useRef, useState } from "react"
@@ -73,6 +80,75 @@ export default function KasirPage() {
   const [initialLoading, setInitialLoading] = useState(true)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   const [skipPrint, setSkipPrint] = useState(false)
+  const [activeTab, setActiveTab] = useState<"cart" | "payment">("cart")
+  const receiptConfigRef = useRef<ReceiptData["config"] | null>(null)
+  const serialPortRef = useRef<SerialPort | null>(null)
+  const [printerConnected, setPrinterConnected] = useState(false)
+
+  useEffect(() => {
+    if (!receiptData) return
+
+    if (serialPortRef.current) {
+      printEscPos(serialPortRef.current, receiptData).catch(() => {
+        setPrinterConnected(false)
+        serialPortRef.current = null
+      })
+      return
+    }
+
+    // fallback: iframe print
+    const el = document.getElementById("receipt-print")
+    if (!el) return
+    const paperWidth = receiptData.config.paperWidth
+    const iframe = document.createElement("iframe")
+    iframe.style.cssText =
+      "position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;border:0;visibility:hidden"
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument!
+    const links = Array.from(document.querySelectorAll<HTMLLinkElement>("link[rel='stylesheet']"))
+      .map((l) => `<link rel="stylesheet" href="${l.href}">`)
+      .join("\n")
+    const styles = Array.from(document.querySelectorAll("style"))
+      .map((s) => `<style>${s.textContent}</style>`)
+      .join("\n")
+    doc.open()
+    doc.write(`<!DOCTYPE html><html><head>
+<meta charset="UTF-8">${links}${styles}
+<style>@page{size:${paperWidth}mm auto;margin:0}html{font-size:16px}body{margin:0;padding:0;background:white}</style>
+</head><body>${el.outerHTML}</body></html>`)
+    doc.close()
+    const doPrint = () => {
+      iframe.contentWindow!.focus()
+      iframe.contentWindow!.print()
+      setTimeout(() => iframe.remove(), 2000)
+    }
+    if (links) iframe.onload = doPrint
+    else setTimeout(doPrint, 50)
+  }, [receiptData])
+
+  async function connectPrinter() {
+    if (!("serial" in navigator)) {
+      setToast({ message: "Web Serial tidak didukung browser ini", type: "error" })
+      return
+    }
+    try {
+      const port = await navigator.serial.requestPort()
+      await port.open({ baudRate: 9600 })
+      serialPortRef.current = port
+      setPrinterConnected(true)
+      setToast({ message: "Printer terhubung", type: "success" })
+    } catch {
+      setToast({ message: "Gagal menghubungkan printer", type: "error" })
+    }
+  }
+
+  async function disconnectPrinter() {
+    if (serialPortRef.current) {
+      await serialPortRef.current.close().catch(() => {})
+      serialPortRef.current = null
+    }
+    setPrinterConnected(false)
+  }
 
   const checkoutRef = useRef<() => void>(() => {})
   const umumIdRef = useRef<number | null>(null)
@@ -82,7 +158,9 @@ export default function KasirPage() {
       fetch("/api/payment-methods").then((r) => r.json()),
       fetch("/api/discounts?active=true").then((r) => r.json()),
       fetch("/api/customers").then((r) => r.json()),
-    ]).then(async ([pms, disc, cust]) => {
+      fetch("/api/receipt-config").then((r) => r.json()),
+    ]).then(async ([pms, disc, cust, config]) => {
+      receiptConfigRef.current = config
       setPaymentMethods(pms.filter((p: any) => p.isActive !== false))
       setDiscounts(disc.discounts ?? [])
 
@@ -190,7 +268,7 @@ export default function KasirPage() {
     const tx = await res.json()
 
     if (!skipPrint) {
-      const config = await fetch("/api/receipt-config").then((r) => r.json())
+      const config = receiptConfigRef.current!
       const receipt: ReceiptData = {
         transactionId: tx.id,
         createdAt: tx.createdAt,
@@ -214,7 +292,6 @@ export default function KasirPage() {
         config,
       }
       setReceiptData(receipt)
-      setTimeout(() => window.print(), 300)
     }
 
     store.reset()
@@ -307,25 +384,61 @@ export default function KasirPage() {
             </kbd>
             <span>Kembali</span>
           </div>
+          <button
+            onClick={printerConnected ? disconnectPrinter : connectPrinter}
+            title={printerConnected ? "Putuskan printer" : "Hubungkan printer ESC/POS"}
+            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
+              printerConnected
+                ? "border-emerald-700 text-emerald-400 hover:bg-emerald-950/40"
+                : "border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300"
+            }`}
+          >
+            {printerConnected ? <Printer size={13} /> : <Unplug size={13} />}
+            {printerConnected ? "Printer" : "Hubungkan"}
+          </button>
           <span className="text-sm text-slate-400">{session?.user?.name}</span>
-          {store.items.length > 0 && (
-            <button
-              onClick={() => {
-                store.reset()
-                if (umumIdRef.current) store.setCustomer(umumIdRef.current)
-              }}
-              className="text-xs text-red-400 hover:text-red-300 border border-red-800 rounded-lg px-3 py-1.5 hover:bg-red-950/40 transition-colors"
-            >
-              Kosongkan
-            </button>
-          )}
         </div>
       </header>
 
       <BarcodeListener onScan={handleScan} />
 
+      {/* Mobile tab bar — hidden at md+ */}
+      <div className="md:hidden flex shrink-0 border-b border-gray-200 bg-white">
+        <button
+          onClick={() => setActiveTab("cart")}
+          className={`flex-1 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${
+            activeTab === "cart"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-gray-500"
+          }`}
+        >
+          <CartIcon size={15} />
+          Keranjang
+          {store.items.length > 0 && (
+            <span className="bg-indigo-600 text-white text-xs px-1.5 py-0.5 rounded-full leading-none">
+              {store.items.length}
+            </span>
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab("payment")}
+          className={`flex-1 py-2.5 text-sm font-semibold flex items-center justify-center gap-2 border-b-2 transition-colors ${
+            activeTab === "payment"
+              ? "border-indigo-600 text-indigo-600"
+              : "border-transparent text-gray-500"
+          }`}
+        >
+          <CreditCard size={15} />
+          Bayar
+        </button>
+      </div>
+
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex-1 flex flex-col overflow-hidden bg-white border-r border-gray-200">
+        <div
+          className={`flex-col overflow-hidden bg-white border-r border-gray-200 flex-1 ${
+            activeTab === "cart" ? "flex" : "hidden md:flex"
+          }`}
+        >
           <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
             <div className="flex-1">
               <ProductSearch onSelect={handleSearchSelect} />
@@ -343,10 +456,24 @@ export default function KasirPage() {
               />
             </div>
           </div>
-          <CartPanel />
+          <CartPanel
+            onClear={
+              store.items.length > 0
+                ? () => {
+                    store.reset()
+                    if (umumIdRef.current) store.setCustomer(umumIdRef.current)
+                  }
+                : undefined
+            }
+            onGoToPayment={() => setActiveTab("payment")}
+          />
         </div>
 
-        <div className="w-[368px] shrink-0 overflow-y-auto bg-gray-50 p-5">
+        <div
+          className={`shrink-0 overflow-y-auto bg-gray-50 p-4 md:p-5 w-full md:w-70 xl:w-92 ${
+            activeTab === "payment" ? "flex flex-col" : "hidden md:flex md:flex-col"
+          }`}
+        >
           <PaymentPanel
             paymentMethods={paymentMethods}
             discounts={discounts}
@@ -354,6 +481,7 @@ export default function KasirPage() {
             loading={loading}
             skipPrint={skipPrint}
             onSkipPrintChange={setSkipPrint}
+            onBack={() => setActiveTab("cart")}
           />
         </div>
       </div>

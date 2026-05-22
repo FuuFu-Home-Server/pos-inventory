@@ -3,7 +3,8 @@
 import { usePosStore } from "@/store/pos"
 import { formatRupiah } from "@/lib/format"
 import { Button } from "@/components/ui/Button"
-import { useEffect } from "react"
+import { ChevronLeft } from "lucide-react"
+import { useEffect, useState } from "react"
 
 type PaymentMethod = { id: number; name: string }
 type Discount = { id: number; name: string; type: string; value: number; scope: string }
@@ -15,9 +16,11 @@ interface PaymentPanelProps {
   loading: boolean
   skipPrint: boolean
   onSkipPrintChange: (v: boolean) => void
+  onBack?: () => void
 }
 
 const QUICK_AMOUNTS = [5_000, 10_000, 20_000, 50_000, 100_000]
+const DISABLED_METHODS = ["transfer", "debit", "kredit", "credit"]
 
 export function PaymentPanel({
   paymentMethods,
@@ -26,11 +29,17 @@ export function PaymentPanel({
   loading,
   skipPrint,
   onSkipPrintChange,
+  onBack,
 }: PaymentPanelProps) {
   const store = usePosStore()
   const subtotal = store.getSubtotal()
   const total = store.getTotal()
   const change = store.getChange()
+  const [paymentDisplay, setPaymentDisplay] = useState("")
+
+  useEffect(() => {
+    setPaymentDisplay(store.paymentAmount ? store.paymentAmount.toLocaleString("id-ID") : "")
+  }, [store.paymentAmount])
 
   useEffect(() => {
     if (paymentMethods.length > 0 && !store.paymentMethodId) {
@@ -55,6 +64,15 @@ export function PaymentPanel({
 
   return (
     <div className="flex flex-col gap-4">
+      {onBack && (
+        <button
+          onClick={onBack}
+          className="md:hidden flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 transition-colors -mb-1"
+        >
+          <ChevronLeft size={16} />
+          Keranjang
+        </button>
+      )}
       <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-sm">
         <p className="text-xs font-medium uppercase tracking-widest opacity-80 mb-1">Total Bayar</p>
         <p className="text-4xl font-black tabular-nums leading-none">{formatRupiah(total)}</p>
@@ -89,19 +107,25 @@ export function PaymentPanel({
           Metode Bayar
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {paymentMethods.map((pm) => (
-            <button
-              key={pm.id}
-              onClick={() => store.setPaymentMethod(pm.id)}
-              className={`py-2.5 px-3 text-sm rounded-lg border-2 transition-all font-medium ${
-                store.paymentMethodId === pm.id
-                  ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                  : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50"
-              }`}
-            >
-              {pm.name}
-            </button>
-          ))}
+          {paymentMethods.map((pm) => {
+            const disabled = DISABLED_METHODS.includes(pm.name.toLowerCase())
+            return (
+              <button
+                key={pm.id}
+                disabled={disabled}
+                onClick={() => !disabled && store.setPaymentMethod(pm.id)}
+                className={`py-2.5 px-3 text-sm rounded-lg border-2 transition-all font-medium ${
+                  disabled
+                    ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
+                    : store.paymentMethodId === pm.id
+                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50"
+                }`}
+              >
+                {pm.name}
+              </button>
+            )
+          })}
         </div>
       </div>
 
@@ -110,10 +134,17 @@ export function PaymentPanel({
           Nominal Diterima
         </label>
         <input
-          type="number"
-          value={store.paymentAmount || ""}
-          onChange={(e) => store.setPaymentAmount(Number(e.target.value))}
-          placeholder={formatRupiah(total).replace("Rp", "").trim()}
+          type="text"
+          inputMode="numeric"
+          value={paymentDisplay}
+          onChange={(e) => {
+            const raw = e.target.value.replace(/\D/g, "")
+            const num = raw ? Number(raw) : 0
+            setPaymentDisplay(num ? num.toLocaleString("id-ID") : "")
+            store.setPaymentAmount(num)
+          }}
+          onFocus={(e) => e.target.select()}
+          placeholder={total.toLocaleString("id-ID")}
           className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-xl font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums"
           data-payment-input
         />

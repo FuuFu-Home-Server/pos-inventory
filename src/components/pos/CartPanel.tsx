@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { usePosStore, type CartItem } from "@/store/pos"
 import { formatRupiah } from "@/lib/format"
-import { ArrowLeftRight } from "lucide-react"
+import { ArrowLeftRight, Trash2 } from "lucide-react"
 
 type VariantOption = {
   id: number
@@ -13,8 +13,15 @@ type VariantOption = {
   unit: string
 }
 
-export function CartPanel() {
-  const { items, removeItem, updateQty } = usePosStore()
+export function CartPanel({
+  onClear,
+  onGoToPayment,
+}: {
+  onClear?: () => void
+  onGoToPayment?: () => void
+}) {
+  const store = usePosStore()
+  const { items, removeItem, updateQty } = store
   const [activeIdx, setActiveIdx] = useState<number>(-1)
   const rowRefs = useRef<(HTMLTableRowElement | null)[]>([])
 
@@ -81,33 +88,62 @@ export function CartPanel() {
   const itemCount = items.reduce((s, i) => s + i.qty, 0)
 
   return (
-    <div className="flex-1 overflow-y-auto">
-      <div className="px-4 py-2.5 bg-gray-100 border-b border-gray-200 flex items-center justify-between sticky top-0 z-10">
-        <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
-          Keranjang
-        </span>
-        <span className="text-xs text-gray-400">
-          {items.length} jenis · {itemCount} item
-        </span>
+    <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 overflow-y-auto">
+        <div className="px-4 py-2.5 bg-gray-100 border-b border-gray-200 flex items-center justify-between sticky top-0 z-10">
+          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+            Keranjang
+          </span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-gray-400">
+              {items.length} jenis · {itemCount} item
+            </span>
+            {onClear && (
+              <button
+                onClick={onClear}
+                className="text-xs text-red-500 hover:text-red-700 font-medium hover:underline transition-colors"
+              >
+                Kosongkan
+              </button>
+            )}
+          </div>
+        </div>
+        <table className="w-full">
+          <tbody className="divide-y divide-gray-100">
+            {items.map((item, idx) => (
+              <CartRow
+                key={item.variantId}
+                item={item}
+                idx={idx}
+                isActive={idx === activeIdx}
+                rowRef={(el) => {
+                  rowRefs.current[idx] = el
+                }}
+                onUpdateQty={updateQty}
+                onRemove={removeItem}
+                onActivate={() => setActiveIdx(idx)}
+              />
+            ))}
+          </tbody>
+        </table>
       </div>
-      <table className="w-full">
-        <tbody className="divide-y divide-gray-100">
-          {items.map((item, idx) => (
-            <CartRow
-              key={item.variantId}
-              item={item}
-              idx={idx}
-              isActive={idx === activeIdx}
-              rowRef={(el) => {
-                rowRefs.current[idx] = el
-              }}
-              onUpdateQty={updateQty}
-              onRemove={removeItem}
-              onActivate={() => setActiveIdx(idx)}
-            />
-          ))}
-        </tbody>
-      </table>
+
+      {onGoToPayment && items.length > 0 && (
+        <div className="md:hidden sticky bottom-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between shrink-0">
+          <div>
+            <p className="text-xs text-gray-500">Total</p>
+            <p className="text-lg font-black text-gray-900 tabular-nums">
+              {formatRupiah(store.getTotal())}
+            </p>
+          </div>
+          <button
+            onClick={onGoToPayment}
+            className="bg-indigo-600 text-white font-bold px-5 py-2.5 rounded-xl text-sm"
+          >
+            Bayar →
+          </button>
+        </div>
+      )}
     </div>
   )
 }
@@ -233,10 +269,10 @@ function CartRow({
         <td className="pr-3 py-4">
           <button
             onClick={() => onRemove(item.variantId)}
-            className="text-gray-300 hover:text-red-500 text-xl leading-none opacity-0 group-hover:opacity-100 transition-all"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-red-100 border border-red-200 hover:border-red-400 transition-colors"
             title="Hapus"
           >
-            ×
+            <Trash2 size={14} />
           </button>
         </td>
       </tr>
