@@ -4,6 +4,7 @@ import { BarcodeListener } from "@/components/pos/BarcodeListener"
 import { CartPanel } from "@/components/pos/CartPanel"
 import { PaymentPanel } from "@/components/pos/PaymentPanel"
 import { ProductSearch } from "@/components/pos/ProductSearch"
+import { QrisModal } from "@/components/pos/QrisModal"
 import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptTemplate"
 import { Toast } from "@/components/ui/Toast"
 import { cn } from "@/lib/utils"
@@ -81,6 +82,11 @@ export default function KasirPage() {
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   const [skipPrint, setSkipPrint] = useState(false)
   const [activeTab, setActiveTab] = useState<"cart" | "payment">("cart")
+  const [qrisSession, setQrisSession] = useState<{
+    qrString: string
+    orderId: string
+    transactionId: number
+  } | null>(null)
   const receiptConfigRef = useRef<ReceiptData["config"] | null>(null)
   const serialPortRef = useRef<SerialPort | null>(null)
   const [printerConnected, setPrinterConnected] = useState(false)
@@ -158,6 +164,88 @@ export default function KasirPage() {
     store.reset()
     if (umumIdRef.current) store.setCustomer(umumIdRef.current)
     if (tunaiIdRef.current) store.setPaymentMethod(tunaiIdRef.current)
+  }
+
+  function isQrisMethod(id: number | null): boolean {
+    if (!id) return false
+    const method = paymentMethods.find((pm) => pm.id === id)
+    return !!method && method.name.toLowerCase().includes("qris")
+  }
+
+  async function handleQrisCheckout() {
+    if (store.items.length === 0 || !store.paymentMethodId) return
+    setLoading(true)
+    const res = await fetch("/api/qris", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: store.items.map((i) => ({
+          variantId: i.variantId,
+          qty: i.qty,
+          unitPrice: i.price,
+          itemDiscountAmt: i.itemDiscountAmt,
+        })),
+        customerId: store.customerId,
+        discountId: store.discountId,
+        paymentMethodId: store.paymentMethodId,
+      }),
+    })
+    setLoading(false)
+    if (!res.ok) {
+      const err = await res.json()
+      setToast({
+        message: (err as { error?: string }).error ?? "Gagal membuat QRIS",
+        type: "error",
+      })
+      return
+    }
+    const data: { transactionId: number; orderId: string; qrString: string } = await res.json()
+    setQrisSession(data)
+  }
+
+  async function handleQrisSuccess(transactionId: number) {
+    setQrisSession(null)
+    if (!skipPrint) {
+      const res = await fetch(`/api/transactions/${transactionId}`)
+      if (res.ok) {
+        const tx = await res.json()
+        const config = receiptConfigRef.current!
+        const receipt: ReceiptData = {
+          transactionId: tx.id,
+          createdAt: tx.createdAt,
+          cashierName: session?.user?.name ?? "-",
+          customerName: tx.customer?.name,
+          items: tx.items.map(
+            (item: {
+              productVariant: { product: { name: string }; variantName: string; unit: string }
+              qty: number
+              unitPrice: number | string
+              itemDiscountAmt: number | string
+              subtotal: number | string
+            }) => ({
+              productName: item.productVariant.product.name,
+              variantName: item.productVariant.variantName,
+              unit: item.productVariant.unit,
+              qty: item.qty,
+              unitPrice: Number(item.unitPrice),
+              itemDiscountAmt: Number(item.itemDiscountAmt),
+              subtotal: Number(item.subtotal),
+            }),
+          ),
+          subtotal: Number(tx.subtotal),
+          discountAmount: Number(tx.discountAmount),
+          total: Number(tx.total),
+          paymentAmount: Number(tx.paymentAmount),
+          changeAmount: Number(tx.changeAmount),
+          paymentMethod: tx.paymentMethod.name,
+          config,
+        }
+        setReceiptData(receipt)
+      }
+    }
+    resetPos()
+    setToast({ message: "Pembayaran QRIS berhasil", type: "success" })
+    document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
   }
 
   useEffect(() => {
@@ -244,6 +332,10 @@ export default function KasirPage() {
   )
 
   async function handleCheckout() {
+    if (isQrisMethod(store.paymentMethodId)) {
+      await handleQrisCheckout()
+      return
+    }
     if (!store.paymentMethodId || store.items.length === 0) return
     const total = store.getTotal()
     if (store.paymentAmount < total) return
@@ -471,6 +563,7 @@ export default function KasirPage() {
             skipPrint={skipPrint}
             onSkipPrintChange={setSkipPrint}
             onBack={() => setActiveTab("cart")}
+            isQris={isQrisMethod(store.paymentMethodId)}
           />
         </div>
       </div>
@@ -501,6 +594,19 @@ export default function KasirPage() {
           </>
         )}
       </button>
+
+      {qrisSession && (
+        <QrisModal
+          qrString={qrisSession.qrString}
+          orderId={qrisSession.orderId}
+          total={store.getTotal()}
+          onSuccess={handleQrisSuccess}
+          onCancel={() => {
+            setQrisSession(null)
+            setToast({ message: "Pembayaran QRIS dibatalkan", type: "info" })
+          }}
+        />
+      )}
 
       {receiptData && (
         <div className="hidden print:block">
