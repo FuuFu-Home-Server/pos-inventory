@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import type { SyncStatus } from "../../electron/sync"
 
 const defaultStatus: SyncStatus = {
   isOnline: true,

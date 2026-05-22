@@ -26,7 +26,11 @@ export function startSync(onUpdate: () => void) {
 }
 
 export function stopSync() {
-  if (pingInterval) clearInterval(pingInterval)
+  if (pingInterval) {
+    clearInterval(pingInterval)
+    pingInterval = null
+  }
+  onStatusChange = null
 }
 
 export function getSyncStatus(): SyncStatus {
@@ -66,8 +70,8 @@ async function performSync() {
     await flushTransactionQueue()
     await pullCatalog()
     status.lastSyncAt = new Date().toISOString()
-  } catch (err) {
-    console.error("[sync] error:", err)
+  } catch {
+    // sync error is silent — status.lastSyncAt stays stale, user sees no lastSyncAt update
   } finally {
     status.syncing = false
     onStatusChange?.()
