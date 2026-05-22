@@ -135,7 +135,7 @@ model Transaction {
   paymentAmount   Decimal
   changeAmount    Decimal  @default(0)
   midtransOrderId String?  @unique
-  status          String
+  status          String   @default("PENDING")
   syncStatus      String   @default("SYNCED")
   syncFailReason  String?
   localId         String?  @unique
@@ -255,7 +255,7 @@ model ImportLog {
   userId          Int
   filename        String
   recordsImported Int      @default(0)
-  status          String
+  status          String   @default("PENDING")
   errorMessage    String?
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id])
