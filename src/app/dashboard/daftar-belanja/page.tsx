@@ -29,6 +29,8 @@ export default function DaftarBelanjaPage() {
     toggleItemPurchased,
     handleDelete,
     markDone,
+    completeToPO,
+    createProductForList,
   } = usePurchaseList()
 
   return (
@@ -113,8 +115,14 @@ export default function DaftarBelanjaPage() {
                   </Badge>
                   <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
                     {list.status === "OPEN" && (
-                      <Button variant="primary" size="sm" onClick={() => markDone(list.id)}>
-                        Selesai
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={async () => {
+                          await completeToPO(list.id)
+                        }}
+                      >
+                        Selesai & Buat PO
                       </Button>
                     )}
                     <Button variant="danger" size="sm" onClick={() => handleDelete(list.id)}>
@@ -232,6 +240,7 @@ export default function DaftarBelanjaPage() {
         loading={loading}
         submitLabel="Buat Daftar Belanja"
         submitDisabled={!form.title || form.items.length === 0}
+        onCreateProduct={createProductForList}
       />
     </div>
   )

@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
       id: `po-${po.id}`,
       type: "expense" as const,
       amount: po.items.reduce((s, i) => s + Number(i.subtotal), 0),
-      description: `PO #${po.id} — ${po.supplier.name} (${po.items.length} item)`,
+      description: `PO #${po.id} — ${po.supplier?.name ?? "Tanpa Supplier"} (${po.items.length} item)`,
       date: po.receivedAt ?? po.createdAt,
       ref: { type: "PURCHASE_ORDER", id: po.id },
     })),

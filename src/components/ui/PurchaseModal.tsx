@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, type ReactNode } from "react"
 import { createPortal } from "react-dom"
-import { X } from "lucide-react"
+import { X, Plus } from "lucide-react"
 import { Modal } from "./Modal"
 import { Button } from "./Button"
 
@@ -25,6 +25,14 @@ export type VariantResult = {
   product: { name: string }
 }
 
+export type QuickProductForm = {
+  name: string
+  category: string
+  variantName: string
+  unit: string
+  costPrice: number
+}
+
 interface PurchaseModalProps {
   open: boolean
   onClose: () => void
@@ -40,6 +48,7 @@ interface PurchaseModalProps {
   loading: boolean
   submitLabel: string
   submitDisabled: boolean
+  onCreateProduct?: (data: QuickProductForm) => Promise<VariantResult | null>
 }
 
 export function PurchaseModal({
@@ -57,11 +66,33 @@ export function PurchaseModal({
   loading,
   submitLabel,
   submitDisabled,
+  onCreateProduct,
 }: PurchaseModalProps) {
   const [search, setSearch] = useState("")
   const [results, setResults] = useState<VariantResult[]>([])
   const [dropOpen, setDropOpen] = useState(false)
   const [dropRect, setDropRect] = useState<DOMRect | null>(null)
+  const [showNewProduct, setShowNewProduct] = useState(false)
+  const [newProductForm, setNewProductForm] = useState<QuickProductForm>({
+    name: "",
+    category: "",
+    variantName: "",
+    unit: "pcs",
+    costPrice: 0,
+  })
+  const [creatingProduct, setCreatingProduct] = useState(false)
+
+  async function handleCreateProduct() {
+    if (!onCreateProduct || !newProductForm.name) return
+    setCreatingProduct(true)
+    const result = await onCreateProduct(newProductForm)
+    setCreatingProduct(false)
+    if (result) {
+      onAddVariant(result)
+      setShowNewProduct(false)
+      setNewProductForm({ name: "", category: "", variantName: "", unit: "pcs", costPrice: 0 })
+    }
+  }
   const searchRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -170,6 +201,71 @@ export function PurchaseModal({
               </div>,
               document.body,
             )}
+
+          {onCreateProduct && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => setShowNewProduct((v) => !v)}
+                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+              >
+                <Plus size={12} />
+                {showNewProduct ? "Batal" : "Produk Baru"}
+              </button>
+
+              {showNewProduct && (
+                <div className="mt-2 p-3 border border-indigo-100 rounded-xl bg-indigo-50 space-y-2">
+                  <input
+                    placeholder="Nama produk *"
+                    value={newProductForm.name}
+                    onChange={(e) => setNewProductForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      placeholder="Kategori"
+                      value={newProductForm.category}
+                      onChange={(e) =>
+                        setNewProductForm((f) => ({ ...f, category: e.target.value }))
+                      }
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                    <input
+                      placeholder="Nama varian (opsional)"
+                      value={newProductForm.variantName}
+                      onChange={(e) =>
+                        setNewProductForm((f) => ({ ...f, variantName: e.target.value }))
+                      }
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                    <input
+                      placeholder="Satuan (pcs)"
+                      value={newProductForm.unit}
+                      onChange={(e) => setNewProductForm((f) => ({ ...f, unit: e.target.value }))}
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                    <input
+                      type="number"
+                      placeholder="Harga beli"
+                      value={newProductForm.costPrice || ""}
+                      onChange={(e) =>
+                        setNewProductForm((f) => ({ ...f, costPrice: Number(e.target.value) }))
+                      }
+                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateProduct}
+                    disabled={!newProductForm.name || creatingProduct}
+                    className="text-xs font-bold bg-indigo-600 text-white rounded-lg px-3 py-1.5 hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+                  >
+                    {creatingProduct ? "Menyimpan..." : "Simpan & Tambah ke Daftar"}
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {items.length > 0 && (

@@ -184,13 +184,13 @@ enum PurchaseOrderStatus {
 
 model PurchaseOrder {
   id         Int                 @id @default(autoincrement())
-  supplierId Int
+  supplierId Int?
   userId     Int
   status     PurchaseOrderStatus @default(DRAFT)
   notes      String?
   createdAt  DateTime            @default(now())
   receivedAt DateTime?
-  supplier   Supplier            @relation(fields: [supplierId], references: [id])
+  supplier   Supplier?           @relation(fields: [supplierId], references: [id])
   user       User                @relation(fields: [userId], references: [id])
   items      PurchaseOrderItem[]
 

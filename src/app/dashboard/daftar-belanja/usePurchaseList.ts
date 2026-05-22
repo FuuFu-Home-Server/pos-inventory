@@ -174,6 +174,65 @@ export function usePurchaseList() {
     load()
   }
 
+  async function completeToPO(id: number): Promise<number | null> {
+    const res = await fetch(`/api/purchase-lists/${id}/complete`, { method: "POST" })
+    if (!res.ok) return null
+    const data: { purchaseOrderId: number } = await res.json()
+    load()
+    return data.purchaseOrderId
+  }
+
+  async function createProductForList(data: {
+    name: string
+    category: string
+    variantName: string
+    unit: string
+    costPrice: number
+  }): Promise<import("@/components/ui/PurchaseModal").VariantResult | null> {
+    const res = await fetch("/api/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: data.name,
+        category: data.category,
+        supplierId: null,
+        variants: [
+          {
+            variantName: data.variantName || "Default",
+            barcode: null,
+            price: data.costPrice,
+            stock: 0,
+            unit: data.unit,
+            lowStockThreshold: 5,
+          },
+        ],
+      }),
+    })
+    if (!res.ok) return null
+    const product: {
+      id: number
+      name: string
+      variants: Array<{
+        id: number
+        variantName: string
+        unit: string
+        price: number
+        costPrice: number | null
+        stock: number
+      }>
+    } = await res.json()
+    const v = product.variants[0]
+    return {
+      id: v.id,
+      variantName: v.variantName,
+      unit: v.unit,
+      price: v.price,
+      costPrice: data.costPrice,
+      stock: 0,
+      product: { name: product.name },
+    }
+  }
+
   return {
     lists,
     expandedId,
@@ -193,5 +252,7 @@ export function usePurchaseList() {
     toggleItemPurchased,
     handleDelete,
     markDone,
+    completeToPO,
+    createProductForList,
   }
 }
