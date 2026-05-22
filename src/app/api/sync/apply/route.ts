@@ -1,15 +1,59 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { z } from "zod"
+
+const variantSchema = z.object({
+  id: z.number().int(),
+  productId: z.number().int(),
+  product: z.object({ name: z.string(), category: z.string() }),
+  variantName: z.string(),
+  barcode: z.string().nullable(),
+  price: z.unknown(),
+  costPrice: z.unknown().nullable(),
+  stock: z.number().int(),
+  lowStockThreshold: z.number().int(),
+  unit: z.string(),
+  isActive: z.boolean(),
+})
+
+const applySchema = z.object({
+  variants: z.array(variantSchema).default([]),
+  paymentMethods: z
+    .array(z.object({ id: z.number().int(), name: z.string(), isActive: z.boolean() }))
+    .default([]),
+  discounts: z
+    .array(
+      z.object({
+        id: z.number().int(),
+        name: z.string(),
+        type: z.string(),
+        value: z.unknown(),
+        scope: z.string(),
+        productId: z.number().int().nullable(),
+        minPurchase: z.unknown().nullable(),
+        isActive: z.boolean(),
+      }),
+    )
+    .default([]),
+  customers: z
+    .array(
+      z.object({
+        id: z.number().int(),
+        name: z.string(),
+        phone: z.string().nullable(),
+        address: z.string().nullable(),
+      }),
+    )
+    .default([]),
+  receiptConfig: z.record(z.unknown()).optional(),
+  syncedAt: z.string().optional(),
+})
 
 export async function POST(req: NextRequest) {
-  const {
-    variants = [],
-    paymentMethods = [],
-    discounts = [],
-    customers = [],
-    receiptConfig,
-    syncedAt,
-  } = await req.json()
+  const body = await req.json()
+  const parsed = applySchema.safeParse(body)
+  if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
+  const { variants, paymentMethods, discounts, customers, receiptConfig, syncedAt } = parsed.data
 
   await prisma.$transaction(async (db) => {
     for (const v of variants) {

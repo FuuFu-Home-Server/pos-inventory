@@ -5,6 +5,9 @@ import { buildTransactionTotals } from "@/lib/transaction-service"
 import { completeTransactionSchema } from "@/lib/validations/transaction"
 
 export async function GET(req: NextRequest) {
+  const session = await auth()
+  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+
   const { searchParams } = new URL(req.url)
   const page = Math.max(1, Number(searchParams.get("page") ?? 1))
   const limit = Math.min(100, Number(searchParams.get("limit") ?? 20))
