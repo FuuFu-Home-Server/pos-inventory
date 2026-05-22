@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
     (transaction_status === "settlement" || transaction_status === "capture") &&
     transaction.status === "PENDING"
   ) {
-    await completePendingTransaction(transaction.id).catch(console.error)
+    await completePendingTransaction(transaction.id).catch(() => {})
   } else if (
     (transaction_status === "expire" ||
       transaction_status === "cancel" ||

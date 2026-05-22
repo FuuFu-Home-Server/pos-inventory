@@ -25,8 +25,16 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ ord
   const mtStatus = await getQrisStatus(orderId)
 
   if (mtStatus.transaction_status === "settlement" || mtStatus.transaction_status === "capture") {
-    const completed = await completePendingTransaction(transaction.id)
-    return NextResponse.json({ status: "settlement", transactionId: completed!.id })
+    try {
+      const completed = await completePendingTransaction(transaction.id)
+      const transactionId = completed?.id ?? transaction.id
+      return NextResponse.json({ status: "settlement", transactionId })
+    } catch (e) {
+      if (e instanceof Error && e.message === "NOT_PENDING") {
+        return NextResponse.json({ status: "settlement", transactionId: transaction.id })
+      }
+      throw e
+    }
   }
 
   if (

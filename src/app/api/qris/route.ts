@@ -6,14 +6,16 @@ import { createQrisCharge, generateOrderId } from "@/lib/midtrans"
 import { z } from "zod"
 
 const schema = z.object({
-  items: z.array(
-    z.object({
-      variantId: z.number().int().positive(),
-      qty: z.number().int().positive(),
-      unitPrice: z.number().nonnegative(),
-      itemDiscountAmt: z.number().nonnegative(),
-    }),
-  ),
+  items: z
+    .array(
+      z.object({
+        variantId: z.number().int().positive(),
+        qty: z.number().int().positive(),
+        unitPrice: z.number().nonnegative(),
+        itemDiscountAmt: z.number().nonnegative(),
+      }),
+    )
+    .min(1),
   customerId: z.number().int().positive().nullable().optional(),
   discountId: z.number().int().positive().nullable().optional(),
   paymentMethodId: z.number().int().positive(),
@@ -78,7 +80,6 @@ export async function POST(req: NextRequest) {
     qrString = charge.qr_string
   } catch (err) {
     await prisma.transaction.delete({ where: { id: transaction.id } })
-    console.error("Midtrans charge error:", err)
     return NextResponse.json({ error: "Gagal membuat QRIS" }, { status: 502 })
   }
 
