@@ -7,9 +7,11 @@ dist/
 build/
 out/
 output-dir/
+electron-dist/
 .superpowers/
 source/
 .next/
+docs/
 
 # Environment variables
 .env

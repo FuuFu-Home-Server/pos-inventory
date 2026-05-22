@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky",
-    "electron:dev": "concurrently -k \"cross-env ELECTRON_DEV=true next dev\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron:dev": "concurrently -k \"cross-env ELECTRON_DEV=true next dev\" \"wait-on http://localhost:3000 --timeout 30000 && electron .\"",
     "electron:build": "next build && tsc --project electron/tsconfig.json && electron-builder",
     "electron:pack": "electron-builder --dir"
   },
