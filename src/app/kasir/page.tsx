@@ -52,8 +52,8 @@ function Clock() {
     return () => clearInterval(id)
   }, [])
   return (
-    <div className="text-slate-400 text-xs tabular-nums">
-      <span>
+    <div className="text-slate-400 text-xs tabular-nums flex items-center gap-1.5">
+      <span className="hidden sm:inline">
         {now.toLocaleDateString("id-ID", {
           weekday: "short",
           day: "numeric",
@@ -61,7 +61,7 @@ function Clock() {
           year: "numeric",
         })}
       </span>
-      <span className="mx-1.5 text-slate-600">·</span>
+      <span className="hidden sm:inline text-slate-600">·</span>
       <span className="font-mono text-slate-300">
         {now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
       </span>
@@ -80,13 +80,9 @@ export default function KasirPage() {
   const [loading, setLoading] = useState(false)
   const [initialLoading, setInitialLoading] = useState(true)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
-  const [skipPrint, setSkipPrint] = useState(false)
+  const [skipPrint, setSkipPrint] = useState(true)
   const [activeTab, setActiveTab] = useState<"cart" | "payment">("cart")
-  const [qrisSession, setQrisSession] = useState<{
-    qrString: string
-    orderId: string
-    transactionId: number
-  } | null>(null)
+  const [qrisOpen, setQrisOpen] = useState(false)
   const receiptConfigRef = useRef<ReceiptData["config"] | null>(null)
   const serialPortRef = useRef<SerialPort | null>(null)
   const [printerConnected, setPrinterConnected] = useState(false)
@@ -172,81 +168,65 @@ export default function KasirPage() {
     return !!method && method.name.toLowerCase().includes("qris")
   }
 
-  async function handleQrisCheckout() {
+  function handleQrisCheckout() {
     if (store.items.length === 0 || !store.paymentMethodId) return
-    setLoading(true)
-    try {
-      const res = await fetch("/api/qris", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: store.items.map((i) => ({
-            variantId: i.variantId,
-            qty: i.qty,
-            unitPrice: i.price,
-            itemDiscountAmt: i.itemDiscountAmt,
-          })),
-          customerId: store.customerId,
-          discountId: store.discountId,
-          paymentMethodId: store.paymentMethodId,
-        }),
-      })
-      if (!res.ok) {
-        const err = await res.json()
-        setToast({
-          message: (err as { error?: string }).error ?? "Gagal membuat QRIS",
-          type: "error",
-        })
-        return
-      }
-      const data: { transactionId: number; orderId: string; qrString: string } = await res.json()
-      setQrisSession(data)
-    } finally {
-      setLoading(false)
-    }
+    setQrisOpen(true)
   }
 
-  async function handleQrisSuccess(transactionId: number) {
-    setQrisSession(null)
+  async function handleQrisConfirm() {
+    if (!store.paymentMethodId || store.items.length === 0) return
+    setLoading(true)
+    const res = await fetch("/api/transactions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        items: store.items.map((i) => ({
+          variantId: i.variantId,
+          qty: i.qty,
+          unitPrice: i.price,
+          itemDiscountAmt: i.itemDiscountAmt,
+        })),
+        customerId: store.customerId,
+        discountId: store.discountId,
+        paymentMethodId: store.paymentMethodId,
+        paymentAmount: store.getTotal(),
+      }),
+    })
+    setLoading(false)
+    if (!res.ok) {
+      const err = await res.json()
+      setToast({ message: (err as { error?: string }).error ?? "Transaksi gagal", type: "error" })
+      return
+    }
+    const tx = await res.json()
+    setQrisOpen(false)
     if (!skipPrint) {
-      const res = await fetch(`/api/transactions/${transactionId}`)
-      if (res.ok) {
-        const tx = await res.json()
-        const config = receiptConfigRef.current!
-        const receipt: ReceiptData = {
-          transactionId: tx.id,
-          createdAt: tx.createdAt,
-          cashierName: session?.user?.name ?? "-",
-          customerName: tx.customer?.name,
-          items: tx.items.map(
-            (item: {
-              productVariant: { product: { name: string }; variantName: string; unit: string }
-              qty: number
-              unitPrice: number | string
-              itemDiscountAmt: number | string
-              subtotal: number | string
-            }) => ({
-              productName: item.productVariant.product.name,
-              variantName: item.productVariant.variantName,
-              unit: item.productVariant.unit,
-              qty: item.qty,
-              unitPrice: Number(item.unitPrice),
-              itemDiscountAmt: Number(item.itemDiscountAmt),
-              subtotal: Number(item.subtotal),
-            }),
-          ),
-          subtotal: Number(tx.subtotal),
-          discountAmount: Number(tx.discountAmount),
-          total: Number(tx.total),
-          paymentAmount: Number(tx.paymentAmount),
-          changeAmount: Number(tx.changeAmount),
-          paymentMethod: tx.paymentMethod.name,
-          config,
-        }
-        setReceiptData(receipt)
-      }
+      const config = receiptConfigRef.current!
+      setReceiptData({
+        transactionId: tx.id,
+        createdAt: tx.createdAt,
+        cashierName: session?.user?.name ?? "-",
+        customerName: tx.customer?.name,
+        items: tx.items.map((item: any) => ({
+          productName: item.productVariant.product.name,
+          variantName: item.productVariant.variantName,
+          unit: item.productVariant.unit,
+          qty: item.qty,
+          unitPrice: Number(item.unitPrice),
+          itemDiscountAmt: Number(item.itemDiscountAmt),
+          subtotal: Number(item.subtotal),
+        })),
+        subtotal: Number(tx.subtotal),
+        discountAmount: Number(tx.discountAmount),
+        total: Number(tx.total),
+        paymentAmount: Number(tx.paymentAmount),
+        changeAmount: Number(tx.changeAmount),
+        paymentMethod: tx.paymentMethod.name,
+        config,
+      })
     }
     resetPos()
+    setActiveTab("cart")
     setToast({ message: "Pembayaran QRIS berhasil", type: "success" })
     document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
   }
@@ -400,6 +380,7 @@ export default function KasirPage() {
     }
 
     resetPos()
+    setActiveTab("cart")
     setToast({ message: "Transaksi berhasil disimpan", type: "success" })
     document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
   }
@@ -466,10 +447,6 @@ export default function KasirPage() {
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <span className="font-bold text-white text-sm">Kasir</span>
           </div>
-          <Clock />
-        </div>
-        <div className="flex items-center gap-4">
-          <span className="text-sm text-slate-400">{session?.user?.name}</span>
         </div>
       </header>
 
@@ -571,6 +548,14 @@ export default function KasirPage() {
         </div>
       </div>
 
+      {/* Footer */}
+      <footer className="bg-slate-950 border-t border-slate-800 px-5 py-1.5 relative flex items-center shrink-0">
+        <span className="text-xs text-slate-500">{session?.user?.name}</span>
+        <div className="absolute left-1/2 -translate-x-1/2">
+          <Clock />
+        </div>
+      </footer>
+
       {/* Printer FAB */}
       <button
         onClick={printerConnected ? disconnectPrinter : connectPrinter}
@@ -598,16 +583,13 @@ export default function KasirPage() {
         )}
       </button>
 
-      {qrisSession && (
+      {qrisOpen && (
         <QrisModal
-          qrString={qrisSession.qrString}
-          orderId={qrisSession.orderId}
+          qrString={process.env.NEXT_PUBLIC_QRIS_STRING ?? ""}
           total={store.getTotal()}
-          onSuccess={handleQrisSuccess}
-          onCancel={() => {
-            setQrisSession(null)
-            setToast({ message: "Pembayaran QRIS dibatalkan", type: "info" })
-          }}
+          onConfirm={handleQrisConfirm}
+          onCancel={() => setQrisOpen(false)}
+          loading={loading}
         />
       )}
 

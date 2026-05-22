@@ -10,6 +10,7 @@ const securityHeaders = [
 ]
 
 const nextConfig: NextConfig = {
+  allowedDevOrigins: ["100.81.214.78"],
   async headers() {
     return [{ source: "/(.*)", headers: securityHeaders }]
   },
