@@ -79,7 +79,7 @@ async function performSync() {
 }
 
 async function flushTransactionQueue() {
-  const res = await fetch(`${localBaseUrl}/api/transactions?syncStatus=PENDING&limit=100`)
+  const res = await fetch(`${localBaseUrl}/api/sync/pending?limit=100`)
   if (!res.ok) return
   const { transactions } = await res.json()
   if (!transactions?.length) return
