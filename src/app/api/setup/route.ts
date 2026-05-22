@@ -4,9 +4,9 @@ import { hash } from "bcryptjs"
 import { z } from "zod"
 
 const setupSchema = z.object({
-  name: z.string().min(2),
+  name: z.string().min(1),
   email: z.string().email(),
-  password: z.string().min(6),
+  password: z.string().min(8),
 })
 
 export async function GET() {
@@ -27,13 +27,18 @@ export async function POST(req: NextRequest) {
   }
 
   const { name, email, password } = parsed.data
-  const passwordHash = await hash(password, 12)
+  const passwordHash = await hash(password, 10)
 
-  let adminRole = await prisma.role.findUnique({ where: { name: "ADMIN" } })
-  if (!adminRole) {
-    adminRole = await prisma.role.create({ data: { name: "ADMIN" } })
-    await prisma.role.create({ data: { name: "EMPLOYEE" } })
-  }
+  const adminRole = await prisma.role.upsert({
+    where: { name: "ADMIN" },
+    update: {},
+    create: { name: "ADMIN" },
+  })
+  await prisma.role.upsert({
+    where: { name: "EMPLOYEE" },
+    update: {},
+    create: { name: "EMPLOYEE" },
+  })
 
   await prisma.user.create({
     data: {
@@ -46,5 +51,5 @@ export async function POST(req: NextRequest) {
     },
   })
 
-  return NextResponse.json({ ok: true }, { status: 201 })
+  return NextResponse.json({ message: "Setup complete" }, { status: 201 })
 }

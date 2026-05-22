@@ -66,7 +66,7 @@ export default function SetupPage() {
               value={form.password}
               onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
               required
-              minLength={6}
+              minLength={8}
             />
           </div>
           {error && <p className="text-red-400 text-sm">{error}</p>}
