@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, FormEvent } from "react"
+import { useState, useEffect, FormEvent } from "react"
 import { signIn } from "next-auth/react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/Button"
@@ -9,6 +9,16 @@ import { ShoppingCart } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
+
+  useEffect(() => {
+    fetch("/api/setup")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.needsSetup) router.replace("/setup")
+      })
+      .catch(() => {})
+  }, [router])
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")

@@ -14,13 +14,24 @@ const ADMIN_ONLY_PREFIXES = [
   "/api/import",
 ]
 
-const PUBLIC_PATHS = ["/login", "/api/auth", "/api/webhooks/midtrans"]
+const PUBLIC_PATHS = [
+  "/login",
+  "/api/auth",
+  "/api/webhooks/midtrans",
+  "/setup",
+  "/api/setup",
+  "/api/health",
+  "/api/sync",
+]
 
 export default auth((req) => {
   const { pathname } = req.nextUrl
   const session = req.auth
 
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
+    if (pathname.startsWith("/setup") && session?.user) {
+      return NextResponse.redirect(new URL("/kasir", req.url))
+    }
     return NextResponse.next()
   }
 
