@@ -33,12 +33,12 @@ export default function SyncFailuresPage() {
   }, [])
 
   async function dismiss(id: number) {
-    await fetch(`/api/transactions/${id}`, {
+    const res = await fetch(`/api/transactions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ syncStatus: "DISMISSED" }),
     })
-    setTransactions((prev) => prev.filter((t) => t.id !== id))
+    if (res.ok) setTransactions((prev) => prev.filter((t) => t.id !== id))
   }
 
   if (loading) {
