@@ -113,7 +113,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
            AND productVariantId IN (
              SELECT pv.id FROM ProductVariant pv
              JOIN Product p ON p.id = pv.productId
-             WHERE p.name LIKE ? OR pv.variantName LIKE ?
+             WHERE LOWER(p.name) LIKE LOWER(?) OR LOWER(pv.variantName) LIKE LOWER(?)
            )`,
         qty,
         qty,
