@@ -1,9 +1,10 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "windows", "debian-openssl-3.0.x"]
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -14,18 +15,19 @@ model Role {
 }
 
 model User {
-  id             Int             @id @default(autoincrement())
-  name           String
-  email          String          @unique
-  passwordHash   String
-  roleId         Int
-  isActive       Boolean         @default(true)
-  createdAt      DateTime        @default(now())
-  role           Role            @relation(fields: [roleId], references: [id])
-  transactions   Transaction[]
-  purchaseOrders PurchaseOrder[]
-  stockOpnames   StockOpname[]
-  importLogs     ImportLog[]
+  id                  Int             @id @default(autoincrement())
+  name                String
+  email               String          @unique
+  passwordHash        String
+  roleId              Int
+  isActive            Boolean         @default(true)
+  isDefaultCredential Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  role                Role            @relation(fields: [roleId], references: [id])
+  transactions        Transaction[]
+  purchaseOrders      PurchaseOrder[]
+  stockOpnames        StockOpname[]
+  importLogs          ImportLog[]
 }
 
 model Supplier {
@@ -78,8 +80,8 @@ model ProductVariant {
   productId          Int
   variantName        String
   barcode            String?             @unique
-  price              Decimal             @db.Decimal(12, 2)
-  costPrice          Decimal?            @db.Decimal(12, 2)
+  price              Decimal
+  costPrice          Decimal?
   stock              Int                 @default(0)
   lowStockThreshold  Int                 @default(5)
   unit               String
@@ -103,24 +105,14 @@ model PaymentMethod {
   transactions Transaction[]
 }
 
-enum DiscountType {
-  PERCENT
-  FLAT
-}
-
-enum DiscountScope {
-  TRANSACTION
-  PRODUCT
-}
-
 model Discount {
   id          Int           @id @default(autoincrement())
   name        String
-  type        DiscountType
-  value       Decimal       @db.Decimal(12, 2)
-  scope       DiscountScope
+  type        String
+  value       Decimal
+  scope       String
   productId   Int?
-  minPurchase Decimal?      @db.Decimal(12, 2)
+  minPurchase Decimal?
   isActive    Boolean       @default(true)
   validFrom   DateTime?
   validUntil  DateTime?
@@ -131,27 +123,23 @@ model Discount {
   @@index([scope, productId])
 }
 
-enum TransactionStatus {
-  PENDING
-  COMPLETED
-  CANCELLED
-  REFUNDED
-}
-
 model Transaction {
-  id              Int               @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   userId          Int
   customerId      Int?
   discountId      Int?
   paymentMethodId Int
-  discountAmount  Decimal           @default(0) @db.Decimal(12, 2)
-  subtotal        Decimal           @db.Decimal(12, 2)
-  total           Decimal           @db.Decimal(12, 2)
-  paymentAmount   Decimal           @db.Decimal(12, 2)
-  changeAmount    Decimal           @default(0) @db.Decimal(12, 2)
-  midtransOrderId String?           @unique
-  status          TransactionStatus
-  createdAt       DateTime          @default(now())
+  discountAmount  Decimal  @default(0)
+  subtotal        Decimal
+  total           Decimal
+  paymentAmount   Decimal
+  changeAmount    Decimal  @default(0)
+  midtransOrderId String?  @unique
+  status          String
+  syncStatus      String   @default("SYNCED")
+  syncFailReason  String?
+  localId         String?  @unique
+  createdAt       DateTime @default(now())
   user            User              @relation(fields: [userId], references: [id])
   customer        Customer?         @relation(fields: [customerId], references: [id])
   discount        Discount?         @relation(fields: [discountId], references: [id])
@@ -160,6 +148,7 @@ model Transaction {
 
   @@index([createdAt])
   @@index([userId])
+  @@index([syncStatus])
 }
 
 model TransactionItem {
@@ -167,28 +156,22 @@ model TransactionItem {
   transactionId    Int
   productVariantId Int
   qty              Int
-  unitPrice        Decimal        @db.Decimal(12, 2)
-  itemDiscountAmt  Decimal        @default(0) @db.Decimal(12, 2)
-  subtotal         Decimal        @db.Decimal(12, 2)
+  unitPrice        Decimal
+  itemDiscountAmt  Decimal        @default(0)
+  subtotal         Decimal
   transaction      Transaction    @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
 
   @@index([transactionId])
 }
 
-enum PurchaseOrderStatus {
-  DRAFT
-  RECEIVED
-  CANCELLED
-}
-
 model PurchaseOrder {
-  id         Int                 @id @default(autoincrement())
+  id         Int      @id @default(autoincrement())
   supplierId Int?
   userId     Int
-  status     PurchaseOrderStatus @default(DRAFT)
+  status     String   @default("DRAFT")
   notes      String?
-  createdAt  DateTime            @default(now())
+  createdAt  DateTime @default(now())
   receivedAt DateTime?
   supplier   Supplier?           @relation(fields: [supplierId], references: [id])
   user       User                @relation(fields: [userId], references: [id])
@@ -202,28 +185,18 @@ model PurchaseOrderItem {
   purchaseOrderId  Int
   productVariantId Int
   qty              Int
-  unitCost         Decimal        @db.Decimal(12, 2)
-  subtotal         Decimal        @db.Decimal(12, 2)
+  unitCost         Decimal
+  subtotal         Decimal
   purchaseOrder    PurchaseOrder  @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   productVariant   ProductVariant @relation(fields: [productVariantId], references: [id])
 }
 
-enum StockOpnameStatus {
-  DRAFT
-  CONFIRMED
-}
-
-enum PurchaseListStatus {
-  OPEN
-  DONE
-}
-
 model PurchaseList {
-  id        Int                @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   title     String
   notes     String?
-  status    PurchaseListStatus @default(OPEN)
-  createdAt DateTime           @default(now())
+  status    String   @default("OPEN")
+  createdAt DateTime @default(now())
   items     PurchaseListItem[]
 }
 
@@ -236,18 +209,18 @@ model PurchaseListItem {
   unit             String
   qty              Int
   qtyPerUnit       Int              @default(1)
-  unitCost         Decimal          @db.Decimal(12, 2)
+  unitCost         Decimal
   isPurchased      Boolean          @default(false)
   purchaseList     PurchaseList     @relation(fields: [purchaseListId], references: [id], onDelete: Cascade)
   productVariant   ProductVariant?  @relation(fields: [productVariantId], references: [id])
 }
 
 model StockOpname {
-  id        Int               @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   userId    Int
-  status    StockOpnameStatus @default(DRAFT)
+  status    String   @default("DRAFT")
   notes     String?
-  createdAt DateTime          @default(now())
+  createdAt DateTime @default(now())
   user      User              @relation(fields: [userId], references: [id])
   items     StockOpnameItem[]
 }
@@ -264,16 +237,17 @@ model StockOpnameItem {
 }
 
 model ReceiptConfig {
-  id          Int      @id @default(1)
-  storeName   String   @default("Toko Saya")
-  address     String?
-  phone       String?
-  headerText  String?
-  footerText  String?
-  showTax     Boolean  @default(false)
-  showCashier Boolean  @default(true)
-  paperWidth  Int      @default(80)
-  updatedAt   DateTime @updatedAt
+  id               Int      @id @default(1)
+  storeName        String   @default("Toko Saya")
+  address          String?
+  phone            String?
+  headerText       String?
+  footerText       String?
+  showTax          Boolean  @default(false)
+  showCashier      Boolean  @default(true)
+  paperWidth       Int      @default(80)
+  staticQrisImage  String?
+  updatedAt        DateTime @updatedAt
 }
 
 model ImportLog {
@@ -285,4 +259,9 @@ model ImportLog {
   errorMessage    String?
   createdAt       DateTime @default(now())
   user            User     @relation(fields: [userId], references: [id])
+}
+
+model SyncMeta {
+  storeName  String    @id
+  lastSyncAt DateTime?
 }
