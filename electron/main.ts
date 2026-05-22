@@ -1,6 +1,7 @@
-import { app, BrowserWindow, ipcMain } from "electron"
+import { app, BrowserWindow, ipcMain, dialog } from "electron"
 import path from "path"
 import { spawn, ChildProcess } from "child_process"
+import { z } from "zod"
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 import ElectronStore from "electron-store"
 
@@ -27,13 +28,16 @@ function runPrismaPush(): Promise<void> {
       env: { ...process.env, DATABASE_URL: `file:${dbPath}` },
       stdio: "pipe",
     })
-    child.on("close", () => resolve())
-    child.on("error", () => resolve())
+    child.on("close", (code) => {
+      if (code === 0) resolve()
+      else reject(new Error(`prisma db push exited with code ${code}`))
+    })
+    child.on("error", (err) => reject(err))
   })
 }
 
 function startNextServer(): Promise<void> {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const dbPath = getDbPath()
     const appRoot = isDev ? process.cwd() : path.join(process.resourcesPath, "app")
 
@@ -73,11 +77,11 @@ function startNextServer(): Promise<void> {
       }
     })
 
-    nextProcess.on("error", () => {
+    nextProcess.on("error", (err) => {
       if (!resolved) {
         resolved = true
         clearTimeout(fallbackTimer)
-        resolve()
+        reject(err)
       }
     })
   })
@@ -105,16 +109,29 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
-  await runPrismaPush()
-  await startNextServer()
+  try {
+    await runPrismaPush()
+    await startNextServer()
+  } catch (err) {
+    await dialog.showMessageBox({
+      type: "error",
+      title: "Gagal memulai aplikasi",
+      message:
+        err instanceof Error ? err.message : "Kesalahan tidak diketahui saat memulai server.",
+      buttons: ["Keluar"],
+    })
+    app.quit()
+    return
+  }
+
   createWindow()
 
   const { startSync } = await import("./sync")
   startSync(() => mainWindow?.webContents.send("sync:status"))
 
-  if (!isDev) {
+  if (!isDev && mainWindow) {
     const { setupUpdater } = await import("./updater")
-    setupUpdater(mainWindow!)
+    setupUpdater(mainWindow)
   }
 })
 
@@ -143,8 +160,10 @@ ipcMain.handle("config:getRemoteUrl", () => {
   return store.get("remoteUrl") as string
 })
 
-ipcMain.handle("config:setRemoteUrl", async (_event, url: string) => {
-  store.set("remoteUrl", url)
+ipcMain.handle("config:setRemoteUrl", async (_event, url: unknown) => {
+  const parsed = z.string().url().safeParse(url)
+  if (!parsed.success) return { error: "URL tidak valid" }
+  store.set("remoteUrl", parsed.data)
   const { setRemoteUrl } = await import("./sync")
-  setRemoteUrl(url)
+  setRemoteUrl(parsed.data)
 })
