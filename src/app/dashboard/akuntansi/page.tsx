@@ -12,7 +12,7 @@ export default function AkuntansiPage() {
   return (
     <div className="p-4 md:p-6">
       <div className="mb-5">
-        <h1 className="text-2xl font-black text-gray-900">Akuntansi</h1>
+        <h1 className="text-xl font-black md:text-2xl text-gray-900">Akuntansi</h1>
         <p className="text-sm text-gray-500 mt-0.5">Arus uang masuk dan keluar</p>
       </div>
 
@@ -26,7 +26,9 @@ export default function AkuntansiPage() {
               <Wallet size={20} className="opacity-80" />
               <span className="text-xs font-semibold opacity-70">SALDO</span>
             </div>
-            <p className="text-2xl font-black tabular-nums">{formatRupiah(data.balance)}</p>
+            <p className="text-xl font-black md:text-2xl tabular-nums">
+              {formatRupiah(data.balance)}
+            </p>
             <p className="text-xs opacity-70 mt-1">{data.balance >= 0 ? "Surplus" : "Defisit"}</p>
           </div>
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
@@ -36,7 +38,7 @@ export default function AkuntansiPage() {
               </div>
               <ArrowUpRight size={14} className="text-emerald-400" />
             </div>
-            <p className="text-xl font-black text-gray-900 tabular-nums">
+            <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">
               {formatRupiah(data.totalIncome)}
             </p>
             <p className="text-xs text-gray-500 mt-1">Total Pemasukan</p>
@@ -48,7 +50,7 @@ export default function AkuntansiPage() {
               </div>
               <ArrowDownLeft size={14} className="text-red-400" />
             </div>
-            <p className="text-xl font-black text-gray-900 tabular-nums">
+            <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">
               {formatRupiah(data.totalExpense)}
             </p>
             <p className="text-xs text-gray-500 mt-1">Total Pengeluaran</p>

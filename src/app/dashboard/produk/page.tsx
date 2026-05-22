@@ -151,7 +151,7 @@ export default function ProdukPage() {
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Produk</h1>
+          <h1 className="text-xl font-black md:text-2xl text-gray-900">Produk</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} produk terdaftar</p>
         </div>
         <div className="flex gap-2">
@@ -201,14 +201,14 @@ export default function ProdukPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4 mb-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
         <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
           <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center shrink-0">
             <Package size={16} className="text-indigo-600" />
           </div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Total Produk</p>
-            <p className="text-xl font-black text-gray-900 tabular-nums">{total}</p>
+            <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">{total}</p>
           </div>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
@@ -217,7 +217,9 @@ export default function ProdukPage() {
           </div>
           <div>
             <p className="text-xs text-gray-500 font-medium">Varian Aktif</p>
-            <p className="text-xl font-black text-gray-900 tabular-nums">{stats.activeVariants}</p>
+            <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">
+              {stats.activeVariants}
+            </p>
           </div>
         </div>
         <div
@@ -234,7 +236,7 @@ export default function ProdukPage() {
           <div>
             <p className="text-xs text-gray-500 font-medium">Stok Menipis</p>
             <p
-              className={`text-xl font-black tabular-nums ${stats.lowStockCount > 0 ? "text-amber-700" : "text-gray-900"}`}
+              className={`text-base font-black tabular-nums md:text-xl ${stats.lowStockCount > 0 ? "text-amber-700" : "text-gray-900"}`}
             >
               {stats.lowStockCount}
             </p>

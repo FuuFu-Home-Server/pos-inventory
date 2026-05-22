@@ -8,10 +8,12 @@ import { useEffect, useState } from "react"
 
 type PaymentMethod = { id: number; name: string }
 type Discount = { id: number; name: string; type: string; value: number; scope: string }
+type Customer = { id: number; name: string; phone: string | null }
 
 interface PaymentPanelProps {
   paymentMethods: PaymentMethod[]
   discounts: Discount[]
+  customers: Customer[]
   onCheckout: () => void
   loading: boolean
   skipPrint: boolean
@@ -25,6 +27,7 @@ const DISABLED_METHODS = ["transfer", "debit", "kredit", "credit"]
 export function PaymentPanel({
   paymentMethods,
   discounts,
+  customers,
   onCheckout,
   loading,
   skipPrint,
@@ -82,6 +85,26 @@ export function PaymentPanel({
           </p>
         )}
       </div>
+
+      {customers.length > 0 && (
+        <div>
+          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5 block">
+            Pelanggan
+          </label>
+          <select
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            value={store.customerId ?? ""}
+            onChange={(e) => store.setCustomer(e.target.value ? Number(e.target.value) : null)}
+          >
+            <option value="">Tanpa pelanggan</option>
+            {customers.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {discounts.length > 0 && (
         <div>

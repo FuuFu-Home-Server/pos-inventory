@@ -14,7 +14,7 @@ export function DashboardShell({ userName, userRole, children }: DashboardShellP
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   return (
-    <div className="min-h-screen flex bg-slate-50">
+    <div className="h-screen overflow-hidden flex bg-slate-50">
       <Sidebar
         userName={userName}
         userRole={userRole}

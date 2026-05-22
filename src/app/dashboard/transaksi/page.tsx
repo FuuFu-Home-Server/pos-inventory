@@ -50,7 +50,7 @@ export default function TransaksiPage() {
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Riwayat Transaksi</h1>
+          <h1 className="text-xl font-black md:text-2xl text-gray-900">Riwayat Transaksi</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} transaksi</p>
         </div>
       </div>
@@ -58,21 +58,21 @@ export default function TransaksiPage() {
       <div className="grid grid-cols-3 gap-4 mb-5">
         <div className="bg-white border border-emerald-100 rounded-xl p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">Total Pendapatan</p>
-          <p className="text-xl font-black text-emerald-700 tabular-nums">
+          <p className="text-base font-black text-emerald-700 tabular-nums md:text-xl">
             {formatRupiah(totalRevenue)}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">{completedCount} transaksi selesai</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">Total Transaksi</p>
-          <p className="text-xl font-black text-gray-900 tabular-nums">
+          <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">
             {total.toLocaleString("id-ID")}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">semua status</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-xs text-gray-500 font-medium mb-1">Rata-rata / Transaksi</p>
-          <p className="text-xl font-black text-gray-900 tabular-nums">
+          <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">
             {formatRupiah(completedCount > 0 ? totalRevenue / completedCount : 0)}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">per checkout selesai</p>

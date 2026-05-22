@@ -118,7 +118,9 @@ export default function StockOpnamePage() {
             >
               ← Kembali
             </button>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Opname #{meta.id}</h1>
+            <h1 className="text-xl font-bold md:text-2xl text-gray-900">
+              Detail Opname #{meta.id}
+            </h1>
             <p className="text-sm text-gray-500">
               {meta.user.name} · {formatDate(meta.createdAt)}
             </p>
@@ -395,7 +397,7 @@ export default function StockOpnamePage() {
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
-        <h1 className="text-2xl font-bold text-gray-900">Stock Opname</h1>
+        <h1 className="text-xl font-bold md:text-2xl text-gray-900">Stock Opname</h1>
         <Button onClick={handleCreate} loading={loading}>
           + Buat Opname Baru
         </Button>

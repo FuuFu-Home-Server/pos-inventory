@@ -38,10 +38,23 @@ function StatCard({
   accent?: string
 }) {
   return (
-    <div className={`bg-white border rounded-xl p-5 shadow-sm ${accent ?? "border-gray-200"}`}>
-      <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold mb-2">{label}</p>
-      <p className={`text-2xl font-black tabular-nums ${color}`}>{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div
+      className={`bg-white border rounded-xl p-4 md:p-5 shadow-sm flex items-center justify-between gap-3 md:block ${accent ?? "border-gray-200"}`}
+    >
+      <div className="min-w-0">
+        <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold md:mb-2 truncate">
+          {label}
+        </p>
+        {sub && <p className="text-xs text-gray-400 mt-0.5 md:hidden truncate">{sub}</p>}
+      </div>
+      <div className="text-right md:text-left shrink-0">
+        <p
+          className={`text-base font-black tabular-nums md:text-lg lg:text-xl xl:text-2xl ${color}`}
+        >
+          {value}
+        </p>
+        {sub && <p className="text-xs text-gray-400 mt-1 hidden md:block">{sub}</p>}
+      </div>
     </div>
   )
 }
@@ -54,7 +67,7 @@ export default function LaporanPage() {
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Laporan Penjualan</h1>
+          <h1 className="text-xl font-black md:text-2xl text-gray-900">Laporan Penjualan</h1>
           <p className="text-sm text-gray-500 mt-0.5">Analisis performa toko</p>
         </div>
         <div className="flex gap-1 bg-gray-100 rounded-xl p-1">
@@ -83,7 +96,7 @@ export default function LaporanPage() {
 
       {report && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard
               label="Total Pendapatan"
               value={formatRupiah(report.summary.totalRevenue)}

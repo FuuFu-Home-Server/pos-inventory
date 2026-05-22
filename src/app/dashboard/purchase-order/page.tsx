@@ -48,7 +48,7 @@ export default function PurchaseOrderPage() {
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-5">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Purchase Order</h1>
+          <h1 className="text-xl font-black md:text-2xl text-gray-900">Purchase Order</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} PO</p>
         </div>
         <Button onClick={() => setModalOpen(true)}>+ Buat PO</Button>

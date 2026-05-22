@@ -34,7 +34,7 @@ export default function SupplierPage() {
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
         <div>
-          <h1 className="text-2xl font-black text-gray-900">Supplier</h1>
+          <h1 className="text-xl font-black md:text-2xl text-gray-900">Supplier</h1>
           <p className="text-sm text-gray-500 mt-0.5">{total} supplier terdaftar</p>
         </div>
         <Button onClick={openCreate}>+ Tambah Supplier</Button>
@@ -46,7 +46,7 @@ export default function SupplierPage() {
         </div>
         <div>
           <p className="text-xs text-gray-500 font-medium">Total Supplier</p>
-          <p className="text-xl font-black text-gray-900 tabular-nums">{total}</p>
+          <p className="text-base font-black text-gray-900 tabular-nums md:text-xl">{total}</p>
         </div>
       </div>
 

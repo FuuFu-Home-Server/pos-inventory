@@ -5,7 +5,6 @@ import { CartPanel } from "@/components/pos/CartPanel"
 import { PaymentPanel } from "@/components/pos/PaymentPanel"
 import { ProductSearch } from "@/components/pos/ProductSearch"
 import { ReceiptTemplate, type ReceiptData } from "@/components/receipt/ReceiptTemplate"
-import { Select } from "@/components/ui/Select"
 import { Toast } from "@/components/ui/Toast"
 import { cn } from "@/lib/utils"
 import { usePosStore } from "@/store/pos"
@@ -153,6 +152,13 @@ export default function KasirPage() {
 
   const checkoutRef = useRef<() => void>(() => {})
   const umumIdRef = useRef<number | null>(null)
+  const tunaiIdRef = useRef<number | null>(null)
+
+  function resetPos() {
+    store.reset()
+    if (umumIdRef.current) store.setCustomer(umumIdRef.current)
+    if (tunaiIdRef.current) store.setPaymentMethod(tunaiIdRef.current)
+  }
 
   useEffect(() => {
     Promise.all([
@@ -162,7 +168,10 @@ export default function KasirPage() {
       fetch("/api/receipt-config").then((r) => r.json()),
     ]).then(async ([pms, disc, cust, config]) => {
       receiptConfigRef.current = config
-      setPaymentMethods(pms.filter((p: any) => p.isActive !== false))
+      const activePms: PaymentMethod[] = pms.filter((p: any) => p.isActive !== false)
+      setPaymentMethods(activePms)
+      const tunai = activePms.find((pm) => pm.name.toLowerCase().includes("tunai"))
+      tunaiIdRef.current = (tunai ?? activePms[0])?.id ?? null
       setDiscounts(disc.discounts ?? [])
 
       let customerList: Customer[] = cust.customers ?? []
@@ -295,8 +304,7 @@ export default function KasirPage() {
       setReceiptData(receipt)
     }
 
-    store.reset()
-    if (umumIdRef.current) store.setCustomer(umumIdRef.current)
+    resetPos()
     setToast({ message: "Transaksi berhasil disimpan", type: "success" })
     document.querySelector<HTMLInputElement>("[data-search-input]")?.focus()
   }
@@ -330,8 +338,7 @@ export default function KasirPage() {
       }
       if (e.key === "Delete" && !isEditable && e.ctrlKey) {
         e.preventDefault()
-        store.reset()
-        if (umumIdRef.current) store.setCustomer(umumIdRef.current)
+        resetPos()
         return
       }
     }
@@ -367,39 +374,32 @@ export default function KasirPage() {
           <Clock />
         </div>
         <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-3 text-xs text-slate-500">
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
-              /
-            </kbd>
-            <span>Cari</span>
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
-              F2
-            </kbd>
-            <span>Bayar</span>
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
-              F8
-            </kbd>
-            <span>Selesai</span>
-            <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
-              Esc
-            </kbd>
-            <span>Kembali</span>
-          </div>
-          <button
-            onClick={printerConnected ? disconnectPrinter : connectPrinter}
-            title={printerConnected ? "Putuskan printer" : "Hubungkan printer ESC/POS"}
-            className={`flex items-center gap-1.5 text-xs px-2.5 py-1.5 rounded-lg border transition-colors ${
-              printerConnected
-                ? "border-emerald-700 text-emerald-400 hover:bg-emerald-950/40"
-                : "border-slate-700 text-slate-500 hover:border-slate-500 hover:text-slate-300"
-            }`}
-          >
-            {printerConnected ? <Printer size={13} /> : <Unplug size={13} />}
-            {printerConnected ? "Printer" : "Hubungkan"}
-          </button>
           <span className="text-sm text-slate-400">{session?.user?.name}</span>
         </div>
       </header>
+
+      {/* Shortcut hint bar — lg+ only */}
+      <div className="hidden lg:flex items-center gap-3 px-5 py-1.5 bg-slate-950 border-b border-slate-800 text-xs text-slate-500 shrink-0">
+        <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+          /
+        </kbd>
+        <span>Cari</span>
+        <span className="text-slate-700">·</span>
+        <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+          F2
+        </kbd>
+        <span>Bayar</span>
+        <span className="text-slate-700">·</span>
+        <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+          F8
+        </kbd>
+        <span>Selesai</span>
+        <span className="text-slate-700">·</span>
+        <kbd className="bg-slate-800 border border-slate-700 text-slate-400 px-1.5 py-0.5 rounded font-mono">
+          Esc
+        </kbd>
+        <span>Kembali</span>
+      </div>
 
       <BarcodeListener onScan={handleScan} />
 
@@ -441,29 +441,14 @@ export default function KasirPage() {
             activeTab === "cart" ? "flex" : "hidden md:flex",
           )}
         >
-          <div className="p-3 bg-gray-50 border-b border-gray-200 flex items-center gap-2">
-            <div className="flex-1">
-              <ProductSearch onSelect={handleSearchSelect} />
-            </div>
-            <div className="shrink-0">
-              <Select
-                value={store.customerId ? String(store.customerId) : ""}
-                onChange={(v) => store.setCustomer(v ? Number(v) : null)}
-                options={customers.map((c) => ({
-                  value: String(c.id),
-                  label: c.name,
-                }))}
-                placeholder="Tanpa pelanggan"
-                className="min-w-[160px]"
-              />
-            </div>
+          <div className="p-3 bg-gray-50 border-b border-gray-200">
+            <ProductSearch onSelect={handleSearchSelect} />
           </div>
           <CartPanel
             onClear={
               store.items.length > 0
                 ? () => {
-                    store.reset()
-                    if (umumIdRef.current) store.setCustomer(umumIdRef.current)
+                    resetPos()
                   }
                 : undefined
             }
@@ -480,6 +465,7 @@ export default function KasirPage() {
           <PaymentPanel
             paymentMethods={paymentMethods}
             discounts={discounts}
+            customers={customers}
             onCheckout={handleCheckout}
             loading={loading}
             skipPrint={skipPrint}
@@ -488,6 +474,33 @@ export default function KasirPage() {
           />
         </div>
       </div>
+
+      {/* Printer FAB */}
+      <button
+        onClick={printerConnected ? disconnectPrinter : connectPrinter}
+        title={printerConnected ? "Putuskan printer" : "Hubungkan printer ESC/POS"}
+        className={cn(
+          "fixed bottom-5 right-5 z-50 flex items-center gap-2 rounded-full shadow-lg transition-all duration-200",
+          printerConnected
+            ? "bg-emerald-600 text-white px-4 py-3 hover:bg-emerald-700 shadow-emerald-900/40"
+            : "bg-slate-800 text-slate-300 px-4 py-3 hover:bg-slate-700 border border-slate-700",
+        )}
+      >
+        {printerConnected ? (
+          <>
+            <div className="relative shrink-0">
+              <Printer size={16} />
+              <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse" />
+            </div>
+            <span className="text-sm font-semibold hidden sm:inline">Terhubung</span>
+          </>
+        ) : (
+          <>
+            <Unplug size={16} />
+            <span className="text-sm font-semibold hidden sm:inline">Hubungkan</span>
+          </>
+        )}
+      </button>
 
       {receiptData && (
         <div className="hidden print:block">

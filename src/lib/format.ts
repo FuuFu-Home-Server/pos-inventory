@@ -6,6 +6,14 @@ export function formatRupiah(amount: number): string {
   }).format(amount)
 }
 
+export function formatRupiahCompact(amount: number): string {
+  if (amount >= 1_000_000_000)
+    return `Rp ${(amount / 1_000_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} M`
+  if (amount >= 1_000_000)
+    return `Rp ${(amount / 1_000_000).toLocaleString("id-ID", { maximumFractionDigits: 1 })} Jt`
+  return formatRupiah(amount)
+}
+
 export function formatDate(date: Date | string): string {
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",

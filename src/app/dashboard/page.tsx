@@ -1,6 +1,6 @@
 import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { formatRupiah } from "@/lib/format"
+import { formatRupiah, formatRupiahCompact } from "@/lib/format"
 import Link from "next/link"
 import {
   ShoppingCart,
@@ -51,6 +51,7 @@ const quickLinks = [
 function StatCard({
   label,
   value,
+  fullValue,
   sub,
   icon: Icon,
   color,
@@ -59,6 +60,7 @@ function StatCard({
 }: {
   label: string
   value: string
+  fullValue?: string
   sub?: string
   icon: React.ElementType
   color: string
@@ -67,25 +69,24 @@ function StatCard({
 }) {
   const inner = (
     <div
-      className={`bg-white border rounded-2xl p-5 flex flex-col gap-3 transition-all duration-200 ${href ? "hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 cursor-pointer" : ""} ${alert ? "border-amber-200 bg-amber-50/40" : "border-gray-200"}`}
+      className={`bg-white border rounded-2xl p-4 md:p-5 flex items-center gap-3 md:flex-col md:items-start transition-all duration-200 ${href ? "hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 cursor-pointer" : ""} ${alert ? "border-amber-200 bg-amber-50/40" : "border-gray-200"}`}
     >
-      <div className="flex items-center justify-between">
-        <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center shrink-0`}>
-          <Icon size={18} className="text-white" />
-        </div>
-        {href && <ArrowRight size={14} className="text-gray-300" />}
+      <div className={`w-10 h-10 rounded-xl ${color} flex items-center justify-center shrink-0`}>
+        <Icon size={18} className="text-white" />
       </div>
-      <div>
+      <div className="flex-1 min-w-0">
         <p
-          className={`text-2xl font-black tabular-nums ${alert ? "text-amber-700" : "text-gray-900"}`}
+          title={fullValue}
+          className={`text-base font-black tabular-nums md:text-lg lg:text-xl xl:text-2xl leading-tight ${alert ? "text-amber-700" : "text-gray-900"}`}
         >
           {value}
         </p>
         <p className={`text-xs font-semibold mt-0.5 ${alert ? "text-amber-600" : "text-gray-500"}`}>
           {label}
         </p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
+        {sub && <p className="text-xs text-gray-400 mt-0.5 truncate">{sub}</p>}
       </div>
+      {href && <ArrowRight size={14} className="text-gray-300 shrink-0 md:hidden" />}
     </div>
   )
   return href ? <Link href={href}>{inner}</Link> : inner
@@ -207,7 +208,7 @@ export default async function DashboardPage() {
   return (
     <div className="p-4 md:p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-black text-gray-900 mb-1">
+        <h1 className="text-xl font-black text-gray-900 mb-1 md:text-2xl lg:text-3xl">
           {greeting}, {session?.user.name?.split(" ")[0]} 👋
         </h1>
         <p className="text-gray-500">Ringkasan operasional toko hari ini.</p>
@@ -218,10 +219,11 @@ export default async function DashboardPage() {
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
           Penjualan
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             label="Pendapatan Hari Ini"
-            value={formatRupiah(revenueToday)}
+            value={formatRupiahCompact(revenueToday)}
+            fullValue={formatRupiah(revenueToday)}
             sub={
               todayVsYesterday !== null
                 ? `${Number(todayVsYesterday) >= 0 ? "+" : ""}${todayVsYesterday}% vs kemarin`
@@ -233,7 +235,8 @@ export default async function DashboardPage() {
           />
           <StatCard
             label="Pendapatan Bulan Ini"
-            value={formatRupiah(revenueMonth)}
+            value={formatRupiahCompact(revenueMonth)}
+            fullValue={formatRupiah(revenueMonth)}
             sub={`${txMonth} transaksi`}
             icon={BarChart2}
             color="bg-purple-500"
@@ -263,7 +266,7 @@ export default async function DashboardPage() {
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
           Inventori
         </h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             label="Produk Aktif"
             value={String(variantActiveCount)}
@@ -283,7 +286,8 @@ export default async function DashboardPage() {
           />
           <StatCard
             label="Nilai Inventori"
-            value={formatRupiah(inventoryValue)}
+            value={formatRupiahCompact(inventoryValue)}
+            fullValue={formatRupiah(inventoryValue)}
             sub="estimasi harga jual × stok"
             icon={Boxes}
             color="bg-teal-500"
@@ -303,7 +307,7 @@ export default async function DashboardPage() {
       {/* Other */}
       <div className="mb-8 mt-6">
         <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Lainnya</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
           <StatCard
             label="Total Pelanggan"
             value={customerCount.toLocaleString("id-ID")}

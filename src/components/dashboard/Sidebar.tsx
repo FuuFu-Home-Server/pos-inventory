@@ -124,7 +124,7 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
             <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
               <ShoppingCart size={15} className="text-white" />
             </div>
-            <div className="hidden xl:block min-w-0">
+            <div className="block lg:hidden xl:block min-w-0">
               <p className="font-bold text-white text-sm leading-tight">Kasir</p>
               <p className="text-xs text-slate-400">POS & Inventori</p>
             </div>
@@ -144,7 +144,7 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
           {navGroups.map((group, gi) => (
             <div key={gi} className={gi > 0 ? "mt-3" : ""}>
               {group.label && (
-                <p className="hidden xl:block text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 mb-1">
+                <p className="block lg:hidden xl:block text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 mb-1">
                   {group.label}
                 </p>
               )}
@@ -187,7 +187,7 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
             <div className="w-7 h-7 rounded-full bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0">
               {userName.charAt(0).toUpperCase()}
             </div>
-            <div className="hidden xl:block min-w-0">
+            <div className="block lg:hidden xl:block min-w-0">
               <p className="text-xs font-semibold text-white truncate">{userName}</p>
               <p className="text-xs text-slate-500">{userRole}</p>
             </div>
