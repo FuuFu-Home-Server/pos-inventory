@@ -175,32 +175,35 @@ export default function KasirPage() {
   async function handleQrisCheckout() {
     if (store.items.length === 0 || !store.paymentMethodId) return
     setLoading(true)
-    const res = await fetch("/api/qris", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        items: store.items.map((i) => ({
-          variantId: i.variantId,
-          qty: i.qty,
-          unitPrice: i.price,
-          itemDiscountAmt: i.itemDiscountAmt,
-        })),
-        customerId: store.customerId,
-        discountId: store.discountId,
-        paymentMethodId: store.paymentMethodId,
-      }),
-    })
-    setLoading(false)
-    if (!res.ok) {
-      const err = await res.json()
-      setToast({
-        message: (err as { error?: string }).error ?? "Gagal membuat QRIS",
-        type: "error",
+    try {
+      const res = await fetch("/api/qris", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: store.items.map((i) => ({
+            variantId: i.variantId,
+            qty: i.qty,
+            unitPrice: i.price,
+            itemDiscountAmt: i.itemDiscountAmt,
+          })),
+          customerId: store.customerId,
+          discountId: store.discountId,
+          paymentMethodId: store.paymentMethodId,
+        }),
       })
-      return
+      if (!res.ok) {
+        const err = await res.json()
+        setToast({
+          message: (err as { error?: string }).error ?? "Gagal membuat QRIS",
+          type: "error",
+        })
+        return
+      }
+      const data: { transactionId: number; orderId: string; qrString: string } = await res.json()
+      setQrisSession(data)
+    } finally {
+      setLoading(false)
     }
-    const data: { transactionId: number; orderId: string; qrString: string } = await res.json()
-    setQrisSession(data)
   }
 
   async function handleQrisSuccess(transactionId: number) {
