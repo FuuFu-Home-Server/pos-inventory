@@ -8,6 +8,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "build:server": "bash scripts/use-pg-schema.sh && prisma generate && next build",
+    "schema:restore": "bash scripts/restore-sqlite-schema.sh",
     "start": "next start",
     "lint": "next lint",
     "db:seed": "tsx prisma/seed.ts",

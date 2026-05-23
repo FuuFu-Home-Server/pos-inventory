@@ -2,20 +2,28 @@
 
 POS + Inventory Management untuk toko kelontong. UI bahasa Indonesia.
 
-Tersedia sebagai **web app** (browser) dan **desktop app** (Electron, branch `electron`).
+Satu codebase, dua mode deployment:
+
+| Mode | Database | Cara jalankan |
+| ---- | -------- | ------------- |
+| **Desktop (Electron)** | SQLite (lokal, offline-first) | `npm run electron:build` |
+| **Server (sync target)** | PostgreSQL | `IS_PROD_SERVER=true npm run build:server` |
+
+Electron desktop melakukan sync ke server PostgreSQL saat online.
 
 ---
 
 ## Fitur
 
-- **Kasir / POS** — barcode scan, text search, cart, kasir, QRIS (Midtrans + static offline)
+- **Kasir / POS** — barcode scan, text search, cart, checkout, QRIS (Midtrans + static offline)
 - **Produk** — CRUD, kategori, satuan, import CSV, soft-disable varian
 - **Stok** — stock opname dengan pagination server-side, bulk update, paste-match
 - **Pembelian** — purchase order DRAFT → RECEIVED → CANCELLED, otomatis tambah stok
 - **Laporan** — transaksi, revenue, grafik harian
 - **Struk** — template 58mm/80mm, auto-print setelah checkout
 - **Manajemen** — user, supplier, customer, diskon, metode pembayaran, konfigurasi struk
-- **Offline (Electron)** — semua fitur jalan tanpa internet, sync ke server saat online
+- **Offline** — semua fitur jalan tanpa internet, sync ke server saat online
+- **Setup wizard** — buat akun admin pertama kali (first-run)
 
 ---
 
@@ -25,79 +33,21 @@ Tersedia sebagai **web app** (browser) dan **desktop app** (Electron, branch `el
 | ------------------ | --------------------------------------------------------- |
 | Framework          | Next.js 15 App Router + TypeScript                        |
 | ORM                | Prisma 5                                                  |
-| Database (web)     | PostgreSQL 16                                             |
-| Database (desktop) | SQLite (via Prisma, `userData/kasir.db`)                  |
+| Database (desktop) | SQLite (`userData/kasir.db`)                              |
+| Database (server)  | PostgreSQL 16                                             |
 | Auth               | NextAuth.js v5 (JWT)                                      |
 | Styling            | Tailwind CSS                                              |
 | State POS          | Zustand                                                   |
 | Validasi           | Zod                                                       |
 | Test               | Vitest                                                    |
-| Desktop            | Electron 31 + electron-builder                            |
+| Desktop            | Electron 42 + electron-builder                            |
 | Sync               | Background service (ping 30s, flush queue, delta catalog) |
-
----
-
-## Struktur Proyek
-
-```
-src/
-  app/
-    (auth)/login/          ← halaman login
-    kasir/                 ← POS (ADMIN + EMPLOYEE)
-    kasir/sync-failures/   ← review transaksi gagal sync (Electron)
-    dashboard/             ← semua halaman admin
-    dashboard/settings/remote/ ← konfigurasi URL server remote (Electron)
-    api/                   ← route handlers (thin)
-    setup/                 ← wizard pertama kali (Electron)
-  components/
-    pos/                   ← komponen POS
-    receipt/               ← template struk cetak
-    ui/                    ← Button, Input, Modal, Table, Badge, Toast
-  hooks/
-    useOnlineStatus.ts     ← status online/offline dari Electron IPC
-    useSyncStatus.ts       ← status sync (pending, failed, lastSyncAt)
-  lib/                     ← business logic, auth, prisma, validasi
-  store/pos.ts             ← Zustand cart store
-  middleware.ts            ← RBAC di Edge
-  types/electron.d.ts      ← Window.electronAPI type declaration
-electron/
-  main.ts                  ← BrowserWindow, spawn next start, IPC handlers
-  preload.ts               ← contextBridge → electronAPI
-  sync.ts                  ← connectivity monitor, flush queue, pull catalog
-  updater.ts               ← auto-update via electron-updater
-  tsconfig.json
-electron-builder.yml       ← packaging config (.exe NSIS + AppImage)
-prisma/schema.prisma
-```
-
----
-
-## Setup Web (Development)
-
-```bash
-# Install dependencies
-npm install
-
-# Buat file .env
-cp .env.example .env
-# Edit DATABASE_URL ke PostgreSQL
-
-# Migrate + seed
-npx prisma db push
-npx prisma db seed
-
-# Dev server
-npm run dev
-```
-
-Login default seed: `admin@example.com` / `password123`
 
 ---
 
 ## Setup Desktop (Electron)
 
 ```bash
-# Install dependencies (sama dengan web)
 npm install
 
 # Dev — Next.js + Electron bersamaan
@@ -106,44 +56,80 @@ npm run electron:dev
 
 Pertama kali buka: wizard setup untuk buat akun admin.
 
-SQLite tersimpan di `userData/kasir.db` (Windows: `%APPDATA%/Kasir/`, Linux: `~/.config/Kasir/`). Data tetap ada setelah update/reinstall.
+SQLite tersimpan di `userData/kasir.db` (Windows: `%APPDATA%\Kasir\`, Linux: `~/.config/kasir/`). Data tetap ada setelah update/reinstall.
+
+### Seed data contoh
+
+```bash
+# Pertama kali (DB kosong)
+./Kasir-0.1.0.AppImage --seed
+
+# Timpa data yang sudah ada
+./Kasir-0.1.0.AppImage --force-seed
+```
+
+Login: `admin@kasir.com` / `password123`
 
 ### Build distribusi
 
 ```bash
-# Production build
 npm run electron:build
-# Output: dist/Kasir Setup 1.0.0.exe (Windows) atau dist/Kasir-1.0.0.AppImage (Linux)
+# Output: dist/Kasir-0.1.0.AppImage (Linux) atau dist/Kasir Setup 0.1.0.exe (Windows)
 ```
-
-Ganti `build/icon.png` dan `build/icon.ico` dengan ikon nyata sebelum distribusi.
 
 ### Konfigurasi sync
 
-Buka `/dashboard/settings/remote` di dalam app → masukkan URL server Tailscale (contoh: `https://kasir.your-tailnet.ts.net`).
+Buka `/dashboard/settings/remote` → masukkan URL server (contoh: `https://kasir.example.com`).
 
 ---
 
-## Sync Architecture (Electron)
+## Setup Server (PostgreSQL)
+
+```bash
+npm install
+
+# Buat .env
+cp .env.example .env
+# Set IS_PROD_SERVER=true dan DATABASE_URL ke PostgreSQL
+
+# Build (swap schema → generate → next build)
+npm run build:server
+
+# Migrate DB (pertama kali deploy)
+npx prisma migrate deploy --schema=prisma/schema.postgresql.prisma
+
+# Start
+IS_PROD_SERVER=true npm start
+```
+
+### Restore schema SQLite (setelah build:server)
+
+```bash
+npm run schema:restore
+```
+
+---
+
+## Sync Architecture
 
 ```
-Electron main process
-├── spawns: node .next/standalone/server.js (localhost:3000)
-├── manages: SQLite via Prisma
+Electron desktop
+├── spawns: node standalone/server.js (127.0.0.1:3000)
+├── database: SQLite via Prisma
 ├── pings: <remoteUrl>/api/health setiap 30 detik
-└── BrowserWindow selalu load http://localhost:3000
+└── BrowserWindow loads http://127.0.0.1:3000
 
 Saat online:
-  PENDING transactions → POST /api/sync/flush → remote PostgreSQL
+  PENDING transactions → POST /api/sync/flush → remote PostgreSQL server
   Remote catalog → GET /api/sync/catalog → POST /api/sync/apply → local SQLite
 
 Saat offline:
   POS tetap jalan, transaksi disimpan syncStatus=PENDING
   QRIS: pakai static QR image, konfirmasi manual
-  Stok: tampil data lokal (mungkin stale, ada badge peringatan)
+  Stok: tampil data lokal (ada badge peringatan)
 ```
 
-Transaksi gagal flush (stok kurang di server) → `syncStatus=FAILED` → review di `/kasir/sync-failures`.
+Transaksi gagal flush (misal stok kurang di server) → `syncStatus=FAILED` → review di `/kasir/sync-failures`.
 
 ---
 
@@ -174,21 +160,14 @@ npx vitest run
 ## Scripts
 
 ```bash
-npm run dev              # Next.js dev server
-npm run build            # Next.js production build
-npm run electron:dev     # Electron + Next.js dev (concurrently)
-npm run electron:build   # Full distributable build
-npm run electron:pack    # Build tanpa installer (untuk testing)
-npx prisma db seed       # Seed data dev
-npx vitest run           # Run all tests
+npm run dev                # Next.js dev server (SQLite)
+npm run build              # Next.js production build (SQLite)
+npm run build:server       # Production build untuk server PostgreSQL
+npm run schema:restore     # Restore schema.prisma ke SQLite setelah build:server
+npm run electron:dev       # Electron + Next.js dev (concurrently)
+npm run electron:build     # Full distributable build (.AppImage / .exe)
+npm run electron:pack      # Build tanpa installer (untuk testing)
+npx prisma db seed         # Seed data dev (SQLite)
+npx vitest run             # Run all tests
 npx prettier --write "src/**/*.{ts,tsx}"  # Format manual
 ```
-
----
-
-## Branches
-
-| Branch     | Deskripsi                              |
-| ---------- | -------------------------------------- |
-| `main`     | Web app — Next.js + PostgreSQL         |
-| `electron` | Desktop app — Electron + SQLite + sync |
