@@ -14,7 +14,7 @@ export async function GET() {
     }[]
   >`
     SELECT pv.id, pv."variantName", pv.unit, pv.stock, pv."lowStockThreshold",
-           pv."costPrice"::float, p.name AS "productName"
+           pv."costPrice", p.name AS "productName"
     FROM "ProductVariant" pv
     JOIN "Product" p ON p.id = pv."productId"
     WHERE pv."isActive" = true AND pv.stock <= pv."lowStockThreshold"

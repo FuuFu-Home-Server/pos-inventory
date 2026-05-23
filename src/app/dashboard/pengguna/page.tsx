@@ -10,8 +10,17 @@ import { formatDateShort } from "@/lib/format"
 import { useUsers } from "./useUsers"
 
 export default function PenggunaPage() {
-  const { users, modalOpen, setModalOpen, loading, form, setForm, handleCreate, handleToggle } =
-    useUsers()
+  const {
+    users,
+    modalOpen,
+    setModalOpen,
+    loading,
+    listLoading,
+    form,
+    setForm,
+    handleCreate,
+    handleToggle,
+  } = useUsers()
 
   return (
     <div className="p-4 md:p-6">
@@ -31,6 +40,23 @@ export default function PenggunaPage() {
           </tr>
         </Thead>
         <Tbody>
+          {listLoading && (
+            <tr>
+              <Td colSpan={6} className="py-10 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Memuat...
+                </div>
+              </Td>
+            </tr>
+          )}
+          {!listLoading && users.length === 0 && (
+            <tr>
+              <Td colSpan={6} className="py-10 text-center text-gray-400">
+                Belum ada pengguna
+              </Td>
+            </tr>
+          )}
           {users.map((u) => (
             <tr key={u.id} className="hover:bg-gray-50">
               <Td className="font-medium">{u.name}</Td>

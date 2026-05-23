@@ -83,6 +83,7 @@ export function useProducts() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
 
   const [createForm, setCreateForm] = useState({
     name: "",
@@ -99,6 +100,7 @@ export function useProducts() {
   }>({ name: "", category: "", supplierId: "", variants: [] })
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const params = new URLSearchParams({
       page: String(page),
       limit: String(pageSize),
@@ -115,6 +117,7 @@ export function useProducts() {
     setProducts(data.products)
     setTotal(data.total)
     if (data.stats) setStats(data.stats)
+    setListLoading(false)
   }, [
     page,
     pageSize,
@@ -212,14 +215,19 @@ export function useProducts() {
 
   async function handleDelete(id: number) {
     if (!confirm("Hapus produk ini dan semua variannya?")) return
-    await fetch(`/api/products/${id}`, { method: "DELETE" })
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
+    const data = await res.json()
+    if (data.deactivated) {
+      alert("Produk memiliki riwayat transaksi. Semua varian telah dinonaktifkan.")
+    }
     load()
   }
 
   function toggleExpand(id: number) {
     setExpandedIds((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
       return next
     })
   }
@@ -250,15 +258,15 @@ export function useProducts() {
     load()
   }
 
-  function updateCreateVariant(i: number, field: string, val: string) {
-    const vv = [...createForm.variants] as any[]
-    vv[i][field] = val
+  function updateCreateVariant(i: number, field: keyof EditVariantRow, val: string) {
+    const vv = [...createForm.variants]
+    ;(vv[i] as Record<string, unknown>)[field] = val
     setCreateForm({ ...createForm, variants: vv })
   }
 
   function updateEditVariant(i: number, field: keyof EditVariantRow, val: string | boolean) {
     const vv = [...editForm.variants]
-    ;(vv[i] as any)[field] = val
+    ;(vv[i] as Record<string, unknown>)[field] = val
     setEditForm({ ...editForm, variants: vv })
   }
 
@@ -293,6 +301,7 @@ export function useProducts() {
     setEditingProduct,
     expandedIds,
     loading,
+    listLoading,
     createForm,
     setCreateForm,
     editForm,

@@ -19,6 +19,7 @@ export function useDiscounts() {
   const [products, setProducts] = useState<Product[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
   const [form, setForm] = useState({
     name: "",
     type: "PERCENT",
@@ -30,9 +31,11 @@ export function useDiscounts() {
   })
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch("/api/discounts")
     const data = await res.json()
     setDiscounts(data.discounts)
+    setListLoading(false)
   }, [])
 
   useEffect(() => {
@@ -85,6 +88,7 @@ export function useDiscounts() {
     modalOpen,
     setModalOpen,
     loading,
+    listLoading,
     form,
     setForm,
     handleCreate,

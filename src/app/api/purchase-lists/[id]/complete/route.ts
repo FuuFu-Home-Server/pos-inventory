@@ -60,7 +60,7 @@ export async function POST(_req: NextRequest, { params }: Params) {
       return { purchaseOrder, skippedItems: skippedCount }
     })
     po = { id: result.purchaseOrder.id, skippedItems: result.skippedItems }
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Gagal membuat PO" }, { status: 500 })
   }
 

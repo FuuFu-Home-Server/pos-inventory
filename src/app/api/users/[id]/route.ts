@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
     data,
     include: { role: { select: { name: true } } },
   })
-  const { passwordHash: _, ...safeUser } = user
+  const { passwordHash: _ph, ...safeUser } = user
   return NextResponse.json(safeUser)
 }
 

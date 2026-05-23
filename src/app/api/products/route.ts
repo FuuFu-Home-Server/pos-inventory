@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
   }
 
   const where = {
-    ...(q ? { name: { contains: q, mode: "insensitive" as const } } : {}),
+    ...(q ? { name: { contains: q } } : {}),
     ...(category ? { category } : {}),
     ...(supplierId ? { supplierId: Number(supplierId) } : {}),
     ...(stockFilterIds !== undefined ? { id: { in: stockFilterIds } } : {}),
@@ -58,8 +58,8 @@ export async function GET(req: NextRequest) {
     }),
     prisma.product.count({ where }),
     prisma.productVariant.count({ where: { isActive: true } }),
-    prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*)::bigint as count FROM "ProductVariant"
+    prisma.$queryRaw<[{ count: number }]>`
+      SELECT COUNT(*) as count FROM "ProductVariant"
       WHERE "isActive" = true AND stock <= "lowStockThreshold"
     `,
     prisma.product.count({

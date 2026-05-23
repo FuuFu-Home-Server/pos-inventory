@@ -21,6 +21,10 @@ export default function SetupPage() {
       })
       const data = await res.json()
       if (!res.ok) {
+        if (res.status === 403) {
+          router.push("/login")
+          return
+        }
         setError(typeof data.error === "string" ? data.error : JSON.stringify(data.error))
         return
       }

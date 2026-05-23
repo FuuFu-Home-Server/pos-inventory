@@ -28,6 +28,6 @@ export async function POST(req: NextRequest) {
     include: { role: { select: { name: true } } },
   })
 
-  const { passwordHash: _, ...safeUser } = user
+  const { passwordHash: _ph, ...safeUser } = user
   return NextResponse.json(safeUser, { status: 201 })
 }

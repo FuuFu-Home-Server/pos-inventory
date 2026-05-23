@@ -14,7 +14,8 @@ export type CartItem = {
 
 type PosStore = {
   items: CartItem[]
-  discountId: number | null
+  discountIds: number[]
+  discountAmounts: Record<number, number>
   discountAmount: number
   customerId: number | null
   paymentMethodId: number | null
@@ -27,7 +28,7 @@ type PosStore = {
     newItem: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">,
   ) => void
   setItemDiscount: (variantId: number, amount: number) => void
-  setDiscount: (discountId: number | null, amount: number) => void
+  toggleDiscount: (id: number, amount: number) => void
   setCustomer: (customerId: number | null) => void
   setPaymentMethod: (id: number | null) => void
   setPaymentAmount: (amount: number) => void
@@ -39,7 +40,8 @@ type PosStore = {
 
 const initialState = {
   items: [] as CartItem[],
-  discountId: null,
+  discountIds: [],
+  discountAmounts: {},
   discountAmount: 0,
   customerId: null,
   paymentMethodId: null,
@@ -108,8 +110,21 @@ export const usePosStore = create<PosStore>((set, get) => ({
     }))
   },
 
-  setDiscount(discountId, amount) {
-    set({ discountId, discountAmount: amount })
+  toggleDiscount(id, amount) {
+    set((state) => {
+      const has = state.discountIds.includes(id)
+      const newIds = has ? state.discountIds.filter((x) => x !== id) : [...state.discountIds, id]
+      const newAmounts = has
+        ? Object.fromEntries(
+            Object.entries(state.discountAmounts).filter(([k]) => Number(k) !== id),
+          )
+        : { ...state.discountAmounts, [id]: amount }
+      return {
+        discountIds: newIds,
+        discountAmounts: newAmounts,
+        discountAmount: Object.values(newAmounts).reduce((a, b) => a + b, 0),
+      }
+    })
   },
   setCustomer(customerId) {
     set({ customerId })

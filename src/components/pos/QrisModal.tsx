@@ -46,27 +46,23 @@ export function QrisModal({
         </div>
 
         <div className="p-6 flex flex-col items-center gap-5">
-          {isOffline ? (
-            staticQrisImage ? (
-              <img
-                src={staticQrisImage}
-                alt="QRIS"
-                className="w-52 h-52 object-contain rounded-xl border-4 border-indigo-100"
-              />
-            ) : (
-              <div className="w-52 h-52 border-4 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
-                <p className="text-xs text-gray-400 text-center px-4">
-                  Gambar QRIS statis belum diatur. Upload di Konfigurasi Struk.
-                </p>
-              </div>
-            )
+          {staticQrisImage ? (
+            <img
+              src={staticQrisImage}
+              alt="QRIS"
+              className="w-52 h-52 object-contain rounded-xl border-4 border-indigo-100"
+            />
           ) : qrString ? (
             <div className="p-3 border-4 border-indigo-100 rounded-xl">
               <QRCodeSVG value={qrString} size={200} level="M" />
             </div>
           ) : (
             <div className="w-52 h-52 border-4 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
-              <p className="text-xs text-gray-400 text-center px-4">Set NEXT_PUBLIC_QRIS_STRING</p>
+              <p className="text-xs text-gray-400 text-center px-4">
+                {isOffline
+                  ? "Upload gambar QRIS statis di Konfigurasi Struk."
+                  : "Set NEXT_PUBLIC_QRIS_STRING di .env"}
+              </p>
             </div>
           )}
 

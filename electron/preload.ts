@@ -9,4 +9,15 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   getRemoteUrl: () => ipcRenderer.invoke("config:getRemoteUrl"),
   setRemoteUrl: (url: string) => ipcRenderer.invoke("config:setRemoteUrl", url),
+  getAppInfo: () => ipcRenderer.invoke("config:getAppInfo"),
+  setAppInfo: (info: { title: string; description: string }) =>
+    ipcRenderer.invoke("config:setAppInfo", info),
+  getWindowSettings: () => ipcRenderer.invoke("config:getWindowSettings"),
+  setWindowSize: (w: number, h: number) => ipcRenderer.invoke("config:setWindowSize", w, h),
+  toggleFullscreen: () => ipcRenderer.invoke("config:toggleFullscreen"),
+  toggleAlwaysOnTop: () => ipcRenderer.invoke("config:toggleAlwaysOnTop"),
+  getAutoLaunch: () => ipcRenderer.invoke("config:getAutoLaunch"),
+  setAutoLaunch: (enabled: boolean) => ipcRenderer.invoke("config:setAutoLaunch", enabled),
+  getTimezone: () => ipcRenderer.invoke("config:getTimezone"),
+  setTimezone: (tz: string) => ipcRenderer.invoke("config:setTimezone", tz),
 })

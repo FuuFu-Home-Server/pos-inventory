@@ -11,10 +11,13 @@ export default function SatuanPage() {
   const [units, setUnits] = useState<Unit[]>([])
   const [newName, setNewName] = useState("")
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
 
   async function load() {
+    setListLoading(true)
     const res = await fetch("/api/units")
     setUnits(await res.json())
+    setListLoading(false)
   }
 
   useEffect(() => {
@@ -65,22 +68,33 @@ export default function SatuanPage() {
           </tr>
         </Thead>
         <Tbody>
+          {listLoading && (
+            <tr>
+              <Td colSpan={2} className="py-10 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Memuat...
+                </div>
+              </Td>
+            </tr>
+          )}
           {units.map((u) => (
             <tr key={u.id} className="hover:bg-gray-50">
               <Td className="font-medium">{u.name}</Td>
-              <Td>
-                <button
+              <Td className="text-right">
+                <Button
+                  variant="danger"
+                  className="text-xs py-1 px-2"
                   onClick={() => handleDelete(u.id)}
-                  className="text-xs text-red-500 hover:text-red-700 font-medium"
                 >
                   Hapus
-                </button>
+                </Button>
               </Td>
             </tr>
           ))}
-          {units.length === 0 && (
+          {!listLoading && units.length === 0 && (
             <tr>
-              <Td colSpan={2} className="text-center text-gray-400 py-6">
+              <Td colSpan={2} className="text-center text-gray-400 py-10">
                 Belum ada satuan
               </Td>
             </tr>

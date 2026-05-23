@@ -13,40 +13,9 @@ import {
   Boxes,
   Users,
   ClipboardList,
-  Store,
 } from "lucide-react"
 import { TransactionChart, type ChartDataPoint } from "@/components/dashboard/TransactionChart"
-
-const quickLinks = [
-  {
-    href: "/kasir",
-    label: "Buka Kasir",
-    desc: "Mulai transaksi penjualan",
-    icon: ShoppingCart,
-    color: "bg-indigo-500",
-  },
-  {
-    href: "/dashboard/produk",
-    label: "Produk",
-    desc: "Kelola katalog produk",
-    icon: Package,
-    color: "bg-emerald-500",
-  },
-  {
-    href: "/dashboard/purchase-order",
-    label: "Pembelian",
-    desc: "Buat & terima PO",
-    icon: ShoppingBag,
-    color: "bg-amber-500",
-  },
-  {
-    href: "/dashboard/laporan",
-    label: "Laporan",
-    desc: "Lihat laporan penjualan",
-    icon: BarChart2,
-    color: "bg-purple-500",
-  },
-]
+import { ServerStatusCard } from "@/components/dashboard/ServerStatusCard"
 
 function StatCard({
   label,
@@ -112,9 +81,8 @@ export default async function DashboardPage() {
     variantActiveCount,
     customerCount,
     pendingPO,
-    lowStockRaw,
-    inventoryRaw,
-    monthlyRaw,
+    variantData,
+    monthlyTx,
   ] = await Promise.all([
     prisma.transaction.aggregate({
       where: { status: "COMPLETED", createdAt: { gte: todayStart } },
@@ -135,32 +103,27 @@ export default async function DashboardPage() {
     prisma.productVariant.count({ where: { isActive: true } }),
     prisma.customer.count(),
     prisma.purchaseOrder.count({ where: { status: "DRAFT" } }),
-    prisma.$queryRaw<[{ count: bigint }]>`
-      SELECT COUNT(*)::bigint as count FROM "ProductVariant"
-      WHERE "isActive" = true AND stock <= "lowStockThreshold"
-    `,
-    prisma.$queryRaw<[{ total: string | null }]>`
-      SELECT SUM(stock * price)::text as total FROM "ProductVariant" WHERE "isActive" = true
-    `,
-    prisma.$queryRaw<{ day: Date; revenue: string; count: bigint }[]>`
-      SELECT
-        DATE_TRUNC('day', "createdAt") AS day,
-        SUM(total)::text AS revenue,
-        COUNT(*)::bigint AS count
-      FROM "Transaction"
-      WHERE status = 'COMPLETED'
-        AND "createdAt" >= ${monthStart}
-        AND "createdAt" < ${new Date(now.getFullYear(), now.getMonth() + 1, 1)}
-      GROUP BY DATE_TRUNC('day', "createdAt")
-      ORDER BY day ASC
-    `,
+    prisma.productVariant.findMany({
+      where: { isActive: true },
+      select: { stock: true, lowStockThreshold: true, price: true },
+    }),
+    prisma.transaction.findMany({
+      where: {
+        status: "COMPLETED",
+        createdAt: { gte: monthStart, lt: new Date(now.getFullYear(), now.getMonth() + 1, 1) },
+      },
+      select: { createdAt: true, total: true },
+    }),
   ])
 
   const revenueToday = Number(revToday._sum.total ?? 0)
   const revenueMonth = Number(revMonth._sum.total ?? 0)
   const revenueYesterday = Number(revYesterday._sum.total ?? 0)
-  const lowStockCount = Number(lowStockRaw[0]?.count ?? 0)
-  const inventoryValue = Number(inventoryRaw[0]?.total ?? 0)
+
+  const lowStockCount = variantData.filter(
+    (v) => v.lowStockThreshold != null && v.stock <= v.lowStockThreshold,
+  ).length
+  const inventoryValue = variantData.reduce((sum, v) => sum + Number(v.price) * v.stock, 0)
 
   const MONTH_NAMES = [
     "Jan",
@@ -178,12 +141,12 @@ export default async function DashboardPage() {
   ]
   const currentMonthName = MONTH_NAMES[now.getMonth()]
   const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-  const dailyMap = new Map(
-    monthlyRaw.map((r) => [
-      new Date(r.day).getDate(),
-      { revenue: Number(r.revenue), count: Number(r.count) },
-    ]),
-  )
+  const dailyMap = new Map<number, { revenue: number; count: number }>()
+  for (const tx of monthlyTx) {
+    const day = tx.createdAt.getDate()
+    const existing = dailyMap.get(day) ?? { revenue: 0, count: 0 }
+    dailyMap.set(day, { revenue: existing.revenue + Number(tx.total), count: existing.count + 1 })
+  }
   const chartData: ChartDataPoint[] = Array.from({ length: daysInMonth }, (_, i) => {
     const d = i + 1
     const found = dailyMap.get(d)
@@ -316,49 +279,13 @@ export default async function DashboardPage() {
             color="bg-rose-500"
             href="/dashboard/pelanggan"
           />
-          <StatCard
-            label="Toko"
-            value="Online"
-            sub="sistem berjalan normal"
-            icon={Store}
-            color="bg-gray-400"
-          />
+          <ServerStatusCard />
         </div>
       </div>
 
       {/* Chart */}
       <div className="mt-6 mb-8">
         <TransactionChart data={chartData} monthName={currentMonthName} />
-      </div>
-
-      {/* Quick Links */}
-      <div>
-        <h2 className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">
-          Akses Cepat
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          {quickLinks.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-indigo-300 hover:shadow-lg hover:shadow-indigo-50 transition-all duration-200"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div
-                  className={`w-11 h-11 rounded-xl ${item.color} flex items-center justify-center shadow-sm`}
-                >
-                  <item.icon size={20} className="text-white" />
-                </div>
-                <ArrowRight
-                  size={16}
-                  className="text-gray-300 group-hover:text-indigo-500 transition-colors mt-1"
-                />
-              </div>
-              <p className="font-bold text-gray-900 mb-0.5">{item.label}</p>
-              <p className="text-sm text-gray-500">{item.desc}</p>
-            </Link>
-          ))}
-        </div>
       </div>
     </div>
   )

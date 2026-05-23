@@ -44,6 +44,7 @@ export default function StockOpnamePage() {
     page,
     PAGE_LIMIT,
     loading,
+    listLoading,
     itemsLoading,
     saving,
     handleCreate,
@@ -259,9 +260,9 @@ export default function StockOpnamePage() {
                 })}
                 {items.length === 0 && (
                   <tr>
-                    <td colSpan={5} className="text-center py-8 text-sm text-gray-400">
+                    <Td colSpan={5} className="text-center py-10 text-gray-400">
                       Tidak ada hasil
-                    </td>
+                    </Td>
                   </tr>
                 )}
               </Tbody>
@@ -414,6 +415,23 @@ export default function StockOpnamePage() {
           </tr>
         </Thead>
         <Tbody>
+          {listLoading && (
+            <tr>
+              <Td colSpan={6} className="py-10 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Memuat...
+                </div>
+              </Td>
+            </tr>
+          )}
+          {!listLoading && opnames.length === 0 && (
+            <tr>
+              <Td colSpan={6} className="py-10 text-center text-gray-400">
+                Belum ada stock opname
+              </Td>
+            </tr>
+          )}
           {opnames.map((o) => (
             <tr key={o.id} className="hover:bg-gray-50">
               <Td className="font-mono text-xs">#{o.id}</Td>

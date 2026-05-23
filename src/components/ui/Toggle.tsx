@@ -5,21 +5,36 @@ type ToggleProps = {
   onChange: (checked: boolean) => void
   label?: string
   size?: "sm" | "md"
+  disabled?: boolean
   className?: string
 }
 
-export function Toggle({ checked, onChange, label, size = "md", className }: ToggleProps) {
+export function Toggle({
+  checked,
+  onChange,
+  label,
+  size = "md",
+  disabled = false,
+  className,
+}: ToggleProps) {
   const trackW = size === "sm" ? "w-8" : "w-10"
   const trackH = size === "sm" ? "h-4" : "h-5"
   const thumbSize = size === "sm" ? "w-3 h-3" : "w-3.5 h-3.5"
   const translate = size === "sm" ? "translate-x-4" : "translate-x-5"
 
   return (
-    <label className={cn("inline-flex items-center gap-2 cursor-pointer select-none", className)}>
+    <label
+      className={cn(
+        "inline-flex items-center gap-2 select-none",
+        disabled ? "cursor-not-allowed opacity-50" : "cursor-pointer",
+        className,
+      )}
+    >
       <button
         type="button"
         role="switch"
         aria-checked={checked}
+        disabled={disabled}
         onClick={() => onChange(!checked)}
         className={cn(
           "relative inline-flex items-center rounded-full transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500",

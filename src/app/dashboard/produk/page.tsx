@@ -39,6 +39,7 @@ export default function ProdukPage() {
     setEditingProduct,
     expandedIds,
     loading,
+    listLoading,
     createForm,
     setCreateForm,
     editForm,
@@ -373,6 +374,23 @@ export default function ProdukPage() {
           </tr>
         </Thead>
         <Tbody>
+          {listLoading && (
+            <tr>
+              <Td colSpan={6} className="py-10 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Memuat...
+                </div>
+              </Td>
+            </tr>
+          )}
+          {!listLoading && products.length === 0 && (
+            <tr>
+              <Td colSpan={6} className="py-10 text-center text-gray-400">
+                Belum ada produk
+              </Td>
+            </tr>
+          )}
           {products.map((p) => {
             const expanded = expandedIds.has(p.id)
             const activeCount = p.variants.filter((v) => v.isActive).length
@@ -667,7 +685,7 @@ function VariantEditor({
 }) {
   function update(i: number, field: keyof EditVariantRow, val: string | boolean) {
     const vv = [...variants]
-    ;(vv[i] as any)[field] = val
+    ;(vv[i] as Record<string, unknown>)[field] = val
     onChange(vv)
   }
 

@@ -57,15 +57,12 @@ export function PaymentPanel({
     if (isQris) store.setPaymentAmount(total)
   }, [isQris, total])
 
-  function handleDiscountChange(id: string) {
-    if (!id) {
-      store.setDiscount(null, 0)
-      return
-    }
-    const d = discounts.find((x) => x.id === Number(id))
+  function toggleDiscount(id: number) {
+    const d = discounts.find((x) => x.id === id)
     if (!d) return
-    const amount = d.type === "PERCENT" ? Math.round((subtotal * d.value) / 100) : d.value
-    store.setDiscount(d.id, amount)
+    const val = Number(d.value)
+    const amt = d.type === "PERCENT" ? Math.round((subtotal * val) / 100) : val
+    store.toggleDiscount(id, amt)
   }
 
   const canCheckout = isQris
@@ -83,7 +80,7 @@ export function PaymentPanel({
           Keranjang
         </button>
       )}
-      <div className="bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-sm">
+      <div className="bg-linear-to-br from-orange-500 to-orange-600 rounded-xl p-5 text-white shadow-sm">
         <p className="text-xs font-medium uppercase tracking-widest opacity-80 mb-1">Total Bayar</p>
         <p className="text-4xl font-black tabular-nums leading-none">{formatRupiah(total)}</p>
         {store.discountAmount > 0 && (
@@ -120,15 +117,49 @@ export function PaymentPanel({
           </label>
           <select
             className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            onChange={(e) => handleDiscountChange(e.target.value)}
+            value=""
+            onChange={(e) => {
+              if (e.target.value) toggleDiscount(Number(e.target.value))
+            }}
           >
-            <option value="">Tanpa diskon</option>
-            {discounts.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
+            <option value="">+ Tambah diskon...</option>
+            {discounts
+              .filter((d) => !store.discountIds.includes(d.id))
+              .map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
           </select>
+          {store.discountIds.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {store.discountIds.map((id) => {
+                const d = discounts.find((x) => x.id === id)
+                if (!d) return null
+                const amt =
+                  store.discountAmounts[id] ??
+                  (d.type === "PERCENT"
+                    ? Math.round((subtotal * Number(d.value)) / 100)
+                    : Number(d.value))
+                return (
+                  <span
+                    key={id}
+                    className="inline-flex items-center gap-1.5 bg-orange-100 text-orange-800 text-xs font-semibold px-2.5 py-1.5 rounded-full border border-orange-200"
+                  >
+                    {d.name}
+                    <span className="text-orange-500 tabular-nums">−{formatRupiah(amt)}</span>
+                    <button
+                      type="button"
+                      onClick={() => toggleDiscount(id)}
+                      className="text-orange-400 hover:text-orange-700 leading-none"
+                    >
+                      ×
+                    </button>
+                  </span>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -137,25 +168,21 @@ export function PaymentPanel({
           Metode Bayar
         </label>
         <div className="grid grid-cols-2 gap-2">
-          {paymentMethods.map((pm) => {
-            const disabled = DISABLED_METHODS.includes(pm.name.toLowerCase())
-            return (
+          {paymentMethods
+            .filter((pm) => !DISABLED_METHODS.includes(pm.name.toLowerCase()))
+            .map((pm) => (
               <button
                 key={pm.id}
-                disabled={disabled}
-                onClick={() => !disabled && store.setPaymentMethod(pm.id)}
+                onClick={() => store.setPaymentMethod(pm.id)}
                 className={`py-2.5 px-3 text-sm rounded-lg border-2 transition-all font-medium ${
-                  disabled
-                    ? "bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed"
-                    : store.paymentMethodId === pm.id
-                      ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50"
+                  store.paymentMethodId === pm.id
+                    ? "bg-indigo-600 text-white border-indigo-600 shadow-sm"
+                    : "bg-white text-gray-600 border-gray-200 hover:border-indigo-300 hover:bg-indigo-50"
                 }`}
               >
                 {pm.name}
               </button>
-            )
-          })}
+            ))}
         </div>
       </div>
 
@@ -188,24 +215,26 @@ export function PaymentPanel({
               className="w-full border-2 border-gray-300 rounded-lg px-4 py-3 text-xl font-bold text-right focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 tabular-nums"
               data-payment-input
             />
-            <div className="grid grid-cols-3 gap-1.5 mt-2">
+            <div className="flex gap-2 mt-3">
               <button
                 onClick={() => store.setPaymentAmount(total)}
-                className="text-xs bg-green-50 border border-green-200 text-green-700 rounded-lg py-1.5 hover:bg-green-100 font-semibold transition-colors"
+                className="flex-1 text-sm bg-green-50 border border-green-200 text-green-700 rounded-lg py-2 hover:bg-green-100 font-semibold transition-colors"
               >
                 Pas
               </button>
               <button
                 onClick={() => store.setPaymentAmount(0)}
-                className="text-xs bg-red-50 border border-red-200 text-red-600 rounded-lg py-1.5 hover:bg-red-100 font-semibold transition-colors"
+                className="flex-1 text-sm bg-red-50 border border-red-200 text-red-600 rounded-lg py-2 hover:bg-red-100 font-semibold transition-colors"
               >
                 Reset
               </button>
+            </div>
+            <div className="grid grid-cols-3 gap-2 mt-2">
               {QUICK_AMOUNTS.map((amt) => (
                 <button
                   key={amt}
                   onClick={() => store.setPaymentAmount((store.paymentAmount || 0) + amt)}
-                  className="text-xs bg-gray-50 border border-gray-200 text-gray-700 rounded-lg py-1.5 hover:bg-gray-100 transition-colors"
+                  className="text-xs bg-gray-50 border border-gray-200 text-gray-700 rounded-lg py-2 hover:bg-gray-100 transition-colors font-medium"
                 >
                   +{formatRupiah(amt)}
                 </button>

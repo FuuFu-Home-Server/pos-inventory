@@ -173,7 +173,7 @@ export async function POST(req: NextRequest) {
   } catch (err: unknown) {
     if (err instanceof Error && err.message === "INSUFFICIENT_STOCK") {
       return NextResponse.json(
-        { error: "Stok tidak cukup", details: (err as any).details },
+        { error: "Stok tidak cukup", details: (err as Error & { details?: unknown }).details },
         { status: 409 },
       )
     }

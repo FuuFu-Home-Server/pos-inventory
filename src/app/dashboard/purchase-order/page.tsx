@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { Table, Thead, Tbody, Th, Td } from "@/components/ui/Table"
 import { Badge } from "@/components/ui/Badge"
 import { Button } from "@/components/ui/Button"
@@ -37,6 +38,7 @@ export default function PurchaseOrderPage() {
     form,
     setForm,
     loading,
+    listLoading,
     searchVariants,
     handleAddVariant,
     toggleDetail,
@@ -67,15 +69,31 @@ export default function PurchaseOrderPage() {
           </tr>
         </Thead>
         <Tbody>
+          {listLoading && (
+            <tr>
+              <Td colSpan={7} className="py-10 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Memuat...
+                </div>
+              </Td>
+            </tr>
+          )}
+          {!listLoading && orders.length === 0 && (
+            <tr>
+              <Td colSpan={7} className="py-10 text-center text-gray-400">
+                Belum ada purchase order
+              </Td>
+            </tr>
+          )}
           {orders.map((o) => {
             const isExpanded = expandedId === o.id
             const detail = details[o.id]
             const isLoading = loadingId === o.id
 
             return (
-              <>
+              <React.Fragment key={o.id}>
                 <tr
-                  key={o.id}
                   className={`cursor-pointer select-none transition-colors ${isExpanded ? "bg-indigo-50" : "hover:bg-gray-50"}`}
                   onClick={() => toggleDetail(o.id)}
                 >
@@ -88,7 +106,9 @@ export default function PurchaseOrderPage() {
                       <span className="text-gray-400 font-mono text-xs">#{o.id}</span>
                     </div>
                   </Td>
-                  <Td className="font-medium">{o.supplier.name}</Td>
+                  <Td className="font-medium">
+                    {o.supplier?.name ?? <span className="text-gray-400 italic">Belanja</span>}
+                  </Td>
                   <Td className="text-gray-500 text-xs">{o.user.name}</Td>
                   <Td>
                     <Badge variant={statusVariant(o.status)}>
@@ -174,7 +194,7 @@ export default function PurchaseOrderPage() {
                               </div>
                               <div className="flex justify-between gap-6 text-gray-500">
                                 <span>Supplier</span>
-                                <span>{detail.supplier.name}</span>
+                                <span>{detail.supplier?.name ?? "Belanja"}</span>
                               </div>
                               <div className="flex justify-between gap-6 text-gray-500">
                                 <span>Dibuat</span>
@@ -193,7 +213,7 @@ export default function PurchaseOrderPage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             )
           })}
         </Tbody>

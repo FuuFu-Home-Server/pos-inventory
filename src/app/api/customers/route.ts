@@ -8,9 +8,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(100, Number(searchParams.get("limit") ?? 20))
   const q = searchParams.get("q") ?? ""
 
-  const where = q
-    ? { OR: [{ name: { contains: q, mode: "insensitive" as const } }, { phone: { contains: q } }] }
-    : undefined
+  const where = q ? { OR: [{ name: { contains: q } }, { phone: { contains: q } }] } : undefined
 
   const [customers, total] = await Promise.all([
     prisma.customer.findMany({

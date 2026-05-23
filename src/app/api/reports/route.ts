@@ -45,8 +45,8 @@ export async function GET(req: NextRequest) {
       include: { product: { select: { name: true } } },
       orderBy: { stock: "asc" },
     }),
-    prisma.$queryRaw<{ name: string; count: bigint; revenue: string }[]>`
-      SELECT pm.name, COUNT(t.id)::bigint as count, SUM(t.total)::text as revenue
+    prisma.$queryRaw<{ name: string; count: number; revenue: number }[]>`
+      SELECT pm.name, COUNT(t.id) as count, SUM(t.total) as revenue
       FROM "Transaction" t
       JOIN "PaymentMethod" pm ON pm.id = t."paymentMethodId"
       WHERE t.status = 'COMPLETED'
@@ -55,8 +55,8 @@ export async function GET(req: NextRequest) {
       GROUP BY pm.id, pm.name
       ORDER BY count DESC
     `,
-    prisma.$queryRaw<{ name: string; count: bigint; spend: string }[]>`
-      SELECT c.name, COUNT(t.id)::bigint as count, SUM(t.total)::text as spend
+    prisma.$queryRaw<{ name: string; count: number; spend: number }[]>`
+      SELECT c.name, COUNT(t.id) as count, SUM(t.total) as spend
       FROM "Transaction" t
       JOIN "Customer" c ON c.id = t."customerId"
       WHERE t.status = 'COMPLETED'
@@ -67,8 +67,8 @@ export async function GET(req: NextRequest) {
       ORDER BY spend DESC
       LIMIT 8
     `,
-    prisma.$queryRaw<{ category: string; revenue: string; qty: bigint }[]>`
-      SELECT p.category, SUM(ti.subtotal)::text as revenue, SUM(ti.qty)::bigint as qty
+    prisma.$queryRaw<{ category: string; revenue: number; qty: number }[]>`
+      SELECT p.category, SUM(ti.subtotal) as revenue, SUM(ti.qty) as qty
       FROM "TransactionItem" ti
       JOIN "ProductVariant" pv ON pv.id = ti."productVariantId"
       JOIN "Product" p ON p.id = pv."productId"

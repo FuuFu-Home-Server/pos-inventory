@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
   try {
     const charge = await createQrisCharge(orderId, total)
     qrString = charge.qr_string
-  } catch (err) {
+  } catch {
     await prisma.transaction.delete({ where: { id: transaction.id } })
     return NextResponse.json({ error: "Gagal membuat QRIS" }, { status: 502 })
   }

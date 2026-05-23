@@ -43,4 +43,4 @@ nsis:
 
 publish:
   provider: generic
-  url: "${env.UPDATE_SERVER_URL}/updates/"
+  url: "https://kasir.irfanjauhari.com/updates/"

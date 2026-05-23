@@ -30,9 +30,9 @@ export default function DaftarBelanjaPage() {
     handleCreate,
     toggleItemPurchased,
     handleDelete,
-    markDone,
     completeToPO,
     createProductForList,
+    createVariantForList,
   } = usePurchaseList()
 
   return (
@@ -165,11 +165,12 @@ export default function DaftarBelanjaPage() {
                       <tbody className="divide-y divide-indigo-100/60">
                         {detail.items.map((item) => (
                           <tr key={item.id} className={item.isPurchased ? "opacity-50" : ""}>
-                            <td className="py-2">
+                            <td className="py-2 pr-3">
                               <Toggle
                                 checked={item.isPurchased}
                                 onChange={(v) => toggleItemPurchased(list.id, item.id, v)}
                                 size="sm"
+                                disabled={list.status !== "OPEN"}
                               />
                             </td>
                             <td
@@ -227,7 +228,6 @@ export default function DaftarBelanjaPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         title="Buat Daftar Belanja"
-        showQtyPerUnit
         headerSlot={
           <>
             <Input
@@ -253,6 +253,7 @@ export default function DaftarBelanjaPage() {
         submitLabel="Buat Daftar Belanja"
         submitDisabled={!form.title || form.items.length === 0}
         onCreateProduct={createProductForList}
+        onCreateVariant={createVariantForList}
       />
     </div>
   )

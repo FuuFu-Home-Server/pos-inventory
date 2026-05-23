@@ -8,7 +8,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  Dot,
 } from "recharts"
 import { formatRupiah } from "@/lib/format"
 import { useState } from "react"
@@ -19,12 +18,21 @@ export type ChartDataPoint = {
   count: number
 }
 
-function CustomTooltip({ active, payload, label }: any) {
+type TooltipPayloadItem = { dataKey: string; value: number; color: string }
+function CustomTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: TooltipPayloadItem[]
+  label?: string
+}) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 text-xs">
       <p className="font-bold text-gray-700 mb-1.5">Tgl {label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.dataKey} className="flex justify-between gap-4">
           <span className="text-gray-500">
             {p.dataKey === "revenue" ? "Pendapatan" : "Transaksi"}
@@ -38,10 +46,10 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
-function CustomDot(props: any) {
-  const { cx, cy, value } = props
+function CustomDot(props: { cx?: number; cy?: number; value?: number; stroke?: string }) {
+  const { cx, cy, value, stroke } = props
   if (!value) return null
-  return <circle cx={cx} cy={cy} r={3} fill={props.stroke} stroke="white" strokeWidth={1.5} />
+  return <circle cx={cx} cy={cy} r={3} fill={stroke} stroke="white" strokeWidth={1.5} />
 }
 
 export function TransactionChart({

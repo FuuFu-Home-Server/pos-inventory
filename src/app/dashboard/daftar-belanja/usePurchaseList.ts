@@ -72,7 +72,7 @@ export function usePurchaseList() {
         ...f.items,
         {
           variantId: v.id,
-          label: `${v.product.name} — ${v.variantName}`,
+          label: `${v.productName} — ${v.variantName}`,
           unit: v.unit,
           qtyPerUnit: "1",
           qty: "1",
@@ -226,12 +226,51 @@ export function usePurchaseList() {
     const v = product.variants[0]
     return {
       id: v.id,
+      productId: product.id,
+      productName: product.name,
       variantName: v.variantName,
       unit: v.unit,
       price: v.price,
       costPrice: data.costPrice,
       stock: 0,
-      product: { name: product.name },
+      barcode: null,
+    }
+  }
+
+  async function createVariantForList(
+    productId: number,
+    data: { variantName: string; unit: string; costPrice: number },
+  ): Promise<import("@/components/ui/PurchaseModal").VariantResult | null> {
+    const res = await fetch(`/api/products/${productId}/variants`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        variantName: data.variantName,
+        unit: data.unit,
+        costPrice: data.costPrice,
+        price: 0,
+      }),
+    })
+    if (!res.ok) return null
+    const v: {
+      id: number
+      productId: number
+      productName: string
+      variantName: string
+      unit: string
+      costPrice: number | null
+      stock: number
+    } = await res.json()
+    return {
+      id: v.id,
+      productId: v.productId,
+      productName: v.productName,
+      variantName: v.variantName,
+      unit: v.unit,
+      price: 0,
+      costPrice: data.costPrice,
+      stock: 0,
+      barcode: null,
     }
   }
 
@@ -256,5 +295,6 @@ export function usePurchaseList() {
     markDone,
     completeToPO,
     createProductForList,
+    createVariantForList,
   }
 }

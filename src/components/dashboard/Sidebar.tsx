@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
@@ -17,13 +17,13 @@ import {
   BarChart2,
   Printer,
   UserCog,
-  Upload,
   LogOut,
   Receipt,
   Layers,
   Ruler,
   BookOpen,
   ListChecks,
+  Settings,
   X,
 } from "lucide-react"
 
@@ -70,7 +70,7 @@ const navGroups: NavGroup[] = [
     items: [
       { href: "/dashboard/struk", label: "Struk", icon: Printer },
       { href: "/dashboard/pengguna", label: "Pengguna", icon: UserCog },
-      { href: "/dashboard/import", label: "Import GDB", icon: Upload },
+      { href: "/dashboard/settings", label: "Aplikasi", icon: Settings },
     ],
   },
 ]
@@ -84,6 +84,13 @@ interface SidebarProps {
 
 export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
   const pathname = usePathname()
+  const [appInfo, setAppInfo] = useState({ title: "Kasir", description: "POS & Inventori" })
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.electronAPI) {
+      window.electronAPI.getAppInfo().then(setAppInfo)
+    }
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -125,8 +132,8 @@ export function Sidebar({ userName, userRole, open, onClose }: SidebarProps) {
               <ShoppingCart size={15} className="text-white" />
             </div>
             <div className="block lg:hidden xl:block min-w-0">
-              <p className="font-bold text-white text-sm leading-tight">Kasir</p>
-              <p className="text-xs text-slate-400">POS & Inventori</p>
+              <p className="font-bold text-white text-sm leading-tight">{appInfo.title}</p>
+              <p className="text-xs text-slate-400">{appInfo.description}</p>
             </div>
           </div>
           {/* Close button — mobile overlay only */}

@@ -49,6 +49,27 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { id } = await params
-  await prisma.product.delete({ where: { id: Number(id) } })
-  return NextResponse.json({ ok: true })
+  const productId = Number(id)
+
+  const variantIds = await prisma.productVariant
+    .findMany({ where: { productId }, select: { id: true } })
+    .then((vs) => vs.map((v) => v.id))
+
+  const usedCount = variantIds.length
+    ? await prisma.transactionItem.count({ where: { productVariantId: { in: variantIds } } })
+    : 0
+
+  if (usedCount > 0) {
+    await prisma.productVariant.updateMany({ where: { productId }, data: { isActive: false } })
+    return NextResponse.json({ ok: true, deactivated: true })
+  }
+
+  await prisma.$transaction([
+    prisma.stockOpnameItem.deleteMany({ where: { productVariantId: { in: variantIds } } }),
+    prisma.purchaseOrderItem.deleteMany({ where: { productVariantId: { in: variantIds } } }),
+    prisma.productVariant.deleteMany({ where: { productId } }),
+    prisma.product.delete({ where: { id: productId } }),
+  ])
+
+  return NextResponse.json({ ok: true, deactivated: false })
 }

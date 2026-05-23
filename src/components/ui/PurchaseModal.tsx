@@ -17,12 +17,14 @@ export type PurchaseItem = {
 
 export type VariantResult = {
   id: number
+  productId: number
+  productName: string
   variantName: string
   unit: string
   price: number
   costPrice: number | null
   stock: number
-  product: { name: string }
+  barcode: string | null
 }
 
 export type QuickProductForm = {
@@ -41,7 +43,6 @@ interface PurchaseModalProps {
   headerSlot: ReactNode
   items: PurchaseItem[]
   onItemsChange: (items: PurchaseItem[]) => void
-  showQtyPerUnit?: boolean
   searchVariants: (q: string) => Promise<VariantResult[]>
   onAddVariant: (v: VariantResult) => void
   onSubmit: () => void
@@ -49,6 +50,10 @@ interface PurchaseModalProps {
   submitLabel: string
   submitDisabled: boolean
   onCreateProduct?: (data: QuickProductForm) => Promise<VariantResult | null>
+  onCreateVariant?: (
+    productId: number,
+    data: { variantName: string; unit: string; costPrice: number },
+  ) => Promise<VariantResult | null>
 }
 
 export function PurchaseModal({
@@ -59,7 +64,6 @@ export function PurchaseModal({
   headerSlot,
   items,
   onItemsChange,
-  showQtyPerUnit = false,
   searchVariants,
   onAddVariant,
   onSubmit,
@@ -67,12 +71,15 @@ export function PurchaseModal({
   submitLabel,
   submitDisabled,
   onCreateProduct,
+  onCreateVariant,
 }: PurchaseModalProps) {
   const [search, setSearch] = useState("")
   const [results, setResults] = useState<VariantResult[]>([])
   const [dropOpen, setDropOpen] = useState(false)
   const [dropRect, setDropRect] = useState<DOMRect | null>(null)
   const [showNewProduct, setShowNewProduct] = useState(false)
+  const [showNewVariant, setShowNewVariant] = useState(false)
+  const [categories, setCategories] = useState<string[]>([])
   const [newProductForm, setNewProductForm] = useState<QuickProductForm>({
     name: "",
     category: "",
@@ -80,14 +87,68 @@ export function PurchaseModal({
     unit: "pcs",
     costPrice: 0,
   })
+  const [productSearch, setProductSearch] = useState("")
+  const [productResults, setProductResults] = useState<{ id: number; name: string }[]>([])
+  const [selectedProduct, setSelectedProduct] = useState<{ id: number; name: string } | null>(null)
+  const [newVariantForm, setNewVariantForm] = useState({
+    variantName: "",
+    unit: "pcs",
+    costPrice: 0,
+  })
+  const [creatingVariant, setCreatingVariant] = useState(false)
   const [creatingProduct, setCreatingProduct] = useState(false)
 
   useEffect(() => {
     if (!open) {
       setShowNewProduct(false)
       setNewProductForm({ name: "", category: "", variantName: "", unit: "pcs", costPrice: 0 })
+      setShowNewVariant(false)
+      setProductSearch("")
+      setProductResults([])
+      setSelectedProduct(null)
+      setNewVariantForm({ variantName: "", unit: "pcs", costPrice: 0 })
     }
   }, [open])
+
+  useEffect(() => {
+    if ((showNewProduct || showNewVariant) && categories.length === 0) {
+      fetch("/api/categories")
+        .then((r) => r.json())
+        .then((data: { name: string }[]) => setCategories(data.map((c) => c.name)))
+        .catch(() => {})
+    }
+  }, [showNewProduct, showNewVariant])
+
+  useEffect(() => {
+    if (!productSearch.trim()) {
+      setProductResults([])
+      return
+    }
+    const t = setTimeout(() => {
+      fetch(`/api/products?q=${encodeURIComponent(productSearch)}&limit=8`)
+        .then((r) => r.json())
+        .then((data: { products: { id: number; name: string }[] }) =>
+          setProductResults(data.products ?? []),
+        )
+        .catch(() => {})
+    }, 300)
+    return () => clearTimeout(t)
+  }, [productSearch])
+
+  async function handleCreateVariant() {
+    if (!onCreateVariant || !selectedProduct || !newVariantForm.variantName) return
+    setCreatingVariant(true)
+    const result = await onCreateVariant(selectedProduct.id, newVariantForm)
+    setCreatingVariant(false)
+    if (result) {
+      onAddVariant(result)
+      setShowNewVariant(false)
+      setProductSearch("")
+      setProductResults([])
+      setSelectedProduct(null)
+      setNewVariantForm({ variantName: "", unit: "pcs", costPrice: 0 })
+    }
+  }
 
   async function handleCreateProduct() {
     if (!onCreateProduct || !newProductForm.name) return
@@ -198,7 +259,7 @@ export function PurchaseModal({
                     className="w-full text-left px-4 py-2.5 hover:bg-indigo-50 flex items-center justify-between text-sm transition-colors border-b border-gray-50 last:border-0"
                   >
                     <span className="font-medium text-gray-800">
-                      {v.product.name} <span className="text-gray-500">{v.variantName}</span>
+                      {v.productName} <span className="text-gray-500">{v.variantName}</span>
                     </span>
                     <span className="text-xs text-gray-400">
                       Stok: {v.stock} {v.unit}
@@ -209,57 +270,248 @@ export function PurchaseModal({
               document.body,
             )}
 
-          {onCreateProduct && (
+          {(onCreateProduct || onCreateVariant) && (
             <div className="mt-2">
-              <button
-                type="button"
-                onClick={() => setShowNewProduct((v) => !v)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
-              >
-                <Plus size={12} />
-                {showNewProduct ? "Batal" : "Produk Baru"}
-              </button>
+              <div className="flex items-center gap-3">
+                {onCreateProduct && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewProduct((v) => !v)
+                      setShowNewVariant(false)
+                    }}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    {showNewProduct ? "Batal" : "Produk Baru"}
+                  </button>
+                )}
+                {onCreateVariant && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowNewVariant((v) => !v)
+                      setShowNewProduct(false)
+                    }}
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                  >
+                    <Plus size={12} />
+                    {showNewVariant ? "Batal" : "Varian Baru"}
+                  </button>
+                )}
+              </div>
+
+              {showNewVariant && (
+                <div className="mt-2 p-3 border border-indigo-100 rounded-xl bg-indigo-50 space-y-2">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                      Cari Produk <span className="text-red-400">*</span>
+                    </label>
+                    {selectedProduct ? (
+                      <div className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-1.5 bg-white text-sm">
+                        <span className="flex-1 font-medium text-gray-800">
+                          {selectedProduct.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProduct(null)}
+                          className="text-gray-400 hover:text-red-500"
+                        >
+                          <X size={13} />
+                        </button>
+                      </div>
+                    ) : (
+                      <>
+                        <input
+                          value={productSearch}
+                          onChange={(e) => setProductSearch(e.target.value)}
+                          placeholder="Ketik nama produk..."
+                          className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                        />
+                        {productResults.length > 0 && (
+                          <div className="border border-gray-200 rounded-lg bg-white shadow-sm max-h-40 overflow-y-auto">
+                            {productResults.map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onMouseDown={(e) => {
+                                  e.preventDefault()
+                                  setSelectedProduct(p)
+                                  setProductSearch("")
+                                  setProductResults([])
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-indigo-50 border-b border-gray-50 last:border-0"
+                              >
+                                {p.name}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Nama Varian <span className="text-red-400">*</span>
+                      </label>
+                      <input
+                        value={newVariantForm.variantName}
+                        onChange={(e) =>
+                          setNewVariantForm((f) => ({ ...f, variantName: e.target.value }))
+                        }
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Satuan
+                      </label>
+                      <select
+                        value={newVariantForm.unit}
+                        onChange={(e) => setNewVariantForm((f) => ({ ...f, unit: e.target.value }))}
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        {[
+                          "pcs",
+                          "kg",
+                          "g",
+                          "liter",
+                          "ml",
+                          "botol",
+                          "pak",
+                          "dus",
+                          "karton",
+                          "lusin",
+                          "sachet",
+                          "bungkus",
+                          "kaleng",
+                          "ikat",
+                          "lembar",
+                        ].map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1 col-span-2">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Harga Beli
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={newVariantForm.costPrice || ""}
+                        onChange={(e) =>
+                          setNewVariantForm((f) => ({ ...f, costPrice: Number(e.target.value) }))
+                        }
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCreateVariant}
+                    disabled={!selectedProduct || !newVariantForm.variantName || creatingVariant}
+                    className="text-xs font-bold bg-indigo-600 text-white rounded-lg px-3 py-1.5 hover:bg-indigo-700 disabled:opacity-40 transition-colors"
+                  >
+                    {creatingVariant ? "Menyimpan..." : "Simpan & Tambah ke Daftar"}
+                  </button>
+                </div>
+              )}
 
               {showNewProduct && (
                 <div className="mt-2 p-3 border border-indigo-100 rounded-xl bg-indigo-50 space-y-2">
-                  <input
-                    placeholder="Nama produk *"
-                    value={newProductForm.name}
-                    onChange={(e) => setNewProductForm((f) => ({ ...f, name: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                  />
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                      Nama Produk <span className="text-red-400">*</span>
+                    </label>
+                    <input
+                      value={newProductForm.name}
+                      onChange={(e) => setNewProductForm((f) => ({ ...f, name: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                    />
+                  </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <input
-                      placeholder="Kategori"
-                      value={newProductForm.category}
-                      onChange={(e) =>
-                        setNewProductForm((f) => ({ ...f, category: e.target.value }))
-                      }
-                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    />
-                    <input
-                      placeholder="Nama varian (opsional)"
-                      value={newProductForm.variantName}
-                      onChange={(e) =>
-                        setNewProductForm((f) => ({ ...f, variantName: e.target.value }))
-                      }
-                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    />
-                    <input
-                      placeholder="Satuan (pcs)"
-                      value={newProductForm.unit}
-                      onChange={(e) => setNewProductForm((f) => ({ ...f, unit: e.target.value }))}
-                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    />
-                    <input
-                      type="number"
-                      placeholder="Harga beli"
-                      value={newProductForm.costPrice || ""}
-                      onChange={(e) =>
-                        setNewProductForm((f) => ({ ...f, costPrice: Number(e.target.value) }))
-                      }
-                      className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    />
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Kategori
+                      </label>
+                      <select
+                        value={newProductForm.category}
+                        onChange={(e) =>
+                          setNewProductForm((f) => ({ ...f, category: e.target.value }))
+                        }
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        <option value="">— Pilih —</option>
+                        {categories.map((c) => (
+                          <option key={c} value={c}>
+                            {c}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Nama Varian
+                      </label>
+                      <input
+                        placeholder="opsional"
+                        value={newProductForm.variantName}
+                        onChange={(e) =>
+                          setNewProductForm((f) => ({ ...f, variantName: e.target.value }))
+                        }
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Satuan
+                      </label>
+                      <select
+                        value={newProductForm.unit}
+                        onChange={(e) => setNewProductForm((f) => ({ ...f, unit: e.target.value }))}
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        {[
+                          "pcs",
+                          "kg",
+                          "g",
+                          "liter",
+                          "ml",
+                          "botol",
+                          "pak",
+                          "dus",
+                          "karton",
+                          "lusin",
+                          "sachet",
+                          "bungkus",
+                          "kaleng",
+                          "ikat",
+                          "lembar",
+                        ].map((u) => (
+                          <option key={u} value={u}>
+                            {u}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Harga Beli
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={newProductForm.costPrice || ""}
+                        onChange={(e) =>
+                          setNewProductForm((f) => ({ ...f, costPrice: Number(e.target.value) }))
+                        }
+                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      />
+                    </div>
                   </div>
                   <button
                     type="button"
@@ -278,7 +530,7 @@ export function PurchaseModal({
         {items.length > 0 && (
           <div>
             <p className="text-sm font-semibold text-gray-700 mb-2">Item ({items.length})</p>
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-72 overflow-y-auto px-0.5 pb-0.5">
               {items.map((item, i) => (
                 <div key={i} className="space-y-1.5">
                   <div className="flex items-center gap-2">
@@ -292,43 +544,36 @@ export function PurchaseModal({
                       <X size={15} />
                     </button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      placeholder="Qty"
-                      value={item.qty}
-                      onChange={(e) => updateItem(i, { qty: e.target.value })}
-                      className={`${fieldCls} w-16 text-center shrink-0`}
-                    />
-                    <span className="text-xs font-medium text-gray-500 shrink-0 px-1">
-                      {item.unit}
-                    </span>
-                    {showQtyPerUnit && (
-                      <>
-                        <span className="text-gray-400 text-xs shrink-0">×</span>
+                  <div className="flex gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Jumlah
+                      </label>
+                      <div className="flex items-center gap-1.5">
                         <input
                           type="number"
-                          placeholder="isi"
-                          value={item.qtyPerUnit ?? "1"}
-                          onChange={(e) => updateItem(i, { qtyPerUnit: e.target.value })}
+                          value={item.qty}
+                          onChange={(e) => updateItem(i, { qty: e.target.value })}
                           className={`${fieldCls} w-16 text-center shrink-0`}
                         />
-                        <span className="text-gray-400 text-xs shrink-0">pcs</span>
-                      </>
-                    )}
-                    <input
-                      type="number"
-                      placeholder="Harga"
-                      value={item.unitCost}
-                      onChange={(e) => updateItem(i, { unitCost: e.target.value })}
-                      className={`${fieldCls} flex-1 min-w-0`}
-                    />
+                        <span className="text-xs font-medium text-gray-500 shrink-0">
+                          {item.unit}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
+                        Harga / Satuan
+                      </label>
+                      <input
+                        type="number"
+                        placeholder="0"
+                        value={item.unitCost}
+                        onChange={(e) => updateItem(i, { unitCost: e.target.value })}
+                        className={`${fieldCls} w-full`}
+                      />
+                    </div>
                   </div>
-                  {showQtyPerUnit && Number(item.qtyPerUnit) > 1 && (
-                    <p className="text-[10px] text-indigo-600 font-medium pl-0.5">
-                      = {Number(item.qty) * Number(item.qtyPerUnit)} {item.unit} total
-                    </p>
-                  )}
                 </div>
               ))}
             </div>

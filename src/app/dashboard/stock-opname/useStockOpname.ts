@@ -35,15 +35,18 @@ export function useStockOpname() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState("")
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
   const [itemsLoading, setItemsLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [localQtys, setLocalQtys] = useState<Record<number, number>>({})
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const loadList = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch("/api/stock-opname")
     const data = await res.json()
     setOpnames(data.opnames)
+    setListLoading(false)
   }, [])
 
   useEffect(() => {
@@ -214,6 +217,7 @@ export function useStockOpname() {
     page,
     PAGE_LIMIT,
     loading,
+    listLoading,
     itemsLoading,
     saving,
     handleCreate,

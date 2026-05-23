@@ -1,6 +1,8 @@
 {
   "name": "kasir",
   "version": "0.1.0",
+  "description": "POS & Inventori untuk toko kelontong",
+  "author": "Muhammad Irfan Jauhari",
   "private": true,
   "main": "electron-dist/main.js",
   "scripts": {
@@ -13,7 +15,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "prepare": "husky",
-    "electron:dev": "concurrently -k \"cross-env ELECTRON_DEV=true next dev\" \"wait-on http://localhost:3000 --timeout 30000 && electron .\"",
+    "electron:dev": "tsc --project electron/tsconfig.json && concurrently -k \"cross-env ELECTRON_DEV=true next dev\" \"tsc --project electron/tsconfig.json --watch --preserveWatchOutput\" \"wait-on http://localhost:3000 --timeout 30000 && ELECTRON_DEV=true ELECTRON_APP_ROOT=$PWD electron . --ozone-platform=x11 --disable-gpu\"",
     "electron:build": "next build && tsc --project electron/tsconfig.json && electron-builder",
     "electron:pack": "electron-builder --dir"
   },
@@ -28,7 +30,6 @@
     "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
-    "electron": "^42.2.0",
     "electron-store": "^11.0.2",
     "electron-updater": "^6.8.3",
     "html-to-image": "^1.11.13",
@@ -53,6 +54,7 @@
     "@vitejs/plugin-react": "^4.5.2",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
+    "electron": "^42.2.0",
     "electron-builder": "^26.8.1",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",

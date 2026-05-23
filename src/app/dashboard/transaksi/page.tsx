@@ -1,5 +1,6 @@
 "use client"
 
+import React from "react"
 import { formatRupiah, formatDate } from "@/lib/format"
 import { Badge } from "@/components/ui/Badge"
 import { Select } from "@/components/ui/Select"
@@ -23,6 +24,7 @@ export default function TransaksiPage() {
     expandedId,
     details,
     loadingId,
+    listLoading,
     receiptData,
     previewReceipt,
     setPreviewReceipt,
@@ -160,13 +162,30 @@ export default function TransaksiPage() {
           </tr>
         </Thead>
         <Tbody>
+          {listLoading && (
+            <tr>
+              <Td colSpan={7} className="py-10 text-center">
+                <div className="inline-flex items-center gap-2 text-gray-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+                  Memuat...
+                </div>
+              </Td>
+            </tr>
+          )}
+          {!listLoading && transactions.length === 0 && (
+            <tr>
+              <Td colSpan={7} className="py-10 text-center text-gray-400">
+                Belum ada transaksi
+              </Td>
+            </tr>
+          )}
           {transactions.map((tx) => {
             const isExpanded = expandedId === tx.id
             const detail = details[tx.id]
             const isLoading = loadingId === tx.id
 
             return (
-              <>
+              <React.Fragment key={tx.id}>
                 <tr
                   key={tx.id}
                   className={`cursor-pointer select-none transition-colors ${isExpanded ? "bg-indigo-50" : "hover:bg-gray-50"}`}
@@ -324,7 +343,7 @@ export default function TransaksiPage() {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             )
           })}
         </Tbody>

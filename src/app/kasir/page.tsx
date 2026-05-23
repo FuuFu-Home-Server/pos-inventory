@@ -18,6 +18,14 @@ import {
   Unplug,
   ShoppingCart as CartIcon,
   CreditCard,
+  Package,
+  ShoppingBag,
+  BarChart2,
+  Users,
+  ClipboardList,
+  Settings,
+  Receipt,
+  X,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import Link from "next/link"
@@ -49,25 +57,127 @@ type Customer = { id: number; name: string; phone: string | null }
 
 function Clock() {
   const [now, setNow] = useState(() => new Date())
+  const [timezone, setTimezone] = useState<string | undefined>(undefined)
+
   useEffect(() => {
     const id = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(id)
   }, [])
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.electronAPI) return
+    window.electronAPI.getTimezone().then(setTimezone)
+    const handler = (e: Event) => setTimezone((e as CustomEvent<string>).detail)
+    window.addEventListener("timezone-changed", handler)
+    return () => window.removeEventListener("timezone-changed", handler)
+  }, [])
+
+  const tzOpt = timezone ? { timeZone: timezone } : {}
+
   return (
-    <div className="text-slate-400 text-xs tabular-nums flex items-center gap-1.5">
+    <div className="text-slate-400 text-xs tabular-nums flex items-baseline gap-1.5 leading-none">
       <span className="hidden sm:inline">
         {now.toLocaleDateString("id-ID", {
           weekday: "short",
           day: "numeric",
           month: "short",
           year: "numeric",
+          ...tzOpt,
         })}
       </span>
       <span className="hidden sm:inline text-slate-600">·</span>
-      <span className="font-mono text-slate-300">
-        {now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}
+      <span className="font-mono text-slate-300 text-sm">
+        {now.toLocaleTimeString("id-ID", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          ...tzOpt,
+        })}
       </span>
     </div>
+  )
+}
+
+const NAV_GROUPS = [
+  {
+    label: null,
+    items: [
+      { href: "/dashboard", label: "Beranda", icon: LayoutDashboard },
+      { href: "/dashboard/transaksi", label: "Transaksi", icon: Receipt },
+    ],
+  },
+  {
+    label: "Katalog",
+    items: [
+      { href: "/dashboard/produk", label: "Produk", icon: Package },
+      { href: "/dashboard/supplier", label: "Supplier", icon: Users },
+    ],
+  },
+  {
+    label: "Gudang",
+    items: [
+      { href: "/dashboard/purchase-order", label: "Purchase Order", icon: ShoppingBag },
+      { href: "/dashboard/stock-opname", label: "Stok Opname", icon: ClipboardList },
+    ],
+  },
+  {
+    label: "Lainnya",
+    items: [
+      { href: "/dashboard/laporan", label: "Laporan", icon: BarChart2 },
+      { href: "/dashboard/settings", label: "Pengaturan", icon: Settings },
+    ],
+  },
+]
+
+function DashboardDrawer({ open, onClose }: { open: boolean; onClose: () => void }) {
+  return (
+    <>
+      {open && (
+        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={onClose} />
+      )}
+      <aside
+        className={`fixed top-0 left-0 z-50 h-full w-64 bg-slate-900 border-r border-slate-800 flex flex-col transition-transform duration-300 ${
+          open ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="px-4 py-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500 flex items-center justify-center shrink-0">
+              <CartIcon size={13} className="text-white" />
+            </div>
+            <p className="font-bold text-white text-sm">Menu</p>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+          >
+            <X size={15} />
+          </button>
+        </div>
+        <nav className="flex-1 overflow-y-auto py-2 px-2">
+          {NAV_GROUPS.map((group, gi) => (
+            <div key={gi} className={gi > 0 ? "mt-3" : ""}>
+              {group.label && (
+                <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest px-3 mb-1">
+                  {group.label}
+                </p>
+              )}
+              {group.items.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all mb-0.5 text-sm"
+                >
+                  <item.icon size={15} className="text-slate-500 shrink-0" />
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
+        </nav>
+      </aside>
+    </>
   )
 }
 
@@ -87,6 +197,7 @@ export default function KasirPage() {
   const [skipPrint, setSkipPrint] = useState(true)
   const [activeTab, setActiveTab] = useState<"cart" | "payment">("cart")
   const [qrisOpen, setQrisOpen] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [receiptConfig, setReceiptConfig] = useState<{
     paperWidth?: number
     staticQrisImage?: string | null
@@ -199,7 +310,7 @@ export default function KasirPage() {
             itemDiscountAmt: i.itemDiscountAmt,
           })),
           customerId: store.customerId,
-          discountId: store.discountId,
+          discountId: store.discountIds[0] ?? null,
           paymentMethodId: store.paymentMethodId,
           paymentAmount: store.getTotal(),
           localId,
@@ -222,7 +333,7 @@ export default function KasirPage() {
         createdAt: tx.createdAt,
         cashierName: session?.user?.name ?? "-",
         customerName: tx.customer?.name,
-        items: tx.items.map((item: any) => ({
+        items: tx.items.map((item: Record<string, any>) => ({
           productName: item.productVariant.product.name,
           variantName: item.productVariant.variantName,
           unit: item.productVariant.unit,
@@ -255,7 +366,9 @@ export default function KasirPage() {
     ]).then(async ([pms, disc, cust, config]) => {
       receiptConfigRef.current = config
       setReceiptConfig(config)
-      const activePms: PaymentMethod[] = pms.filter((p: any) => p.isActive !== false)
+      const activePms: PaymentMethod[] = pms.filter(
+        (p: Record<string, unknown>) => p.isActive !== false,
+      )
       setPaymentMethods(activePms)
       const tunai = activePms.find((pm) => pm.name.toLowerCase().includes("tunai"))
       tunaiIdRef.current = (tunai ?? activePms[0])?.id ?? null
@@ -277,7 +390,7 @@ export default function KasirPage() {
       setCustomers(customerList)
       if (umum) {
         umumIdRef.current = umum.id
-        if (!store.customerId) store.setCustomer(umum.id)
+        store.setCustomer(umum.id)
       }
       setInitialLoading(false)
     })
@@ -353,7 +466,7 @@ export default function KasirPage() {
           itemDiscountAmt: i.itemDiscountAmt,
         })),
         customerId: store.customerId,
-        discountId: store.discountId,
+        discountId: store.discountIds[0] ?? null,
         paymentMethodId: store.paymentMethodId,
         paymentAmount: store.paymentAmount,
         localId,
@@ -377,7 +490,7 @@ export default function KasirPage() {
         createdAt: tx.createdAt,
         cashierName: session?.user?.name ?? "-",
         customerName: tx.customer?.name,
-        items: tx.items.map((item: any) => ({
+        items: tx.items.map((item: Record<string, any>) => ({
           productName: item.productVariant.product.name,
           variantName: item.productVariant.variantName,
           unit: item.productVariant.unit,
@@ -451,15 +564,16 @@ export default function KasirPage() {
 
   return (
     <div className="h-screen flex flex-col bg-slate-100">
+      <DashboardDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
       <header className="bg-slate-900 border-b border-slate-800 px-5 py-3 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-4">
-          <Link
-            href="/dashboard"
+          <button
+            onClick={() => setDrawerOpen(true)}
             className="flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors text-xs"
           >
             <LayoutDashboard size={14} />
             Dashboard
-          </Link>
+          </button>
           <div className="w-px h-4 bg-slate-700" />
           <div className="flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />

@@ -28,10 +28,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     ...(q
       ? {
           productVariant: {
-            OR: [
-              { product: { name: { contains: q, mode: "insensitive" as const } } },
-              { variantName: { contains: q, mode: "insensitive" as const } },
-            ],
+            OR: [{ product: { name: { contains: q } } }, { variantName: { contains: q } }],
           },
         }
       : {}),

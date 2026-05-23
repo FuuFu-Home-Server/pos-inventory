@@ -44,6 +44,7 @@ export function useTransactions() {
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [details, setDetails] = useState<Record<number, TxDetail>>({})
   const [loadingId, setLoadingId] = useState<number | null>(null)
+  const [listLoading, setListLoading] = useState(true)
   const [receiptData, setReceiptData] = useState<ReceiptData | null>(null)
   const [previewReceipt, setPreviewReceipt] = useState<ReceiptData | null>(null)
   const [toast, setToast] = useState<string | null>(null)
@@ -67,12 +68,14 @@ export function useTransactions() {
   }, [page, pageSize, filterFrom, filterTo, filterPayment, filterUser])
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch(`/api/transactions?${buildQuery()}`)
     const data = await res.json()
     setTransactions(data.transactions ?? [])
     setTotal(data.total ?? 0)
     setTotalRevenue(data.totalRevenue ?? 0)
     setCompletedCount(data.completedCount ?? 0)
+    setListLoading(false)
   }, [buildQuery])
 
   useEffect(() => {
@@ -168,6 +171,7 @@ export function useTransactions() {
     expandedId,
     details,
     loadingId,
+    listLoading,
     receiptData,
     previewReceipt,
     setPreviewReceipt,

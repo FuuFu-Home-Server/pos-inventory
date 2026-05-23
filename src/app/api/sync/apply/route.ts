@@ -8,8 +8,8 @@ const variantSchema = z.object({
   product: z.object({ name: z.string(), category: z.string() }),
   variantName: z.string(),
   barcode: z.string().nullable(),
-  price: z.unknown(),
-  costPrice: z.unknown().nullable(),
+  price: z.union([z.string(), z.number()]),
+  costPrice: z.union([z.string(), z.number()]).nullable(),
   stock: z.number().int(),
   lowStockThreshold: z.number().int(),
   unit: z.string(),
@@ -27,10 +27,10 @@ const applySchema = z.object({
         id: z.number().int(),
         name: z.string(),
         type: z.string(),
-        value: z.unknown(),
+        value: z.union([z.string(), z.number()]),
         scope: z.string(),
         productId: z.number().int().nullable(),
-        minPurchase: z.unknown().nullable(),
+        minPurchase: z.union([z.string(), z.number()]).nullable(),
         isActive: z.boolean(),
       }),
     )
@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (receiptConfig) {
-      const { id: _id, updatedAt: _updatedAt, ...rest } = receiptConfig
+      const { id: _rc_id, updatedAt: _rc_updatedAt, ...rest } = receiptConfig
       await db.receiptConfig.upsert({
         where: { id: 1 },
         create: { id: 1, ...rest },

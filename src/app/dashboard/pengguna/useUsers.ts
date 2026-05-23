@@ -15,12 +15,15 @@ export function useUsers() {
   const [users, setUsers] = useState<User[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
   const [form, setForm] = useState({ name: "", email: "", password: "", role: "EMPLOYEE" })
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch("/api/users")
     const data = await res.json()
     setUsers(data.users)
+    setListLoading(false)
   }, [])
 
   useEffect(() => {
@@ -51,5 +54,15 @@ export function useUsers() {
     load()
   }
 
-  return { users, modalOpen, setModalOpen, loading, form, setForm, handleCreate, handleToggle }
+  return {
+    users,
+    modalOpen,
+    setModalOpen,
+    loading,
+    listLoading,
+    form,
+    setForm,
+    handleCreate,
+    handleToggle,
+  }
 }

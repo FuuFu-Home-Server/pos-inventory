@@ -35,13 +35,16 @@ export function usePurchaseOrder() {
   const [modalOpen, setModalOpen] = useState(false)
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
   const [form, setForm] = useState({ supplierId: "", notes: "", items: [] as PurchaseItem[] })
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch(`/api/purchase-orders?page=${page}&limit=${pageSize}`)
     const data = await res.json()
     setOrders(data.orders)
     setTotal(data.total)
+    setListLoading(false)
   }, [page, pageSize])
 
   useEffect(() => {
@@ -66,7 +69,7 @@ export function usePurchaseOrder() {
         ...f.items,
         {
           variantId: v.id,
-          label: `${v.product.name} — ${v.variantName}`,
+          label: `${v.productName} — ${v.variantName}`,
           unit: v.unit,
           qty: "1",
           unitCost: String(v.costPrice ?? ""),
@@ -136,6 +139,7 @@ export function usePurchaseOrder() {
     form,
     setForm,
     loading,
+    listLoading,
     searchVariants,
     handleAddVariant,
     toggleDetail,

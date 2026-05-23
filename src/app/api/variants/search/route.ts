@@ -13,8 +13,8 @@ export async function GET(req: NextRequest) {
       ...(q.length >= 1
         ? {
             OR: [
-              { product: { name: { contains: q, mode: "insensitive" } } },
-              { variantName: { contains: q, mode: "insensitive" } },
+              { product: { name: { contains: q } } },
+              { variantName: { contains: q } },
               { barcode: { contains: q } },
             ],
           }

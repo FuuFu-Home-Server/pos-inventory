@@ -22,14 +22,17 @@ export function useCustomer() {
   const [editing, setEditing] = useState<Customer | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch(
       `/api/customers?q=${encodeURIComponent(search)}&page=${page}&limit=${pageSize}`,
     )
     const data = await res.json()
     setCustomers(data.customers)
     setTotal(data.total ?? data.customers.length)
+    setListLoading(false)
   }, [search, page, pageSize])
 
   useEffect(() => {
@@ -86,6 +89,7 @@ export function useCustomer() {
     form,
     setForm,
     loading,
+    listLoading,
     openCreate,
     openEdit,
     handleSave,

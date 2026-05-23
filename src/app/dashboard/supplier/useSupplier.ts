@@ -22,14 +22,17 @@ export function useSupplier() {
   const [editing, setEditing] = useState<Supplier | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [loading, setLoading] = useState(false)
+  const [listLoading, setListLoading] = useState(true)
 
   const load = useCallback(async () => {
+    setListLoading(true)
     const res = await fetch(
       `/api/suppliers?q=${encodeURIComponent(search)}&page=${page}&limit=${pageSize}`,
     )
     const data = await res.json()
     setSuppliers(data.suppliers)
     setTotal(data.total ?? data.suppliers.length)
+    setListLoading(false)
   }, [search, page, pageSize])
 
   useEffect(() => {
@@ -93,6 +96,7 @@ export function useSupplier() {
     form,
     setForm,
     loading,
+    listLoading,
     openCreate,
     openEdit,
     handleSave,
