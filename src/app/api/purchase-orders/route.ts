@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { createPurchaseOrderSchema } from "@/lib/validations/purchase-order"
 import { buildPoTotals } from "@/lib/purchase-order-service"
+import { randomUUID } from "crypto"
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
@@ -43,6 +44,8 @@ export async function POST(req: NextRequest) {
       userId: Number(session.user.id),
       notes,
       status: "DRAFT",
+      syncStatus: "PENDING",
+      localId: randomUUID(),
       items: {
         create: itemsWithSubtotal.map((i) => ({
           productVariantId: i.productVariantId,

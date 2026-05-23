@@ -102,29 +102,56 @@ export async function PATCH(req: NextRequest, { params }: Params) {
 
   if (parsed.data.action === "set-all") {
     const { qty, q } = parsed.data
+    const isPg = process.env.IS_PROD_SERVER === "true"
     if (q) {
-      await prisma.$executeRawUnsafe(
-        `UPDATE StockOpnameItem
-         SET physicalQty = ?, difference = ? - systemQty
-         WHERE opnameId = ?
-           AND productVariantId IN (
-             SELECT pv.id FROM ProductVariant pv
-             JOIN Product p ON p.id = pv.productId
-             WHERE LOWER(p.name) LIKE LOWER(?) OR LOWER(pv.variantName) LIKE LOWER(?)
-           )`,
-        qty,
-        qty,
-        opnameId,
-        `%${q}%`,
-        `%${q}%`,
-      )
+      if (isPg) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "StockOpnameItem" soi
+           SET "physicalQty" = $1, "difference" = $2 - soi."systemQty"
+           FROM "ProductVariant" pv
+           JOIN "Product" p ON p.id = pv."productId"
+           WHERE soi."opnameId" = $3
+             AND soi."productVariantId" = pv.id
+             AND (p.name ILIKE $4 OR pv."variantName" ILIKE $5)`,
+          qty,
+          qty,
+          opnameId,
+          `%${q}%`,
+          `%${q}%`,
+        )
+      } else {
+        await prisma.$executeRawUnsafe(
+          `UPDATE StockOpnameItem
+           SET physicalQty = ?, difference = ? - systemQty
+           WHERE opnameId = ?
+             AND productVariantId IN (
+               SELECT pv.id FROM ProductVariant pv
+               JOIN Product p ON p.id = pv.productId
+               WHERE LOWER(p.name) LIKE LOWER(?) OR LOWER(pv.variantName) LIKE LOWER(?)
+             )`,
+          qty,
+          qty,
+          opnameId,
+          `%${q}%`,
+          `%${q}%`,
+        )
+      }
     } else {
-      await prisma.$executeRawUnsafe(
-        `UPDATE StockOpnameItem SET physicalQty = ?, difference = ? - systemQty WHERE opnameId = ?`,
-        qty,
-        qty,
-        opnameId,
-      )
+      if (isPg) {
+        await prisma.$executeRawUnsafe(
+          `UPDATE "StockOpnameItem" SET "physicalQty" = $1, "difference" = $2 - "systemQty" WHERE "opnameId" = $3`,
+          qty,
+          qty,
+          opnameId,
+        )
+      } else {
+        await prisma.$executeRawUnsafe(
+          `UPDATE StockOpnameItem SET physicalQty = ?, difference = ? - systemQty WHERE opnameId = ?`,
+          qty,
+          qty,
+          opnameId,
+        )
+      }
     }
     return NextResponse.json({ ok: true })
   }

@@ -25,6 +25,37 @@ const flushSchema = z.object({
       createdAt: z.string(),
     }),
   ),
+  purchaseOrders: z
+    .array(
+      z.object({
+        localId: z.string(),
+        supplierId: z.number().int().positive().nullable(),
+        supplier: z
+          .object({
+            id: z.number().int(),
+            name: z.string(),
+            phone: z.string().nullable(),
+            address: z.string().nullable(),
+            contactPerson: z.string().nullable(),
+          })
+          .nullable()
+          .optional(),
+        userId: z.number().int().positive(),
+        status: z.string(),
+        notes: z.string().nullable(),
+        createdAt: z.string(),
+        receivedAt: z.string().nullable(),
+        items: z.array(
+          z.object({
+            variantId: z.number().int().positive(),
+            qty: z.number().int().positive(),
+            unitCost: z.number().min(0),
+            subtotal: z.number().min(0),
+          }),
+        ),
+      }),
+    )
+    .default([]),
 })
 
 export async function POST(req: NextRequest) {
@@ -139,5 +170,61 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({ synced, failed })
+  const syncedPo: string[] = []
+  const failedPo: { localId: string; reason: string }[] = []
+
+  for (const po of parsed.data.purchaseOrders) {
+    if (!po.localId) continue
+    const existing = await prisma.purchaseOrder.findUnique({ where: { localId: po.localId } })
+    if (existing) {
+      syncedPo.push(po.localId)
+      continue
+    }
+    try {
+      if (po.supplier && po.supplierId) {
+        await prisma.supplier.upsert({
+          where: { id: po.supplierId },
+          create: {
+            id: po.supplierId,
+            name: po.supplier.name,
+            phone: po.supplier.phone ?? null,
+            address: po.supplier.address ?? null,
+            contactPerson: po.supplier.contactPerson ?? null,
+          },
+          update: {
+            name: po.supplier.name,
+            phone: po.supplier.phone ?? null,
+            address: po.supplier.address ?? null,
+            contactPerson: po.supplier.contactPerson ?? null,
+          },
+        })
+      }
+      await prisma.purchaseOrder.create({
+        data: {
+          supplierId: po.supplierId ?? null,
+          userId: po.userId,
+          status: po.status,
+          notes: po.notes ?? null,
+          createdAt: new Date(po.createdAt),
+          receivedAt: po.receivedAt ? new Date(po.receivedAt) : null,
+          syncStatus: "SYNCED",
+          localId: po.localId,
+          items: {
+            create: po.items.map((i) => ({
+              productVariantId: i.variantId,
+              qty: i.qty,
+              unitCost: i.unitCost,
+              subtotal: i.subtotal,
+            })),
+          },
+        },
+      })
+      syncedPo.push(po.localId)
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Kesalahan server"
+      failedPo.push({ localId: po.localId, reason: msg })
+    }
+  }
+
+  return NextResponse.json({ synced, failed, syncedPo, failedPo })
 }

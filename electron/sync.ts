@@ -81,18 +81,22 @@ async function performSync() {
 async function flushTransactionQueue() {
   const res = await fetch(`${localBaseUrl}/api/sync/pending?limit=100`)
   if (!res.ok) return
-  const { transactions } = await res.json()
-  if (!transactions?.length) return
+  const { transactions, purchaseOrders } = await res.json()
+  if (!transactions?.length && !purchaseOrders?.length) return
 
   const flushRes = await fetch(`${remoteBaseUrl}/api/sync/flush`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transactions }),
+    body: JSON.stringify({ transactions: transactions ?? [], purchaseOrders: purchaseOrders ?? [] }),
   })
   if (!flushRes.ok) return
 
-  const result: { synced: string[]; failed: { localId: string; reason: string }[] } =
-    await flushRes.json()
+  const result: {
+    synced: string[]
+    failed: { localId: string; reason: string }[]
+    syncedPo: string[]
+    failedPo: { localId: string; reason: string }[]
+  } = await flushRes.json()
 
   await fetch(`${localBaseUrl}/api/sync/mark`, {
     method: "POST",
@@ -101,7 +105,7 @@ async function flushTransactionQueue() {
   })
 
   status.pendingCount = 0
-  status.failedCount = (status.failedCount ?? 0) + result.failed.length
+  status.failedCount = (status.failedCount ?? 0) + result.failed.length + result.failedPo.length
 }
 
 async function pullCatalog() {
