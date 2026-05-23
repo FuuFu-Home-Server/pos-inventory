@@ -45,6 +45,17 @@ const applySchema = z.object({
       }),
     )
     .default([]),
+  suppliers: z
+    .array(
+      z.object({
+        id: z.number().int(),
+        name: z.string(),
+        phone: z.string().nullable(),
+        address: z.string().nullable(),
+        contactPerson: z.string().nullable(),
+      }),
+    )
+    .default([]),
   receiptConfig: z.record(z.unknown()).optional(),
   syncedAt: z.string().optional(),
 })
@@ -53,7 +64,8 @@ export async function POST(req: NextRequest) {
   const body = await req.json()
   const parsed = applySchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 })
-  const { variants, paymentMethods, discounts, customers, receiptConfig, syncedAt } = parsed.data
+  const { variants, paymentMethods, discounts, customers, suppliers, receiptConfig, syncedAt } =
+    parsed.data
 
   await prisma.$transaction(async (db) => {
     for (const v of variants) {
@@ -127,6 +139,25 @@ export async function POST(req: NextRequest) {
         where: { id: c.id },
         create: { id: c.id, name: c.name, phone: c.phone ?? null, address: c.address ?? null },
         update: { name: c.name, phone: c.phone ?? null, address: c.address ?? null },
+      })
+    }
+
+    for (const s of suppliers) {
+      await db.supplier.upsert({
+        where: { id: s.id },
+        create: {
+          id: s.id,
+          name: s.name,
+          phone: s.phone ?? null,
+          address: s.address ?? null,
+          contactPerson: s.contactPerson ?? null,
+        },
+        update: {
+          name: s.name,
+          phone: s.phone ?? null,
+          address: s.address ?? null,
+          contactPerson: s.contactPerson ?? null,
+        },
       })
     }
 

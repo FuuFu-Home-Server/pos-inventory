@@ -54,13 +54,13 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       )
       await tx.purchaseOrder.update({
         where: { id: Number(id) },
-        data: { status: "RECEIVED", receivedAt: new Date() },
+        data: { status: "RECEIVED", receivedAt: new Date(), syncStatus: "PENDING" },
       })
     })
   } else {
     await prisma.purchaseOrder.update({
       where: { id: Number(id) },
-      data: { status: "CANCELLED" },
+      data: { status: "CANCELLED", syncStatus: "PENDING" },
     })
   }
 

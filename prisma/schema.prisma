@@ -173,11 +173,14 @@ model PurchaseOrder {
   notes      String?
   createdAt  DateTime @default(now())
   receivedAt DateTime?
+  syncStatus String   @default("PENDING")
+  localId    String?  @unique
   supplier   Supplier?           @relation(fields: [supplierId], references: [id])
   user       User                @relation(fields: [userId], references: [id])
   items      PurchaseOrderItem[]
 
   @@index([status, createdAt])
+  @@index([syncStatus])
 }
 
 model PurchaseOrderItem {

@@ -14,27 +14,29 @@ export async function GET(req: NextRequest) {
     ...(sinceDate ? { updatedAt: { gt: sinceDate } } : {}),
   }
 
-  const [variants, paymentMethods, discounts, customers, receiptConfig, users] = await Promise.all([
-    prisma.productVariant.findMany({
-      where: variantWhere,
-      include: { product: { select: { name: true, category: true } } },
-    }),
-    prisma.paymentMethod.findMany({ where: { isActive: true } }),
-    prisma.discount.findMany({ where: { isActive: true } }),
-    prisma.customer.findMany(),
-    prisma.receiptConfig.findUnique({ where: { id: 1 } }),
-    prisma.user.findMany({
-      where: { isActive: true },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        roleId: true,
-        isActive: true,
-        createdAt: true,
-      },
-    }),
-  ])
+  const [variants, paymentMethods, discounts, customers, receiptConfig, users, suppliers] =
+    await Promise.all([
+      prisma.productVariant.findMany({
+        where: variantWhere,
+        include: { product: { select: { name: true, category: true } } },
+      }),
+      prisma.paymentMethod.findMany({ where: { isActive: true } }),
+      prisma.discount.findMany({ where: { isActive: true } }),
+      prisma.customer.findMany(),
+      prisma.receiptConfig.findUnique({ where: { id: 1 } }),
+      prisma.user.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          roleId: true,
+          isActive: true,
+          createdAt: true,
+        },
+      }),
+      prisma.supplier.findMany(),
+    ])
 
   return NextResponse.json({
     variants,
@@ -43,6 +45,7 @@ export async function GET(req: NextRequest) {
     customers,
     receiptConfig,
     users,
+    suppliers,
     syncedAt: new Date().toISOString(),
   })
 }

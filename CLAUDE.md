@@ -109,6 +109,7 @@ Discount (type: PERCENT|FLAT stored as String, scope: TRANSACTION|PRODUCT, produ
 Transaction → TransactionItem
   syncStatus String (PENDING|SYNCED|FAILED|DISMISSED), syncFailReason String?, localId String? @unique
 PurchaseOrder (DRAFT→RECEIVED→CANCELLED) → PurchaseOrderItem
+  syncStatus String (PENDING|SYNCED|FAILED), localId String? @unique
 PurchaseList → PurchaseListItem
 StockOpname (DRAFT→CONFIRMED) → StockOpnameItem
 ReceiptConfig (singleton id=1, staticQrisImage String?)
