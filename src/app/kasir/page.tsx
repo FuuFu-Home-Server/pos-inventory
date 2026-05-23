@@ -185,7 +185,7 @@ export default function KasirPage() {
   const { data: session } = useSession()
   const store = usePosStore()
   const isOnline = useOnlineStatus()
-  const { failedCount, pendingCount, syncing, triggerSync } = useSyncStatus()
+  const { failedCount, pendingCount, syncing, syncProgress, triggerSync } = useSyncStatus()
 
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([])
   const [discounts, setDiscounts] = useState<Discount[]>([])
@@ -603,9 +603,27 @@ export default function KasirPage() {
             <button
               onClick={triggerSync}
               disabled={syncing}
-              className="text-xs text-slate-400 hover:text-slate-200 px-2 py-1 disabled:opacity-40"
+              className="flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 px-2 py-1 disabled:opacity-40"
             >
-              {syncing ? "Sync..." : "Sync"}
+              {syncing && syncProgress ? (
+                <>
+                  <span className="w-24 h-1.5 rounded-full bg-slate-700 overflow-hidden">
+                    <span
+                      className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${Math.round((syncProgress.done / syncProgress.total) * 100)}%`,
+                      }}
+                    />
+                  </span>
+                  <span className="tabular-nums">
+                    {syncProgress.done}/{syncProgress.total}
+                  </span>
+                </>
+              ) : syncing ? (
+                "Syncing..."
+              ) : (
+                "Sync"
+              )}
             </button>
           )}
         </div>

@@ -4,6 +4,7 @@ export type SyncStatus = {
   pendingCount: number
   failedCount: number
   syncing: boolean
+  syncProgress: { done: number; total: number } | null
 }
 
 let status: SyncStatus = {
@@ -12,6 +13,7 @@ let status: SyncStatus = {
   pendingCount: 0,
   failedCount: 0,
   syncing: false,
+  syncProgress: null,
 }
 
 let pingInterval: ReturnType<typeof setInterval> | null = null
@@ -65,6 +67,7 @@ async function checkConnectivity() {
 async function performSync() {
   if (status.syncing) return
   status.syncing = true
+  status.syncProgress = null
   onStatusChange?.()
   try {
     await flushTransactionQueue()
@@ -74,6 +77,7 @@ async function performSync() {
     // sync error is silent — status.lastSyncAt stays stale, user sees no lastSyncAt update
   } finally {
     status.syncing = false
+    status.syncProgress = null
     onStatusChange?.()
   }
 }
@@ -82,12 +86,18 @@ async function flushTransactionQueue() {
   const res = await fetch(`${localBaseUrl}/api/sync/pending?limit=100`)
   if (!res.ok) return
   const { transactions, purchaseOrders } = await res.json()
-  if (!transactions?.length && !purchaseOrders?.length) return
+  const txList: unknown[] = transactions ?? []
+  const poList: unknown[] = purchaseOrders ?? []
+  const total = txList.length + poList.length
+  if (total === 0) return
+
+  status.syncProgress = { done: 0, total }
+  onStatusChange?.()
 
   const flushRes = await fetch(`${remoteBaseUrl}/api/sync/flush`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ transactions: transactions ?? [], purchaseOrders: purchaseOrders ?? [] }),
+    body: JSON.stringify({ transactions: txList, purchaseOrders: poList }),
   })
   if (!flushRes.ok) return
 
@@ -97,6 +107,9 @@ async function flushTransactionQueue() {
     syncedPo: string[]
     failedPo: { localId: string; reason: string }[]
   } = await flushRes.json()
+
+  status.syncProgress = { done: total, total }
+  onStatusChange?.()
 
   await fetch(`${localBaseUrl}/api/sync/mark`, {
     method: "POST",
