@@ -4,6 +4,7 @@ type SyncStatus = {
   pendingCount: number
   failedCount: number
   syncing: boolean
+  syncProgress: { done: number; total: number } | null
 }
 
 type AppInfo = { title: string; description: string }

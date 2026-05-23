@@ -9,6 +9,7 @@ const defaultStatus: SyncStatus = {
   pendingCount: 0,
   failedCount: 0,
   syncing: false,
+  syncProgress: null,
 }
 
 export function useSyncStatus() {

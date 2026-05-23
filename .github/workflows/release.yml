@@ -23,6 +23,9 @@ jobs:
       - run: npm run electron:build -- --linux
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DATABASE_URL: "file:./dev.db"
+          NEXT_PUBLIC_QRIS_STRING: ${{ secrets.NEXT_PUBLIC_QRIS_STRING }}
 
       - uses: softprops/action-gh-release@v2
         with:
@@ -47,6 +50,9 @@ jobs:
       - run: npm run electron:build -- --win
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          DATABASE_URL: "file:./dev.db"
+          NEXT_PUBLIC_QRIS_STRING: ${{ secrets.NEXT_PUBLIC_QRIS_STRING }}
 
       - uses: softprops/action-gh-release@v2
         with:
