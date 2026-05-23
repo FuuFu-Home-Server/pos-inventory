@@ -2,24 +2,17 @@ appId: com.kasir.desktop
 productName: Kasir
 copyright: Copyright © 2026
 
+asar: false
+
 directories:
   output: dist
   buildResources: build
 
 files:
-  - ".next/standalone/**"
-  - ".next/static/**"
-  - "public/**"
+  - "standalone/**"
   - "prisma/schema.prisma"
   - "electron-dist/**"
   - "package.json"
-  - "node_modules/**"
-  - "!node_modules/.cache/**"
-  - "!node_modules/.bin/**"
-  - "!src/**"
-  - "!electron/**"
-  - "!docs/**"
-  - "!tests/**"
   - "!.env*"
 
 win:

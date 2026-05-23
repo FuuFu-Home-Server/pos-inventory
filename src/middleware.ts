@@ -22,6 +22,7 @@ const PUBLIC_PATHS = [
   "/api/setup",
   "/api/health",
   "/api/sync",
+  "/api/seed",
 ]
 
 export default auth((req) => {

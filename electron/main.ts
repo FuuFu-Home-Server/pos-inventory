@@ -1,14 +1,18 @@
-import { app, BrowserWindow, ipcMain, dialog } from "electron"
-import path from "path"
+import { ChildProcess, execFile, spawn } from "child_process"
+import crypto from "crypto"
+import { app, BrowserWindow, dialog, ipcMain } from "electron"
 import fs from "fs"
-import { spawn, execFile, ChildProcess } from "child_process"
+import path from "path"
 import { z } from "zod"
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+
 import ElectronStore from "electron-store"
 
 if (process.platform === "linux") {
-  app.commandLine.appendSwitch("ozone-platform", "x11")
+  app.commandLine.appendSwitch("no-sandbox")
   app.commandLine.appendSwitch("disable-gpu-sandbox")
+  app.commandLine.appendSwitch("disable-dev-shm-usage")
+  app.commandLine.appendSwitch("no-zygote")
+  app.commandLine.appendSwitch("host-resolver-rules", "MAP localhost 127.0.0.1")
 }
 
 const isDev = process.env.ELECTRON_DEV === "true"
@@ -20,11 +24,24 @@ let nextProcess: ChildProcess | null = null
 const store = new (ElectronStore as any)({ defaults: { remoteUrl: "" } })
 
 function findSystemNode(): string {
+  if (process.platform === "win32") {
+    const bases = [
+      process.env.PROGRAMFILES,
+      process.env["PROGRAMFILES(X86)"],
+      process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, "Programs") : null,
+      "C:\\Program Files",
+    ].filter(Boolean) as string[]
+    for (const base of bases) {
+      const p = path.join(base, "nodejs", "node.exe")
+      if (fs.existsSync(p)) return p
+    }
+    throw new Error("Node.js tidak ditemukan. Install Node.js dari nodejs.org")
+  }
   const candidates = ["/usr/bin/node", "/usr/local/bin/node", "/opt/homebrew/bin/node"]
   for (const p of candidates) {
     if (fs.existsSync(p)) return p
   }
-  throw new Error("Node.js not found. Install Node.js from nodejs.org")
+  throw new Error("Node.js tidak ditemukan. Install Node.js dari nodejs.org")
 }
 
 export function getDbPath(): string {
@@ -38,8 +55,13 @@ function runPrismaPush(): Promise<void> {
       ? (process.env.ELECTRON_APP_ROOT ?? path.join(__dirname, ".."))
       : path.join(process.resourcesPath, "app")
 
-    const prismaScript = path.join(appRoot, "node_modules", "prisma", "build", "index.js")
-    const schemaPath = path.join(appRoot, "prisma", "schema.prisma")
+    const standaloneRoot = isDev
+      ? path.join(appRoot, ".next", "standalone")
+      : path.join(process.resourcesPath, "app", "standalone")
+    const prismaScript = path.join(standaloneRoot, "node_modules", "prisma", "build", "index.js")
+    const schemaPath = isDev
+      ? path.join(appRoot, "prisma", "schema.prisma")
+      : path.join(process.resourcesPath, "app", "prisma", "schema.prisma")
     const [cmd, args, cwd] = isDev
       ? [
           path.join(appRoot, "node_modules", ".bin", "prisma"),
@@ -57,9 +79,16 @@ function runPrismaPush(): Promise<void> {
       env: { ...process.env, DATABASE_URL: `file:${dbPath}` },
       stdio: "pipe",
     })
+    const stderr: Buffer[] = []
+    child.stderr?.on("data", (chunk: Buffer) => stderr.push(chunk))
     child.on("close", (code) => {
       if (code === 0) resolve()
-      else reject(new Error(`prisma db push exited with code ${code}`))
+      else
+        reject(
+          new Error(
+            `prisma db push exited with code ${code}\n${Buffer.concat(stderr).toString().slice(0, 500)}`,
+          ),
+        )
     })
     child.on("error", (err) =>
       reject(
@@ -78,9 +107,19 @@ function startNextServer(): Promise<void> {
       ? (process.env.ELECTRON_APP_ROOT ?? path.join(__dirname, ".."))
       : path.join(process.resourcesPath, "app")
 
+    let authSecret = store.get("authSecret") as string | undefined
+    if (!authSecret) {
+      authSecret = crypto.randomBytes(32).toString("hex")
+      store.set("authSecret", authSecret)
+    }
+
     const env = {
       ...process.env,
       DATABASE_URL: `file:${dbPath}`,
+      AUTH_SECRET: authSecret,
+      AUTH_URL: `http://127.0.0.1:${PORT}`,
+      NEXTAUTH_SECRET: authSecret,
+      NEXTAUTH_URL: `http://127.0.0.1:${PORT}`,
       PORT: String(PORT),
       HOSTNAME: "127.0.0.1",
       NODE_ENV: (isDev ? "development" : "production") as "development" | "production",
@@ -94,8 +133,16 @@ function startNextServer(): Promise<void> {
         shell: process.platform === "win32",
       })
     } else {
-      const serverScript = path.join(appRoot, ".next", "standalone", "server.js")
-      nextProcess = spawn(findSystemNode(), [serverScript], { cwd: appRoot, env, stdio: "pipe" })
+      const serverScript = path.join(process.resourcesPath, "app", "standalone", "server.js")
+      const logFile = fs.createWriteStream(path.join(app.getPath("userData"), "server.log"), {
+        flags: "a",
+      })
+      nextProcess = spawn(findSystemNode(), [serverScript], {
+        cwd: app.getPath("userData"),
+        env,
+        stdio: "pipe",
+      })
+      nextProcess.stderr?.pipe(logFile)
     }
 
     let resolved = false
@@ -107,6 +154,7 @@ function startNextServer(): Promise<void> {
     }, 15000)
 
     nextProcess.stdout?.on("data", (chunk: Buffer) => {
+      if (!isDev) fs.appendFileSync(path.join(app.getPath("userData"), "server.log"), chunk)
       if (!resolved && chunk.toString().includes(String(PORT))) {
         resolved = true
         clearTimeout(fallbackTimer)
@@ -154,8 +202,24 @@ function createWindow() {
     },
     show: false,
   })
+  mainWindow.webContents.on("will-redirect", (_e, url) => {
+    if (url.includes("localhost")) {
+      mainWindow?.loadURL(url.replace(/localhost/g, "127.0.0.1"))
+    }
+  })
 
-  mainWindow.loadURL(`http://localhost:${PORT}`)
+  const logPath = path.join(app.getPath("userData"), "renderer.log")
+  mainWindow.webContents.on("did-fail-load", (_e, code, desc, url) => {
+    fs.appendFileSync(logPath, `[did-fail-load] ${code} ${desc} url=${url}\n`)
+  })
+  mainWindow.webContents.on("console-message", (_e, level, msg, line, src) => {
+    fs.appendFileSync(logPath, `[console:${level}] ${msg} (${src}:${line})\n`)
+  })
+  mainWindow.webContents.on("render-process-gone", (_e, details) => {
+    fs.appendFileSync(logPath, `[render-process-gone] ${JSON.stringify(details)}\n`)
+  })
+
+  mainWindow.loadURL(`http://127.0.0.1:${PORT}`)
   mainWindow.once("ready-to-show", () => mainWindow?.show())
   mainWindow.on("closed", () => {
     mainWindow = null
@@ -176,6 +240,32 @@ app.whenReady().then(async () => {
     })
     app.quit()
     return
+  }
+
+  const wantSeed = process.argv.includes("--seed") || process.argv.includes("--force-seed")
+  if (wantSeed) {
+    const force = process.argv.includes("--force-seed")
+    try {
+      const res = await fetch(`http://127.0.0.1:${PORT}/api/seed`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ force }),
+      })
+      const data = (await res.json()) as { ok?: boolean; message?: string; error?: string }
+      await dialog.showMessageBox({
+        type: res.ok ? "info" : "warning",
+        title: "Seed Database",
+        message: data.message ?? data.error ?? "Selesai",
+        buttons: ["OK"],
+      })
+    } catch (err) {
+      await dialog.showMessageBox({
+        type: "error",
+        title: "Seed gagal",
+        message: err instanceof Error ? err.message : String(err),
+        buttons: ["OK"],
+      })
+    }
   }
 
   createWindow()

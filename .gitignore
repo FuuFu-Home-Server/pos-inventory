@@ -8,6 +8,7 @@ build/
 out/
 output-dir/
 electron-dist/
+standalone/
 .superpowers/
 source/
 .next/
