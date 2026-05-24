@@ -1,0 +1,41 @@
+name: Deploy kasir server to Mac Mini
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v2
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
+          AUTH_URL: ${{ secrets.AUTH_URL }}
+          NEXT_PUBLIC_QRIS_STRING: ${{ secrets.NEXT_PUBLIC_QRIS_STRING }}
+          PORT: ${{ secrets.PORT }}
+          PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          envs: DATABASE_URL,AUTH_SECRET,AUTH_URL,NEXT_PUBLIC_QRIS_STRING,PORT,PAT_TOKEN
+          script: |
+            export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin:~/.docker/bin
+
+            cd /Users/fu/homelab/apps/kasir
+
+            git pull "https://x-access-token:${PAT_TOKEN}@github.com/FuuFu-Home-Server/pos-inventory.git" main
+
+            printf 'DATABASE_URL=%s\nAUTH_SECRET=%s\nAUTH_URL=%s\nNEXT_PUBLIC_QRIS_STRING=%s\nPORT=%s\n' \
+              "$DATABASE_URL" "$AUTH_SECRET" "$AUTH_URL" "$NEXT_PUBLIC_QRIS_STRING" "$PORT" > .env
+
+            docker compose up -d --build

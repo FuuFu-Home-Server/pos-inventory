@@ -2,10 +2,6 @@ FROM node:20-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache bash
 
-FROM base AS deps
-COPY package*.json ./
-RUN npm ci --omit=dev
-
 FROM base AS builder
 COPY package*.json ./
 RUN npm ci

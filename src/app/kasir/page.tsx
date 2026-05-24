@@ -208,6 +208,20 @@ export default function KasirPage() {
   const [printerConnected, setPrinterConnected] = useState(false)
 
   useEffect(() => {
+    if (!("serial" in navigator)) return
+    navigator.serial.getPorts().then(async (ports) => {
+      if (ports.length === 0) return
+      try {
+        await ports[0].open({ baudRate: 9600 })
+        serialPortRef.current = ports[0]
+        setPrinterConnected(true)
+      } catch {
+        // port busy or unavailable — silently skip
+      }
+    })
+  }, [])
+
+  useEffect(() => {
     if (!receiptData) return
 
     if (serialPortRef.current) {
