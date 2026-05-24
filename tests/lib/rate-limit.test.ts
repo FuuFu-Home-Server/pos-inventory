@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest"
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest"
 import { rateLimit } from "@/lib/rate-limit"
 
 describe("rateLimit", () => {
@@ -17,5 +17,15 @@ describe("rateLimit", () => {
     rateLimit("10.0.0.3", 1, 60_000)
     expect(rateLimit("10.0.0.3", 1, 60_000)).toBe(false)
     expect(rateLimit("10.0.0.4", 1, 60_000)).toBe(true)
+  })
+
+  it("resets count after window expires", () => {
+    vi.useFakeTimers()
+    const ip = "10.0.0.99"
+    rateLimit(ip, 1, 1_000)
+    expect(rateLimit(ip, 1, 1_000)).toBe(false)
+    vi.advanceTimersByTime(1_001)
+    expect(rateLimit(ip, 1, 1_000)).toBe(true)
+    vi.useRealTimers()
   })
 })

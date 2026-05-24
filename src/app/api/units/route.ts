@@ -4,8 +4,12 @@ import { z } from "zod"
 
 const schema = z.object({ name: z.string().min(1) })
 
-export async function GET() {
-  const units = await prisma.unitOption.findMany({ orderBy: { name: "asc" } })
+export async function GET(req: NextRequest) {
+  const active = new URL(req.url).searchParams.get("active")
+  const units = await prisma.unitOption.findMany({
+    where: active === "true" ? { isActive: true } : undefined,
+    orderBy: { name: "asc" },
+  })
   return NextResponse.json(units)
 }
 

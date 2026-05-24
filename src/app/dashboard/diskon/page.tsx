@@ -27,7 +27,10 @@ export default function DiskonPage() {
   return (
     <div className="p-4 md:p-6">
       <div className="flex flex-wrap justify-between items-start gap-3 mb-4">
-        <h1 className="text-xl font-bold md:text-2xl text-gray-900">Diskon</h1>
+        <div>
+          <h1 className="text-xl font-black md:text-2xl text-gray-900">Diskon</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{discounts.length} diskon terdaftar</p>
+        </div>
         <Button onClick={() => setModalOpen(true)}>+ Tambah Diskon</Button>
       </div>
       <Table>

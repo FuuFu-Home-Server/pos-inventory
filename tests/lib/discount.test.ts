@@ -2,6 +2,17 @@ import { describe, it, expect } from "vitest"
 import { calcTransactionDiscount, calcProductDiscount } from "@/lib/discount-calc"
 
 describe("calcTransactionDiscount", () => {
+  it("returns 0 for PRODUCT scope", () => {
+    expect(
+      calcTransactionDiscount(100_000, {
+        type: "PERCENT",
+        value: 10,
+        scope: "PRODUCT",
+        minPurchase: null,
+      }),
+    ).toBe(0)
+  })
+
   it("calculates PERCENT", () => {
     expect(
       calcTransactionDiscount(100_000, {
@@ -57,6 +68,28 @@ describe("calcProductDiscount", () => {
         minPurchase: null,
       }),
     ).toBe(10_000)
+  })
+
+  it("calculates FLAT on item subtotal", () => {
+    expect(
+      calcProductDiscount(30_000, {
+        type: "FLAT",
+        value: 5_000,
+        scope: "PRODUCT",
+        minPurchase: null,
+      }),
+    ).toBe(5_000)
+  })
+
+  it("FLAT cannot exceed item subtotal", () => {
+    expect(
+      calcProductDiscount(3_000, {
+        type: "FLAT",
+        value: 50_000,
+        scope: "PRODUCT",
+        minPurchase: null,
+      }),
+    ).toBe(3_000)
   })
 
   it("returns 0 for TRANSACTION scope", () => {

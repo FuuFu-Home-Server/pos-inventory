@@ -19,7 +19,8 @@
     "prepare": "husky",
     "electron:dev": "tsc --project electron/tsconfig.json && concurrently -k \"cross-env ELECTRON_DEV=true next dev\" \"tsc --project electron/tsconfig.json --watch --preserveWatchOutput\" \"wait-on http://localhost:3000 --timeout 30000 && ELECTRON_DEV=true ELECTRON_APP_ROOT=$PWD electron . --ozone-platform=x11 --disable-gpu\"",
     "electron:build": "next build && cp -r .next/static .next/standalone/.next/static && cp -r node_modules/.prisma .next/standalone/node_modules/.prisma && cp -r node_modules/prisma .next/standalone/node_modules/prisma && rm -rf standalone && cp -r .next/standalone standalone && tsc --project electron/tsconfig.json && electron-builder",
-    "electron:pack": "electron-builder --dir"
+    "electron:pack": "electron-builder --dir",
+    "coverage": "vitest run --coverage"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx,json,md}": "prettier --write"
@@ -51,11 +52,15 @@
   "devDependencies": {
     "@faker-js/faker": "^9.8.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^4.5.2",
+    "@vitest/coverage-istanbul": "^3.2.4",
     "concurrently": "^9.2.1",
     "cross-env": "^10.1.0",
     "electron": "^42.2.0",
@@ -63,6 +68,7 @@
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "husky": "^9.1.7",
+    "jsdom": "^29.1.1",
     "lint-staged": "^17.0.5",
     "prettier": "^3.8.3",
     "tailwindcss": "^4",

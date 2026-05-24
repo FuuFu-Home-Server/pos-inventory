@@ -5,6 +5,7 @@ import { createPortal } from "react-dom"
 import { X, Plus } from "lucide-react"
 import { Modal } from "./Modal"
 import { Button } from "./Button"
+import { Select } from "./Select"
 
 export type PurchaseItem = {
   variantId: number
@@ -80,6 +81,7 @@ export function PurchaseModal({
   const [showNewProduct, setShowNewProduct] = useState(false)
   const [showNewVariant, setShowNewVariant] = useState(false)
   const [categories, setCategories] = useState<string[]>([])
+  const [unitOptions, setUnitOptions] = useState<{ value: string; label: string }[]>([])
   const [newProductForm, setNewProductForm] = useState<QuickProductForm>({
     name: "",
     category: "",
@@ -111,10 +113,19 @@ export function PurchaseModal({
   }, [open])
 
   useEffect(() => {
-    if ((showNewProduct || showNewVariant) && categories.length === 0) {
+    if (!(showNewProduct || showNewVariant)) return
+    if (categories.length === 0) {
       fetch("/api/categories")
         .then((r) => r.json())
         .then((data: { name: string }[]) => setCategories(data.map((c) => c.name)))
+        .catch(() => {})
+    }
+    if (unitOptions.length === 0) {
+      fetch("/api/units?active=true")
+        .then((r) => r.json())
+        .then((data: { name: string }[]) =>
+          setUnitOptions(data.map((u) => ({ value: u.name, label: u.name }))),
+        )
         .catch(() => {})
     }
   }, [showNewProduct, showNewVariant])
@@ -363,38 +374,12 @@ export function PurchaseModal({
                         className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
                       />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                        Satuan
-                      </label>
-                      <select
-                        value={newVariantForm.unit}
-                        onChange={(e) => setNewVariantForm((f) => ({ ...f, unit: e.target.value }))}
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                      >
-                        {[
-                          "pcs",
-                          "kg",
-                          "g",
-                          "liter",
-                          "ml",
-                          "botol",
-                          "pak",
-                          "dus",
-                          "karton",
-                          "lusin",
-                          "sachet",
-                          "bungkus",
-                          "kaleng",
-                          "ikat",
-                          "lembar",
-                        ].map((u) => (
-                          <option key={u} value={u}>
-                            {u}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      label="Satuan"
+                      value={newVariantForm.unit}
+                      onChange={(v) => setNewVariantForm((f) => ({ ...f, unit: v }))}
+                      options={unitOptions}
+                    />
                     <div className="flex flex-col gap-1 col-span-2">
                       <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
                         Harga Beli
@@ -434,25 +419,15 @@ export function PurchaseModal({
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                        Kategori
-                      </label>
-                      <select
-                        value={newProductForm.category}
-                        onChange={(e) =>
-                          setNewProductForm((f) => ({ ...f, category: e.target.value }))
-                        }
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                      >
-                        <option value="">— Pilih —</option>
-                        {categories.map((c) => (
-                          <option key={c} value={c}>
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      label="Kategori"
+                      value={newProductForm.category}
+                      onChange={(v) => setNewProductForm((f) => ({ ...f, category: v }))}
+                      options={[
+                        { value: "", label: "— Pilih —" },
+                        ...categories.map((c) => ({ value: c, label: c })),
+                      ]}
+                    />
                     <div className="flex flex-col gap-1">
                       <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
                         Nama Varian
@@ -466,38 +441,12 @@ export function PurchaseModal({
                         className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
                       />
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
-                        Satuan
-                      </label>
-                      <select
-                        value={newProductForm.unit}
-                        onChange={(e) => setNewProductForm((f) => ({ ...f, unit: e.target.value }))}
-                        className="border border-gray-300 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                      >
-                        {[
-                          "pcs",
-                          "kg",
-                          "g",
-                          "liter",
-                          "ml",
-                          "botol",
-                          "pak",
-                          "dus",
-                          "karton",
-                          "lusin",
-                          "sachet",
-                          "bungkus",
-                          "kaleng",
-                          "ikat",
-                          "lembar",
-                        ].map((u) => (
-                          <option key={u} value={u}>
-                            {u}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <Select
+                      label="Satuan"
+                      value={newProductForm.unit}
+                      onChange={(v) => setNewProductForm((f) => ({ ...f, unit: v }))}
+                      options={unitOptions}
+                    />
                     <div className="flex flex-col gap-1">
                       <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">
                         Harga Beli

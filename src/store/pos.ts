@@ -12,11 +12,17 @@ export type CartItem = {
   subtotal: number
 }
 
+export type StoredDiscount = {
+  id: number
+  type: string
+  value: number
+  scope: string
+  minPurchase: number | null
+}
+
 type PosStore = {
   items: CartItem[]
-  discountIds: number[]
-  discountAmounts: Record<number, number>
-  discountAmount: number
+  appliedDiscounts: StoredDiscount[]
   customerId: number | null
   paymentMethodId: number | null
   paymentAmount: number
@@ -28,21 +34,21 @@ type PosStore = {
     newItem: Omit<CartItem, "qty" | "itemDiscountAmt" | "subtotal">,
   ) => void
   setItemDiscount: (variantId: number, amount: number) => void
-  toggleDiscount: (id: number, amount: number) => void
+  toggleDiscount: (discount: StoredDiscount) => void
   setCustomer: (customerId: number | null) => void
   setPaymentMethod: (id: number | null) => void
   setPaymentAmount: (amount: number) => void
   reset: () => void
   getSubtotal: () => number
+  getDiscountAmounts: () => Record<number, number>
+  getDiscountTotal: () => number
   getTotal: () => number
   getChange: () => number
 }
 
 const initialState = {
   items: [] as CartItem[],
-  discountIds: [],
-  discountAmounts: {},
-  discountAmount: 0,
+  appliedDiscounts: [] as StoredDiscount[],
   customerId: null,
   paymentMethodId: null,
   paymentAmount: 0,
@@ -110,19 +116,13 @@ export const usePosStore = create<PosStore>((set, get) => ({
     }))
   },
 
-  toggleDiscount(id, amount) {
+  toggleDiscount(discount) {
     set((state) => {
-      const has = state.discountIds.includes(id)
-      const newIds = has ? state.discountIds.filter((x) => x !== id) : [...state.discountIds, id]
-      const newAmounts = has
-        ? Object.fromEntries(
-            Object.entries(state.discountAmounts).filter(([k]) => Number(k) !== id),
-          )
-        : { ...state.discountAmounts, [id]: amount }
+      const has = state.appliedDiscounts.some((d) => d.id === discount.id)
       return {
-        discountIds: newIds,
-        discountAmounts: newAmounts,
-        discountAmount: Object.values(newAmounts).reduce((a, b) => a + b, 0),
+        appliedDiscounts: has
+          ? state.appliedDiscounts.filter((d) => d.id !== discount.id)
+          : [...state.appliedDiscounts, discount],
       }
     })
   },
@@ -141,8 +141,24 @@ export const usePosStore = create<PosStore>((set, get) => ({
   getSubtotal() {
     return get().items.reduce((sum, i) => sum + i.subtotal, 0)
   },
+  getDiscountAmounts() {
+    const subtotal = get().getSubtotal()
+    return Object.fromEntries(
+      get().appliedDiscounts.map((d) => {
+        if (d.minPurchase != null && subtotal < d.minPurchase) return [d.id, 0]
+        const amt =
+          d.type === "PERCENT"
+            ? Math.round((subtotal * d.value) / 100)
+            : Math.min(d.value, subtotal)
+        return [d.id, amt]
+      }),
+    )
+  },
+  getDiscountTotal() {
+    return Object.values(get().getDiscountAmounts()).reduce((a, b) => a + b, 0)
+  },
   getTotal() {
-    return Math.max(0, get().getSubtotal() - get().discountAmount)
+    return Math.max(0, get().getSubtotal() - get().getDiscountTotal())
   },
   getChange() {
     return Math.max(0, get().paymentAmount - get().getTotal())

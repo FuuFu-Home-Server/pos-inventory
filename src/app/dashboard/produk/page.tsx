@@ -279,63 +279,61 @@ export default function ProdukPage() {
       </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
-        <select
+        <Select
           value={filterCategory}
-          onChange={(e) => setFilterCategory(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <option value="">Semua Kategori</option>
-          {categories.map((c) => (
-            <option key={c.id} value={c.name}>
-              {c.name}
-            </option>
-          ))}
-        </select>
+          onChange={setFilterCategory}
+          options={[
+            { value: "", label: "Semua Kategori" },
+            ...categories.map((c) => ({ value: c.name, label: c.name })),
+          ]}
+          className="w-44"
+        />
 
-        <select
+        <Select
           value={filterSupplierId}
-          onChange={(e) => setFilterSupplierId(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <option value="">Semua Supplier</option>
-          {suppliers.map((s) => (
-            <option key={s.id} value={String(s.id)}>
-              {s.name}
-            </option>
-          ))}
-        </select>
+          onChange={setFilterSupplierId}
+          options={[
+            { value: "", label: "Semua Supplier" },
+            ...suppliers.map((s) => ({ value: String(s.id), label: s.name })),
+          ]}
+          className="w-44"
+        />
 
-        <select
+        <Select
           value={filterStockStatus}
-          onChange={(e) => setFilterStockStatus(e.target.value as "all" | "low" | "out")}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <option value="all">Semua Stok</option>
-          <option value="low">Stok Menipis</option>
-          <option value="out">Stok Habis</option>
-        </select>
+          onChange={(v) => setFilterStockStatus(v as "all" | "low" | "out")}
+          options={[
+            { value: "all", label: "Semua Stok" },
+            { value: "low", label: "Stok Menipis" },
+            { value: "out", label: "Stok Habis" },
+          ]}
+          className="w-36"
+        />
 
-        <select
+        <Select
           value={filterDataStatus}
-          onChange={(e) => setFilterDataStatus(e.target.value as "all" | "incomplete")}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        >
-          <option value="all">Semua Data</option>
-          <option value="incomplete">
-            Data Tidak Lengkap{stats.incompleteCount > 0 ? ` (${stats.incompleteCount})` : ""}
-          </option>
-        </select>
+          onChange={(v) => setFilterDataStatus(v as "all" | "incomplete")}
+          options={[
+            { value: "all", label: "Semua Data" },
+            {
+              value: "incomplete",
+              label: `Data Tidak Lengkap${stats.incompleteCount > 0 ? ` (${stats.incompleteCount})` : ""}`,
+            },
+          ]}
+          className="w-52"
+        />
 
         <div className="flex items-center gap-1 ml-auto">
-          <select
+          <Select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as "name" | "category" | "createdAt")}
-            className="text-sm border border-gray-200 rounded-lg px-3 py-1.5 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
-          >
-            <option value="name">Urut: Nama</option>
-            <option value="category">Urut: Kategori</option>
-            <option value="createdAt">Urut: Terbaru</option>
-          </select>
+            onChange={(v) => setSortBy(v as "name" | "category" | "createdAt")}
+            options={[
+              { value: "name", label: "Urut: Nama" },
+              { value: "category", label: "Urut: Kategori" },
+              { value: "createdAt", label: "Urut: Terbaru" },
+            ]}
+            className="w-44"
+          />
           <button
             onClick={() => setSortDir((d) => (d === "asc" ? "desc" : "asc"))}
             className="border border-gray-200 rounded-lg px-2.5 py-1.5 bg-white hover:bg-gray-50 text-gray-600 text-sm"
@@ -593,18 +591,14 @@ export default function ProdukPage() {
                     {field.label}
                     {field.required && <span className="text-red-500 ml-1">*</span>}
                   </label>
-                  <select
+                  <Select
                     value={mapping[field.key] ?? ""}
-                    onChange={(e) => setMapping({ ...mapping, [field.key]: e.target.value })}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                  >
-                    <option value="">— tidak dipetakan —</option>
-                    {csvData.headers.map((h) => (
-                      <option key={h} value={h}>
-                        {h}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(v) => setMapping({ ...mapping, [field.key]: v })}
+                    options={[
+                      { value: "", label: "— tidak dipetakan —" },
+                      ...csvData.headers.map((h) => ({ value: h, label: h })),
+                    ]}
+                  />
                 </div>
               ))}
             </div>

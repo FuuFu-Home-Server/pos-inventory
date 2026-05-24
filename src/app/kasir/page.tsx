@@ -310,7 +310,7 @@ export default function KasirPage() {
             itemDiscountAmt: i.itemDiscountAmt,
           })),
           customerId: store.customerId,
-          discountId: store.discountIds[0] ?? null,
+          discountId: store.appliedDiscounts[0]?.id ?? null,
           paymentMethodId: store.paymentMethodId,
           paymentAmount: store.getTotal(),
           localId,
@@ -466,7 +466,7 @@ export default function KasirPage() {
           itemDiscountAmt: i.itemDiscountAmt,
         })),
         customerId: store.customerId,
-        discountId: store.discountIds[0] ?? null,
+        discountId: store.appliedDiscounts[0]?.id ?? null,
         paymentMethodId: store.paymentMethodId,
         paymentAmount: store.paymentAmount,
         localId,
@@ -714,7 +714,7 @@ export default function KasirPage() {
 
         <div
           className={cn(
-            "shrink-0 overflow-y-auto bg-gray-50 p-4 md:p-5 w-full md:w-70 xl:w-92",
+            "shrink-0 overflow-hidden bg-gray-50 w-full md:w-70 xl:w-92",
             activeTab === "payment" ? "flex flex-col" : "hidden md:flex md:flex-col",
           )}
         >

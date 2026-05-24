@@ -39,6 +39,7 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+coverage/
 
 #GDB
 client-0.0.5.jar

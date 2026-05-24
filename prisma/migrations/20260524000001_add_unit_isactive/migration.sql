@@ -1,0 +1,1 @@
+ALTER TABLE "UnitOption" ADD COLUMN "isActive" BOOLEAN NOT NULL DEFAULT true;

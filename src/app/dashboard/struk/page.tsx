@@ -96,7 +96,10 @@ export default function StrukPage() {
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-xl font-bold md:text-2xl text-gray-900 mb-6">Konfigurasi Struk</h1>
+      <div className="mb-6">
+        <h1 className="text-xl font-black md:text-2xl text-gray-900">Konfigurasi Struk</h1>
+        <p className="text-sm text-gray-500 mt-0.5">Atur tampilan nota / struk cetak</p>
+      </div>
       <div className="flex gap-6">
         <div className="flex-1 space-y-4 max-w-md">
           <Input

@@ -57,8 +57,9 @@ model CategoryOption {
 }
 
 model UnitOption {
-  id   Int    @id @default(autoincrement())
-  name String @unique
+  id       Int     @id @default(autoincrement())
+  name     String  @unique
+  isActive Boolean @default(true)
 }
 
 model Product {

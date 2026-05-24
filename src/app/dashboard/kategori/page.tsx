@@ -56,7 +56,10 @@ export default function KategoriPage() {
 
   return (
     <div className="p-4 md:p-6">
-      <h1 className="text-xl font-black md:text-2xl text-gray-900 mb-5">Kategori Produk</h1>
+      <div className="mb-5">
+        <h1 className="text-xl font-black md:text-2xl text-gray-900">Kategori Produk</h1>
+        <p className="text-sm text-gray-500 mt-0.5">{categories.length} kategori terdaftar</p>
+      </div>
 
       <div className="flex gap-2 mb-6">
         <Input
