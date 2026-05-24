@@ -31,6 +31,12 @@ jobs:
           script: |
             export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin:~/.docker/bin
 
+            mkdir -p /Users/fu/homelab/apps/kasir
+
+            if [ ! -d /Users/fu/homelab/apps/kasir/.git ]; then
+              git clone "https://x-access-token:${PAT_TOKEN}@github.com/FuuFu-Home-Server/pos-inventory.git" /Users/fu/homelab/apps/kasir
+            fi
+
             cd /Users/fu/homelab/apps/kasir
 
             git pull "https://x-access-token:${PAT_TOKEN}@github.com/FuuFu-Home-Server/pos-inventory.git" main
