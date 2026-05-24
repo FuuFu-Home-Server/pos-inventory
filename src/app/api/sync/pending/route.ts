@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({
     transactions: transactions.map((tx) => ({
       localId: tx.localId,
+      userId: tx.userId,
       customerId: tx.customerId,
       discountId: tx.discountId,
       paymentMethodId: tx.paymentMethodId,

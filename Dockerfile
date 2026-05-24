@@ -6,10 +6,11 @@ FROM base AS builder
 COPY package*.json ./
 RUN npm ci
 COPY . .
-RUN bash scripts/use-pg-schema.sh && \
+RUN cp prisma/schema.prisma prisma/schema.sqlite.prisma && \
+    bash scripts/use-pg-schema.sh && \
     npx prisma generate && \
     npm run build && \
-    bash scripts/restore-sqlite-schema.sh
+    cp prisma/schema.sqlite.prisma prisma/schema.prisma
 
 FROM base AS runner
 ENV NODE_ENV=production

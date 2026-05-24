@@ -9,6 +9,8 @@ contextBridge.exposeInMainWorld("electronAPI", {
   },
   getRemoteUrl: () => ipcRenderer.invoke("config:getRemoteUrl"),
   setRemoteUrl: (url: string) => ipcRenderer.invoke("config:setRemoteUrl", url),
+  getSyncSecret: () => ipcRenderer.invoke("config:getSyncSecret"),
+  setSyncSecret: (secret: string) => ipcRenderer.invoke("config:setSyncSecret", secret),
   getAppInfo: () => ipcRenderer.invoke("config:getAppInfo"),
   setAppInfo: (info: { title: string; description: string }) =>
     ipcRenderer.invoke("config:setAppInfo", info),

@@ -19,10 +19,12 @@ let status: SyncStatus = {
 let pingInterval: ReturnType<typeof setInterval> | null = null
 let onStatusChange: (() => void) | null = null
 let remoteBaseUrl = ""
+let syncSecret = ""
 const localBaseUrl = "http://localhost:3000"
 
-export function startSync(onUpdate: () => void) {
+export function startSync(onUpdate: () => void, secret?: string) {
   onStatusChange = onUpdate
+  if (secret) syncSecret = secret
   pingInterval = setInterval(checkConnectivity, 30000)
   checkConnectivity()
 }
@@ -41,6 +43,10 @@ export function getSyncStatus(): SyncStatus {
 
 export function setRemoteUrl(url: string) {
   remoteBaseUrl = url
+}
+
+export function setSyncSecret(secret: string) {
+  syncSecret = secret
 }
 
 export async function triggerSync(): Promise<void> {
@@ -96,7 +102,7 @@ async function flushTransactionQueue() {
 
   const flushRes = await fetch(`${remoteBaseUrl}/api/sync/flush`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-Sync-Secret": syncSecret },
     body: JSON.stringify({ transactions: txList, purchaseOrders: poList }),
   })
   if (!flushRes.ok) return
@@ -126,7 +132,9 @@ async function pullCatalog() {
   const meta = metaRes.ok ? await metaRes.json() : {}
   const since = meta.lastSyncAt ? `?since=${encodeURIComponent(meta.lastSyncAt)}` : ""
 
-  const catalogRes = await fetch(`${remoteBaseUrl}/api/sync/catalog${since}`)
+  const catalogRes = await fetch(`${remoteBaseUrl}/api/sync/catalog${since}`, {
+    headers: { "X-Sync-Secret": syncSecret },
+  })
   if (!catalogRes.ok) return
   const catalog = await catalogRes.json()
 

@@ -22,6 +22,8 @@ interface Window {
     onSyncStatus: (cb: () => void) => () => void
     getRemoteUrl: () => Promise<string>
     setRemoteUrl: (url: string) => Promise<void>
+    getSyncSecret: () => Promise<string>
+    setSyncSecret: (secret: string) => Promise<{ error?: string }>
     getAppInfo: () => Promise<AppInfo>
     setAppInfo: (info: AppInfo) => Promise<{ ok?: boolean; error?: string }>
     getWindowSettings: () => Promise<WindowSettings>

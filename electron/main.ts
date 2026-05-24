@@ -113,6 +113,8 @@ function startNextServer(): Promise<void> {
       store.set("authSecret", authSecret)
     }
 
+    const syncSecret = (store.get("syncSecret") as string | undefined) ?? ""
+
     const env = {
       ...process.env,
       DATABASE_URL: `file:${dbPath}`,
@@ -120,6 +122,7 @@ function startNextServer(): Promise<void> {
       AUTH_URL: `http://127.0.0.1:${PORT}`,
       NEXTAUTH_SECRET: authSecret,
       NEXTAUTH_URL: `http://127.0.0.1:${PORT}`,
+      SYNC_SECRET: syncSecret,
       PORT: String(PORT),
       HOSTNAME: "127.0.0.1",
       NODE_ENV: (isDev ? "development" : "production") as "development" | "production",
@@ -271,7 +274,7 @@ app.whenReady().then(async () => {
   createWindow()
 
   const { startSync } = await import("./sync")
-  startSync(() => mainWindow?.webContents.send("sync:status"))
+  startSync(() => mainWindow?.webContents.send("sync:status"), store.get("syncSecret") as string)
 
   if (!isDev && mainWindow) {
     const { setupUpdater } = await import("./updater")
@@ -310,6 +313,18 @@ ipcMain.handle("config:setRemoteUrl", async (_event, url: unknown) => {
   store.set("remoteUrl", parsed.data)
   const { setRemoteUrl } = await import("./sync")
   setRemoteUrl(parsed.data)
+})
+
+ipcMain.handle("config:getSyncSecret", () => {
+  return store.get("syncSecret") as string
+})
+
+ipcMain.handle("config:setSyncSecret", async (_event, secret: unknown) => {
+  const parsed = z.string().min(16).safeParse(secret)
+  if (!parsed.success) return { error: "Secret minimal 16 karakter" }
+  store.set("syncSecret", parsed.data)
+  const { setSyncSecret } = await import("./sync")
+  setSyncSecret(parsed.data)
 })
 
 ipcMain.handle("config:getAppInfo", () => {

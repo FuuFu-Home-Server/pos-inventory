@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { buildTransactionTotals } from "@/lib/transaction-service"
 import { z } from "zod"
@@ -8,6 +7,7 @@ const flushSchema = z.object({
   transactions: z.array(
     z.object({
       localId: z.string(),
+      userId: z.number().int().positive(),
       items: z
         .array(
           z.object({
@@ -59,8 +59,9 @@ const flushSchema = z.object({
 })
 
 export async function POST(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const secret = req.headers.get("x-sync-secret")
+  if (!secret || secret !== process.env.SYNC_SECRET)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const body = await req.json()
   const parsed = flushSchema.safeParse(body)
@@ -128,7 +129,7 @@ export async function POST(req: NextRequest) {
 
         await db.transaction.create({
           data: {
-            userId: Number(session.user.id),
+            userId: tx.userId,
             customerId: tx.customerId ?? null,
             discountId: tx.discountId ?? null,
             paymentMethodId: tx.paymentMethodId,

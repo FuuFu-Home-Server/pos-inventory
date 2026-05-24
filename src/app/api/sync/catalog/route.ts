@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
-import { auth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const secret = req.headers.get("x-sync-secret")
+  if (!secret || secret !== process.env.SYNC_SECRET)
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const since = req.nextUrl.searchParams.get("since")
   const sinceDate = since ? new Date(since) : undefined

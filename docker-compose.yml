@@ -10,3 +10,4 @@ services:
       AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       IS_PROD_SERVER: "true"
       NEXT_PUBLIC_QRIS_STRING: ${NEXT_PUBLIC_QRIS_STRING:-}
+      SYNC_SECRET: ${SYNC_SECRET}

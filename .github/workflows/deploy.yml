@@ -21,13 +21,14 @@ jobs:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           AUTH_URL: ${{ secrets.AUTH_URL }}
           NEXT_PUBLIC_QRIS_STRING: ${{ secrets.NEXT_PUBLIC_QRIS_STRING }}
+          SYNC_SECRET: ${{ secrets.SYNC_SECRET }}
           PORT: ${{ secrets.PORT }}
           PAT_TOKEN: ${{ secrets.PAT_TOKEN }}
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: DATABASE_URL,AUTH_SECRET,AUTH_URL,NEXT_PUBLIC_QRIS_STRING,PORT,PAT_TOKEN
+          envs: DATABASE_URL,AUTH_SECRET,AUTH_URL,NEXT_PUBLIC_QRIS_STRING,SYNC_SECRET,PORT,PAT_TOKEN
           script: |
             export PATH=$PATH:/usr/local/bin:/opt/homebrew/bin:~/.docker/bin
 
@@ -41,7 +42,7 @@ jobs:
 
             git pull "https://x-access-token:${PAT_TOKEN}@github.com/FuuFu-Home-Server/pos-inventory.git" main
 
-            printf 'DATABASE_URL=%s\nAUTH_SECRET=%s\nAUTH_URL=%s\nNEXT_PUBLIC_QRIS_STRING=%s\nPORT=%s\n' \
-              "$DATABASE_URL" "$AUTH_SECRET" "$AUTH_URL" "$NEXT_PUBLIC_QRIS_STRING" "$PORT" > .env
+            printf 'DATABASE_URL=%s\nAUTH_SECRET=%s\nAUTH_URL=%s\nNEXT_PUBLIC_QRIS_STRING=%s\nSYNC_SECRET=%s\nPORT=%s\n' \
+              "$DATABASE_URL" "$AUTH_SECRET" "$AUTH_URL" "$NEXT_PUBLIC_QRIS_STRING" "$SYNC_SECRET" "$PORT" > .env
 
             docker compose up -d --build
