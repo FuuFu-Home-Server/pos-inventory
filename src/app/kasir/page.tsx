@@ -757,12 +757,12 @@ export default function KasirPage() {
               <Printer size={16} />
               <div className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-300 animate-pulse" />
             </div>
-            <span className="text-sm font-semibold hidden sm:inline">Terhubung</span>
+            <span className="text-sm font-semibold hidden sm:inline">Printer Terhubung</span>
           </>
         ) : (
           <>
             <Unplug size={16} />
-            <span className="text-sm font-semibold hidden sm:inline">Hubungkan</span>
+            <span className="text-sm font-semibold hidden sm:inline">Hubungkan Printer</span>
           </>
         )}
       </button>

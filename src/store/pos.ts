@@ -161,6 +161,6 @@ export const usePosStore = create<PosStore>((set, get) => ({
     return Math.max(0, get().getSubtotal() - get().getDiscountTotal())
   },
   getChange() {
-    return Math.max(0, get().paymentAmount - get().getTotal())
+    return get().paymentAmount - get().getTotal()
   },
 }))
