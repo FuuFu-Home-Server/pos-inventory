@@ -13,6 +13,7 @@ RUN cp prisma/schema.prisma prisma/schema.sqlite.prisma && \
     cp prisma/schema.sqlite.prisma prisma/schema.prisma
 
 FROM base AS runner
+RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 ENV IS_PROD_SERVER=true
 ENV NEXT_TELEMETRY_DISABLED=1
