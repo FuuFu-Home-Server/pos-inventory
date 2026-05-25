@@ -56,7 +56,7 @@ const applySchema = z.object({
       }),
     )
     .default([]),
-  receiptConfig: z.record(z.unknown()).optional(),
+  receiptConfig: z.record(z.unknown()).nullish(),
   syncedAt: z.string().optional(),
 })
 

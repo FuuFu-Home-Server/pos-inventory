@@ -9,20 +9,17 @@ export async function GET(req: NextRequest) {
   const since = req.nextUrl.searchParams.get("since")
   const sinceDate = since ? new Date(since) : undefined
 
-  const variantWhere = {
-    isActive: true,
-    ...(sinceDate ? { updatedAt: { gt: sinceDate } } : {}),
-  }
+  const where = sinceDate ? { updatedAt: { gt: sinceDate } } : {}
 
   const [variants, paymentMethods, discounts, customers, receiptConfig, users, suppliers] =
     await Promise.all([
       prisma.productVariant.findMany({
-        where: variantWhere,
+        where,
         include: { product: { select: { name: true, category: true } } },
       }),
-      prisma.paymentMethod.findMany({ where: { isActive: true } }),
-      prisma.discount.findMany({ where: { isActive: true } }),
-      prisma.customer.findMany(),
+      prisma.paymentMethod.findMany({ where }),
+      prisma.discount.findMany({ where }),
+      prisma.customer.findMany({ where }),
       prisma.receiptConfig.findUnique({ where: { id: 1 } }),
       prisma.user.findMany({
         where: { isActive: true },
@@ -35,7 +32,7 @@ export async function GET(req: NextRequest) {
           createdAt: true,
         },
       }),
-      prisma.supplier.findMany(),
+      prisma.supplier.findMany({ where }),
     ])
 
   return NextResponse.json({

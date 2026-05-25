@@ -77,6 +77,8 @@ export default function SettingsPage() {
 
   const [remoteUrl, setRemoteUrl] = useState("")
   const [urlSaved, setUrlSaved] = useState(false)
+  const [syncSecret, setSyncSecret] = useState("")
+  const [secretSaved, setSecretSaved] = useState(false)
 
   const [timezone, setTimezone] = useState("")
   const [tzResult, setTzResult] = useState<{ ok?: boolean; error?: string } | null>(null)
@@ -106,6 +108,7 @@ export default function SettingsPage() {
     })
     window.electronAPI!.getAutoLaunch().then(setAutoLaunch)
     window.electronAPI!.getRemoteUrl().then(setRemoteUrl)
+    window.electronAPI!.getSyncSecret().then(setSyncSecret)
     window.electronAPI!.getTimezone().then(setTimezone)
     window.electronAPI!.getSyncStatus().then(setSyncStatus)
     const unsub = window.electronAPI!.onSyncStatus(() => {
@@ -166,6 +169,15 @@ export default function SettingsPage() {
     setUrlSaved(true)
     setTimeout(() => setUrlSaved(false), 2000)
     showToast("URL server disimpan")
+  }
+
+  async function handleSaveSecret(e: React.FormEvent) {
+    e.preventDefault()
+    if (!isElectron) return
+    await window.electronAPI!.setSyncSecret(syncSecret)
+    setSecretSaved(true)
+    setTimeout(() => setSecretSaved(false), 2000)
+    showToast("Sync secret disimpan")
   }
 
   async function handleSetTimezone() {
@@ -380,6 +392,27 @@ export default function SettingsPage() {
                 {remoteUrl}
               </p>
             )}
+
+            <form onSubmit={handleSaveSecret} className="space-y-3">
+              <Input
+                label="Sync Secret"
+                type="password"
+                value={syncSecret}
+                onChange={(e) => setSyncSecret(e.target.value)}
+                placeholder="Masukkan sync secret..."
+              />
+              <Button type="submit" disabled={!syncSecret} className="flex items-center gap-2">
+                {secretSaved ? (
+                  <>
+                    <Check size={14} /> Tersimpan
+                  </>
+                ) : (
+                  <>
+                    <Save size={14} /> Simpan Secret
+                  </>
+                )}
+              </Button>
+            </form>
 
             {syncStatus && (
               <div className="grid grid-cols-3 gap-2">

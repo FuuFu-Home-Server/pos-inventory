@@ -273,7 +273,9 @@ app.whenReady().then(async () => {
 
   createWindow()
 
-  const { startSync } = await import("./sync")
+  const { startSync, setRemoteUrl } = await import("./sync")
+  const savedRemoteUrl = (store.get("remoteUrl") as string | undefined) ?? ""
+  if (savedRemoteUrl) setRemoteUrl(savedRemoteUrl)
   startSync(() => mainWindow?.webContents.send("sync:status"), store.get("syncSecret") as string)
 
   if (!isDev && mainWindow) {

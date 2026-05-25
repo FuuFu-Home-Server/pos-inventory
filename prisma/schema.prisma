@@ -23,6 +23,7 @@ model User {
   isActive            Boolean         @default(true)
   isDefaultCredential Boolean         @default(false)
   createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
   role                Role            @relation(fields: [roleId], references: [id])
   transactions        Transaction[]
   purchaseOrders      PurchaseOrder[]
@@ -37,6 +38,7 @@ model Supplier {
   address        String?
   contactPerson  String?
   createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
   products       Product[]
   purchaseOrders PurchaseOrder[]
 }
@@ -47,6 +49,7 @@ model Customer {
   phone        String?       @unique
   address      String?
   createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   transactions Transaction[]
 }
 
@@ -68,6 +71,7 @@ model Product {
   category   String
   supplierId Int?
   createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
   supplier   Supplier?        @relation(fields: [supplierId], references: [id])
   variants   ProductVariant[]
   discounts  Discount[]
@@ -88,6 +92,7 @@ model ProductVariant {
   unit               String
   isActive           Boolean             @default(true)
   createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
   product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
   transactionItems   TransactionItem[]
   purchaseOrderItems PurchaseOrderItem[]
@@ -103,6 +108,7 @@ model PaymentMethod {
   id           Int           @id @default(autoincrement())
   name         String        @unique
   isActive     Boolean       @default(true)
+  updatedAt    DateTime      @updatedAt
   transactions Transaction[]
 }
 
@@ -118,6 +124,7 @@ model Discount {
   validFrom   DateTime?
   validUntil  DateTime?
   createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   product     Product?      @relation(fields: [productId], references: [id])
   transactions Transaction[]
 
