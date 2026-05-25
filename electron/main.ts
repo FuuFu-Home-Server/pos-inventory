@@ -300,6 +300,11 @@ ipcMain.handle("sync:trigger", async () => {
   return triggerSync()
 })
 
+ipcMain.handle("sync:mirror", async () => {
+  const { triggerMirror } = await import("./sync")
+  return triggerMirror()
+})
+
 ipcMain.handle("sync:getStatus", async () => {
   const { getSyncStatus } = await import("./sync")
   return getSyncStatus()

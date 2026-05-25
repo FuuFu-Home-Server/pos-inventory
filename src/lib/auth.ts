@@ -5,7 +5,7 @@ import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 
 const credentialsSchema = z.object({
-  email: z.string().email(),
+  email: z.string().min(3),
   password: z.string().min(1),
 })
 

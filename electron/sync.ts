@@ -54,6 +54,24 @@ export async function triggerSync(): Promise<void> {
   await performSync()
 }
 
+export async function triggerMirror(): Promise<void> {
+  if (!remoteBaseUrl || status.syncing) return
+  status.syncing = true
+  status.syncProgress = null
+  onStatusChange?.()
+  try {
+    await fetch(`${localBaseUrl}/api/sync/mirror`, { method: "POST" })
+    await pullCatalog()
+    status.lastSyncAt = new Date().toISOString()
+  } catch {
+    // silent
+  } finally {
+    status.syncing = false
+    status.syncProgress = null
+    onStatusChange?.()
+  }
+}
+
 async function checkConnectivity() {
   if (!remoteBaseUrl) return
   try {

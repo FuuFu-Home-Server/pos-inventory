@@ -18,6 +18,8 @@ export default function PenggunaPage() {
     listLoading,
     form,
     setForm,
+    fieldErrors,
+    apiError,
     handleCreate,
     handleToggle,
   } = useUsers()
@@ -35,7 +37,7 @@ export default function PenggunaPage() {
         <Thead>
           <tr>
             <Th>Nama</Th>
-            <Th>Email</Th>
+            <Th>Username</Th>
             <Th>Role</Th>
             <Th>Status</Th>
             <Th>Terdaftar</Th>
@@ -94,19 +96,23 @@ export default function PenggunaPage() {
             label="Nama"
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
+            error={fieldErrors.name?.[0]}
           />
           <Input
-            label="Email"
-            type="email"
+            label="Username"
+            type="text"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+            error={fieldErrors.email?.[0]}
           />
           <Input
             label="Password"
             type="password"
             value={form.password}
             onChange={(e) => setForm({ ...form, password: e.target.value })}
+            error={fieldErrors.password?.[0]}
           />
+          {apiError && <p className="text-sm text-red-600">⚠ {apiError}</p>}
           <Select
             label="Role"
             value={form.role}

@@ -18,6 +18,7 @@ type WindowSettings = {
 interface Window {
   electronAPI?: {
     triggerSync: () => Promise<void>
+    triggerMirror: () => Promise<void>
     getSyncStatus: () => Promise<SyncStatus>
     onSyncStatus: (cb: () => void) => () => void
     getRemoteUrl: () => Promise<string>

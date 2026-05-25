@@ -6,6 +6,10 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { ShoppingCart } from "lucide-react"
+import { loginSchema } from "@/lib/validations/user"
+import { z } from "zod"
+
+type FieldErrors = z.inferFlattenedErrors<typeof loginSchema>["fieldErrors"]
 
 export default function LoginPage() {
   const router = useRouter()
@@ -21,12 +25,20 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     setError("")
+
+    const parsed = loginSchema.safeParse({ email, password })
+    if (!parsed.success) {
+      setFieldErrors(parsed.error.flatten().fieldErrors)
+      return
+    }
+    setFieldErrors({})
     setLoading(true)
 
     const result = await signIn("credentials", {
@@ -38,7 +50,7 @@ export default function LoginPage() {
     setLoading(false)
 
     if (result?.error) {
-      setError("Email atau kata sandi salah.")
+      setError("Username atau kata sandi salah.")
       return
     }
 
@@ -97,13 +109,13 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               id="email"
-              type="email"
-              label="Email"
+              type="text"
+              label="Username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@kasir.com"
-              required
+              placeholder="username"
               autoFocus
+              error={fieldErrors.email?.[0]}
             />
             <Input
               id="password"
@@ -112,7 +124,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              required
+              error={fieldErrors.password?.[0]}
             />
 
             {error && (

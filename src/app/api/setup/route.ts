@@ -5,7 +5,7 @@ import { z } from "zod"
 
 const setupSchema = z.object({
   name: z.string().min(1),
-  email: z.string().email(),
+  email: z.string().min(3, "Username minimal 3 karakter"),
   password: z.string().min(8),
 })
 

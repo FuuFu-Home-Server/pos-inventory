@@ -63,6 +63,7 @@ export default function SettingsPage() {
   const [pwNew, setPwNew] = useState("")
   const [pwConfirm, setPwConfirm] = useState("")
   const [pwLoading, setPwLoading] = useState(false)
+  const [pwFieldErrors, setPwFieldErrors] = useState<Record<string, string>>({})
   const [pwResult, setPwResult] = useState<{ ok?: boolean; error?: string } | null>(null)
   const [showPw, setShowPw] = useState(false)
 
@@ -207,12 +208,33 @@ export default function SettingsPage() {
     showToast("Sinkronisasi selesai")
   }
 
+  const [mirroring, setMirroring] = useState(false)
+
+  async function handleMirror() {
+    if (!isElectron || mirroring || syncing) return
+    const ok = window.confirm(
+      "Mirror dari server akan menghapus SEMUA data lokal (produk, transaksi, dll) dan menggantinya dengan data server. Lanjutkan?",
+    )
+    if (!ok) return
+    setMirroring(true)
+    await window.electronAPI!.triggerMirror()
+    const updated = await window.electronAPI!.getSyncStatus()
+    setSyncStatus(updated)
+    setMirroring(false)
+    showToast("Mirror selesai — data lokal diganti dari server")
+  }
+
   async function handleChangePassword(e: React.FormEvent) {
     e.preventDefault()
-    if (pwNew !== pwConfirm) {
-      setPwResult({ error: "Konfirmasi password tidak cocok" })
+    const errors: Record<string, string> = {}
+    if (!pwCurrent) errors.pwCurrent = "Password saat ini wajib diisi"
+    if (pwNew.length < 8) errors.pwNew = "Password baru minimal 8 karakter"
+    if (pwNew !== pwConfirm) errors.pwConfirm = "Konfirmasi password tidak cocok"
+    if (Object.keys(errors).length > 0) {
+      setPwFieldErrors(errors)
       return
     }
+    setPwFieldErrors({})
     setPwLoading(true)
     setPwResult(null)
     const res = await fetch("/api/me/password", {
@@ -271,13 +293,21 @@ export default function SettingsPage() {
             onChange={setPwCurrent}
             show={showPw}
             onToggleShow={() => setShowPw((v) => !v)}
+            error={pwFieldErrors.pwCurrent}
           />
-          <PasswordField label="Password Baru" value={pwNew} onChange={setPwNew} show={showPw} />
+          <PasswordField
+            label="Password Baru"
+            value={pwNew}
+            onChange={setPwNew}
+            show={showPw}
+            error={pwFieldErrors.pwNew}
+          />
           <PasswordField
             label="Konfirmasi Password Baru"
             value={pwConfirm}
             onChange={setPwConfirm}
             show={showPw}
+            error={pwFieldErrors.pwConfirm}
           />
           {pwResult && (
             <p
@@ -497,6 +527,23 @@ export default function SettingsPage() {
                 )}
               </Button>
             </div>
+
+            <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-800">Mirror dari Server</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Hapus data lokal, ganti penuh dengan data server
+                </p>
+              </div>
+              <Button
+                onClick={handleMirror}
+                loading={mirroring}
+                variant="secondary"
+                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+              >
+                <RefreshCw size={14} /> Mirror
+              </Button>
+            </div>
           </div>
         )}
       </section>
@@ -675,12 +722,14 @@ function PasswordField({
   onChange,
   show,
   onToggleShow,
+  error,
 }: {
   label: string
   value: string
   onChange: (v: string) => void
   show: boolean
   onToggleShow?: () => void
+  error?: string
 }) {
   return (
     <div className="flex flex-col gap-1.5">
@@ -690,8 +739,7 @@ function PasswordField({
           type={show ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          required
-          className="w-full px-3.5 py-2.5 pr-10 border border-gray-300 rounded-lg text-sm bg-white transition-all placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400"
+          className={`w-full px-3.5 py-2.5 pr-10 border rounded-lg text-sm bg-white transition-all placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-400 ${error ? "border-red-400 bg-red-50/30" : "border-gray-300"}`}
         />
         {onToggleShow && (
           <button
@@ -703,6 +751,7 @@ function PasswordField({
           </button>
         )}
       </div>
+      {error && <p className="text-xs text-red-600 flex items-center gap-1">⚠ {error}</p>}
     </div>
   )
 }
