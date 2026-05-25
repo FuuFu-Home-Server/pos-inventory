@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
     if (err instanceof Error && err.message === "already_setup") {
       return NextResponse.json({ error: "Setup sudah selesai" }, { status: 403 })
     }
+    console.error("[setup]", err)
     return NextResponse.json({ error: "Gagal membuat akun" }, { status: 500 })
   }
 
