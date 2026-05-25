@@ -14,7 +14,7 @@ export type Discount = {
 }
 export type Product = { id: number; name: string }
 
-export function useDiscounts() {
+export function useDiscounts(confirm: (msg: string) => Promise<boolean>) {
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [modalOpen, setModalOpen] = useState(false)
@@ -77,7 +77,7 @@ export function useDiscounts() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Hapus diskon ini?")) return
+    if (!(await confirm("Hapus diskon ini?"))) return
     await fetch(`/api/discounts/${id}`, { method: "DELETE" })
     load()
   }

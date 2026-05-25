@@ -7,8 +7,10 @@ import { Modal } from "@/components/ui/Modal"
 import { Pagination } from "@/components/ui/Pagination"
 import { Building2 } from "lucide-react"
 import { useSupplier } from "./useSupplier"
+import { useConfirm } from "@/hooks/useConfirm"
 
 export default function SupplierPage() {
+  const { confirm, dialog } = useConfirm()
   const {
     suppliers,
     total,
@@ -29,7 +31,7 @@ export default function SupplierPage() {
     openEdit,
     handleSave,
     handleDelete,
-  } = useSupplier()
+  } = useSupplier(confirm)
 
   return (
     <div className="p-4 md:p-6">
@@ -161,6 +163,7 @@ export default function SupplierPage() {
           </Button>
         </div>
       </Modal>
+      {dialog}
     </div>
   )
 }

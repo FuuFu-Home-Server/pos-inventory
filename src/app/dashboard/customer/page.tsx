@@ -8,8 +8,10 @@ import { Pagination } from "@/components/ui/Pagination"
 import { formatDateShort } from "@/lib/format"
 import { Users } from "lucide-react"
 import { useCustomer } from "./useCustomer"
+import { useConfirm } from "@/hooks/useConfirm"
 
 export default function CustomerPage() {
+  const { confirm, dialog } = useConfirm()
   const {
     customers,
     total,
@@ -30,7 +32,7 @@ export default function CustomerPage() {
     openEdit,
     handleSave,
     handleDelete,
-  } = useCustomer()
+  } = useCustomer(confirm)
 
   return (
     <div className="p-4 md:p-6">
@@ -157,6 +159,7 @@ export default function CustomerPage() {
           </Button>
         </div>
       </Modal>
+      {dialog}
     </div>
   )
 }

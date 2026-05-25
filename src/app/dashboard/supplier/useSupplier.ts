@@ -12,7 +12,7 @@ export type Supplier = {
 
 const emptyForm = { name: "", phone: "", address: "", contactPerson: "" }
 
-export function useSupplier() {
+export function useSupplier(confirm: (msg: string) => Promise<boolean>) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -76,7 +76,7 @@ export function useSupplier() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Hapus supplier ini?")) return
+    if (!(await confirm("Hapus supplier ini?"))) return
     await fetch(`/api/suppliers/${id}`, { method: "DELETE" })
     load()
   }

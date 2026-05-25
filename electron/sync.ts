@@ -123,7 +123,6 @@ async function performSync() {
   onStatusChange?.()
   try {
     await flushTransactionQueue()
-    await pushCatalog()
     await pullCatalog()
     status.lastSyncAt = new Date().toISOString()
   } catch {
@@ -172,29 +171,6 @@ async function flushTransactionQueue() {
 
   status.pendingCount = 0
   status.failedCount = (status.failedCount ?? 0) + result.failed.length + result.failedPo.length
-}
-
-async function pushCatalog() {
-  const metaRes = await fetch(`${localBaseUrl}/api/sync/meta`)
-  const meta = metaRes.ok ? await metaRes.json() : {}
-  const since = meta.lastPushAt ? `?since=${encodeURIComponent(meta.lastPushAt)}` : ""
-
-  const exportRes = await fetch(`${localBaseUrl}/api/sync/export${since}`)
-  if (!exportRes.ok) return
-  const payload = await exportRes.json()
-
-  const pushRes = await fetch(`${remoteBaseUrl}/api/sync/push`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Sync-Secret": syncSecret },
-    body: JSON.stringify(payload),
-  })
-  if (!pushRes.ok) return
-
-  await fetch(`${localBaseUrl}/api/sync/meta`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ storeName: "catalog-push", syncedAt: payload.exportedAt }),
-  })
 }
 
 async function pullCatalog() {

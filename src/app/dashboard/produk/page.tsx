@@ -18,8 +18,10 @@ import {
   type Option,
   type Product,
 } from "./useProducts"
+import { useConfirm } from "@/hooks/useConfirm"
 
 export default function ProdukPage() {
+  const { confirm, dialog } = useConfirm()
   const {
     products,
     total,
@@ -62,7 +64,7 @@ export default function ProdukPage() {
     setSortBy,
     sortDir,
     setSortDir,
-  } = useProducts()
+  } = useProducts(confirm)
 
   function isIncomplete(p: Product): boolean {
     return p.category === "" || p.variants.some((v) => v.isActive && v.price === 0)
@@ -757,6 +759,7 @@ function VariantEditor({
           </div>
         ))}
       </div>
+      {dialog}
     </div>
   )
 }

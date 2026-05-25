@@ -63,7 +63,7 @@ function productToEditForm(p: Product) {
   }
 }
 
-export function useProducts() {
+export function useProducts(confirm: (msg: string) => Promise<boolean>) {
   const [products, setProducts] = useState<Product[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -214,7 +214,7 @@ export function useProducts() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Hapus produk ini dan semua variannya?")) return
+    if (!(await confirm("Hapus produk ini dan semua variannya?"))) return
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
     const data = await res.json()
     if (data.deactivated) {

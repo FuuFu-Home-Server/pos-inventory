@@ -12,7 +12,7 @@ export type Customer = {
 
 const emptyForm = { name: "", phone: "", address: "" }
 
-export function useCustomer() {
+export function useCustomer(confirm: (msg: string) => Promise<boolean>) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -69,7 +69,7 @@ export function useCustomer() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Hapus pelanggan ini?")) return
+    if (!(await confirm("Hapus pelanggan ini?"))) return
     await fetch(`/api/customers/${id}`, { method: "DELETE" })
     load()
   }
