@@ -3,11 +3,11 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "6000:3000"
+      - "6001:3000"
     environment:
       DATABASE_URL: ${DATABASE_URL}
       AUTH_SECRET: ${AUTH_SECRET}
-      AUTH_URL: ${AUTH_URL:-http://localhost:6000}
+      AUTH_URL: ${AUTH_URL:-http://localhost:3000}
       IS_PROD_SERVER: "true"
       NEXT_PUBLIC_QRIS_STRING: ${NEXT_PUBLIC_QRIS_STRING:-}
       SYNC_SECRET: ${SYNC_SECRET}
