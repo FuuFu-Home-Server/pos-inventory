@@ -20,6 +20,7 @@ import {
   Clock,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
+import { useConfirm } from "@/hooks/useConfirm"
 
 const SIZE_PRESETS = [
   { label: "1024 × 600", w: 1024, h: 600 },
@@ -52,6 +53,7 @@ function SectionHeader({ icon: Icon, title }: { icon: React.ElementType; title: 
 }
 
 export default function SettingsPage() {
+  const { confirm, dialog } = useConfirm()
   const [isElectron, setIsElectron] = useState(false)
   const { data: session } = useSession()
 
@@ -198,6 +200,7 @@ export default function SettingsPage() {
 
   async function handleSync() {
     if (!isElectron || syncing) return
+    if (!(await confirm("Jalankan sinkronisasi manual sekarang?"))) return
     setSyncing(true)
     await window.electronAPI!.triggerSync()
     const updated = await window.electronAPI!.getSyncStatus()
@@ -213,10 +216,12 @@ export default function SettingsPage() {
 
   async function handlePullMirror() {
     if (!isElectron || mirroringPull || mirroringPush || syncing) return
-    const ok = window.confirm(
-      "Pull dari server akan menghapus semua katalog lokal (produk, diskon, dll) dan menggantinya penuh dari server. Lanjutkan?",
+    if (
+      !(await confirm(
+        "Pull dari server akan menghapus semua katalog lokal (produk, diskon, dll) dan menggantinya penuh dari server. Lanjutkan?",
+      ))
     )
-    if (!ok) return
+      return
     setMirroringPull(true)
     await window.electronAPI!.triggerPullMirror()
     const updated = await window.electronAPI!.getSyncStatus()
@@ -227,10 +232,12 @@ export default function SettingsPage() {
 
   async function handlePushMirror() {
     if (!isElectron || mirroringPull || mirroringPush || syncing) return
-    const ok = window.confirm(
-      "Push ke server akan menghapus semua katalog server dan menggantinya penuh dari data lokal. Lanjutkan?",
+    if (
+      !(await confirm(
+        "Push ke server akan menghapus semua katalog server dan menggantinya penuh dari data lokal. Lanjutkan?",
+      ))
     )
-    if (!ok) return
+      return
     setMirroringPush(true)
     await window.electronAPI!.triggerPushMirror()
     const updated = await window.electronAPI!.getSyncStatus()
@@ -274,6 +281,7 @@ export default function SettingsPage() {
 
   return (
     <div className="p-4 md:p-6 max-w-2xl space-y-6">
+      {dialog}
       {toast && (
         <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />
       )}

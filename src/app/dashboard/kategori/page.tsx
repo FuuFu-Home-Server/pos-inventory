@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/Input"
 import { Table, Thead, Tbody, Th, Td } from "@/components/ui/Table"
 import { Toggle } from "@/components/ui/Toggle"
 import { Badge } from "@/components/ui/Badge"
+import { useConfirm } from "@/hooks/useConfirm"
 
 type Category = { id: number; name: string; isActive: boolean; productCount: number }
 
 export default function KategoriPage() {
+  const { confirm, dialog } = useConfirm()
   const [categories, setCategories] = useState<Category[]>([])
   const [newName, setNewName] = useState("")
   const [loading, setLoading] = useState(false)
@@ -49,13 +51,14 @@ export default function KategoriPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Hapus kategori ini?")) return
+    if (!(await confirm("Hapus kategori ini?"))) return
     await fetch(`/api/categories/${id}`, { method: "DELETE" })
     load()
   }
 
   return (
     <div className="p-4 md:p-6">
+      {dialog}
       <div className="mb-5">
         <h1 className="text-xl font-black md:text-2xl text-gray-900">Kategori Produk</h1>
         <p className="text-sm text-gray-500 mt-0.5">{categories.length} kategori terdaftar</p>

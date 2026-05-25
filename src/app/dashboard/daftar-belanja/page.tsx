@@ -9,8 +9,10 @@ import { Toggle } from "@/components/ui/Toggle"
 import { PurchaseModal } from "@/components/ui/PurchaseModal"
 import { ChevronDown, AlertTriangle, Plus, ShoppingCart } from "lucide-react"
 import { usePurchaseList } from "./usePurchaseList"
+import { useConfirm } from "@/hooks/useConfirm"
 
 export default function DaftarBelanjaPage() {
+  const { confirm, dialog } = useConfirm()
   const [completing, setCompleting] = useState<number | null>(null)
   const {
     lists,
@@ -33,7 +35,7 @@ export default function DaftarBelanjaPage() {
     completeToPO,
     createProductForList,
     createVariantForList,
-  } = usePurchaseList()
+  } = usePurchaseList(confirm)
 
   return (
     <div className="p-4 md:p-6">
@@ -224,6 +226,7 @@ export default function DaftarBelanjaPage() {
         })}
       </div>
 
+      {dialog}
       <PurchaseModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}

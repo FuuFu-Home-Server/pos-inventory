@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/Button"
 import { Input } from "@/components/ui/Input"
 import { Table, Thead, Tbody, Th, Td } from "@/components/ui/Table"
 import { Toggle } from "@/components/ui/Toggle"
+import { useConfirm } from "@/hooks/useConfirm"
 
 type Unit = { id: number; name: string; isActive: boolean }
 
 export default function SatuanPage() {
+  const { confirm, dialog } = useConfirm()
   const [units, setUnits] = useState<Unit[]>([])
   const [newName, setNewName] = useState("")
   const [loading, setLoading] = useState(false)
@@ -48,13 +50,14 @@ export default function SatuanPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!confirm("Hapus satuan ini?")) return
+    if (!(await confirm("Hapus satuan ini?"))) return
     await fetch(`/api/units/${id}`, { method: "DELETE" })
     load()
   }
 
   return (
     <div className="p-4 md:p-6">
+      {dialog}
       <div className="mb-5">
         <h1 className="text-xl font-black md:text-2xl text-gray-900">Satuan Produk</h1>
         <p className="text-sm text-gray-500 mt-0.5">{units.length} satuan terdaftar</p>

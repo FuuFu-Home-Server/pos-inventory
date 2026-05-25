@@ -8,8 +8,10 @@ import { Modal } from "@/components/ui/Modal"
 import { Select } from "@/components/ui/Select"
 import { formatRupiah } from "@/lib/format"
 import { useDiscounts } from "./useDiscounts"
+import { useConfirm } from "@/hooks/useConfirm"
 
 export default function DiskonPage() {
+  const { confirm, dialog } = useConfirm()
   const {
     discounts,
     products,
@@ -22,7 +24,7 @@ export default function DiskonPage() {
     handleCreate,
     handleToggle,
     handleDelete,
-  } = useDiscounts()
+  } = useDiscounts(confirm)
 
   return (
     <div className="p-4 md:p-6">
@@ -103,6 +105,7 @@ export default function DiskonPage() {
           ))}
         </Tbody>
       </Table>
+      {dialog}
       <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Tambah Diskon">
         <div className="space-y-3">
           <Input
