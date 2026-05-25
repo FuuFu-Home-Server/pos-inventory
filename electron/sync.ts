@@ -54,7 +54,7 @@ export async function triggerSync(): Promise<void> {
   await performSync()
 }
 
-export async function triggerMirror(): Promise<void> {
+export async function triggerPullMirror(): Promise<void> {
   if (!remoteBaseUrl || status.syncing) return
   status.syncing = true
   status.syncProgress = null
@@ -62,6 +62,34 @@ export async function triggerMirror(): Promise<void> {
   try {
     await fetch(`${localBaseUrl}/api/sync/mirror`, { method: "POST" })
     await pullCatalog()
+    status.lastSyncAt = new Date().toISOString()
+  } catch {
+    // silent
+  } finally {
+    status.syncing = false
+    status.syncProgress = null
+    onStatusChange?.()
+  }
+}
+
+export async function triggerPushMirror(): Promise<void> {
+  if (!remoteBaseUrl || status.syncing) return
+  status.syncing = true
+  status.syncProgress = null
+  onStatusChange?.()
+  try {
+    await fetch(`${remoteBaseUrl}/api/sync/wipe`, {
+      method: "POST",
+      headers: { "X-Sync-Secret": syncSecret },
+    })
+    const exportRes = await fetch(`${localBaseUrl}/api/sync/export`)
+    if (!exportRes.ok) return
+    const payload = await exportRes.json()
+    await fetch(`${remoteBaseUrl}/api/sync/push`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sync-Secret": syncSecret },
+      body: JSON.stringify(payload),
+    })
     status.lastSyncAt = new Date().toISOString()
   } catch {
     // silent

@@ -2,7 +2,8 @@ import { contextBridge, ipcRenderer } from "electron"
 
 contextBridge.exposeInMainWorld("electronAPI", {
   triggerSync: () => ipcRenderer.invoke("sync:trigger"),
-  triggerMirror: () => ipcRenderer.invoke("sync:mirror"),
+  triggerPullMirror: () => ipcRenderer.invoke("sync:mirror-pull"),
+  triggerPushMirror: () => ipcRenderer.invoke("sync:mirror-push"),
   getSyncStatus: () => ipcRenderer.invoke("sync:getStatus"),
   onSyncStatus: (cb: () => void) => {
     ipcRenderer.on("sync:status", cb)

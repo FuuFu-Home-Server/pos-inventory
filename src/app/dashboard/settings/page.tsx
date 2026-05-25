@@ -208,20 +208,35 @@ export default function SettingsPage() {
     showToast("Sinkronisasi selesai")
   }
 
-  const [mirroring, setMirroring] = useState(false)
+  const [mirroringPull, setMirroringPull] = useState(false)
+  const [mirroringPush, setMirroringPush] = useState(false)
 
-  async function handleMirror() {
-    if (!isElectron || mirroring || syncing) return
+  async function handlePullMirror() {
+    if (!isElectron || mirroringPull || mirroringPush || syncing) return
     const ok = window.confirm(
-      "Mirror dari server akan menghapus SEMUA data lokal (produk, transaksi, dll) dan menggantinya dengan data server. Lanjutkan?",
+      "Pull dari server akan menghapus semua katalog lokal (produk, diskon, dll) dan menggantinya penuh dari server. Lanjutkan?",
     )
     if (!ok) return
-    setMirroring(true)
-    await window.electronAPI!.triggerMirror()
+    setMirroringPull(true)
+    await window.electronAPI!.triggerPullMirror()
     const updated = await window.electronAPI!.getSyncStatus()
     setSyncStatus(updated)
-    setMirroring(false)
-    showToast("Mirror selesai — data lokal diganti dari server")
+    setMirroringPull(false)
+    showToast("Pull selesai — katalog lokal diganti dari server")
+  }
+
+  async function handlePushMirror() {
+    if (!isElectron || mirroringPull || mirroringPush || syncing) return
+    const ok = window.confirm(
+      "Push ke server akan menghapus semua katalog server dan menggantinya penuh dari data lokal. Lanjutkan?",
+    )
+    if (!ok) return
+    setMirroringPush(true)
+    await window.electronAPI!.triggerPushMirror()
+    const updated = await window.electronAPI!.getSyncStatus()
+    setSyncStatus(updated)
+    setMirroringPush(false)
+    showToast("Push selesai — katalog server diganti dari lokal")
   }
 
   async function handleChangePassword(e: React.FormEvent) {
@@ -528,21 +543,39 @@ export default function SettingsPage() {
               </Button>
             </div>
 
-            <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-800">Mirror dari Server</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Hapus data lokal, ganti penuh dengan data server
-                </p>
+            <div className="border-t border-gray-100 pt-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Pull dari Server</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Ganti katalog lokal penuh dengan data server
+                  </p>
+                </div>
+                <Button
+                  onClick={handlePullMirror}
+                  loading={mirroringPull}
+                  variant="secondary"
+                  className="flex items-center gap-2 text-amber-600 border-amber-200 hover:bg-amber-50"
+                >
+                  <RefreshCw size={14} /> Pull
+                </Button>
               </div>
-              <Button
-                onClick={handleMirror}
-                loading={mirroring}
-                variant="secondary"
-                className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
-              >
-                <RefreshCw size={14} /> Mirror
-              </Button>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Push ke Server</p>
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Ganti katalog server penuh dengan data lokal
+                  </p>
+                </div>
+                <Button
+                  onClick={handlePushMirror}
+                  loading={mirroringPush}
+                  variant="secondary"
+                  className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                >
+                  <RefreshCw size={14} /> Push
+                </Button>
+              </div>
             </div>
           </div>
         )}
