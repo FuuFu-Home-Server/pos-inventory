@@ -7,19 +7,19 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
   const since = req.nextUrl.searchParams.get("since")
-  const sinceDate = since ? new Date(since) : undefined
-
-  const where = sinceDate ? { updatedAt: { gt: sinceDate } } : {}
+  const sinceDate = since ? new Date(since) : null
 
   const [variants, paymentMethods, discounts, customers, receiptConfig, users, suppliers] =
     await Promise.all([
       prisma.productVariant.findMany({
-        where,
+        ...(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : {}),
         include: { product: { select: { name: true, category: true } } },
       }),
-      prisma.paymentMethod.findMany({ where }),
-      prisma.discount.findMany({ where }),
-      prisma.customer.findMany({ where }),
+      prisma.paymentMethod.findMany(
+        sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined,
+      ),
+      prisma.discount.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
+      prisma.customer.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
       prisma.receiptConfig.findUnique({ where: { id: 1 } }),
       prisma.user.findMany({
         where: { isActive: true },
@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
           createdAt: true,
         },
       }),
-      prisma.supplier.findMany({ where }),
+      prisma.supplier.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
     ])
 
   return NextResponse.json({

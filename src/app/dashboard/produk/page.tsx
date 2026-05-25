@@ -21,7 +21,7 @@ import {
 import { useConfirm } from "@/hooks/useConfirm"
 
 export default function ProdukPage() {
-  const { confirm } = useConfirm()
+  const { confirm, dialog } = useConfirm()
   const {
     products,
     total,
@@ -664,6 +664,7 @@ export default function ProdukPage() {
           </div>
         )}
       </Modal>
+      {dialog}
     </div>
   )
 }
@@ -759,7 +760,6 @@ function VariantEditor({
           </div>
         ))}
       </div>
-      {dialog}
     </div>
   )
 }
