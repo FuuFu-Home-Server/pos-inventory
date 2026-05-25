@@ -4,7 +4,8 @@ RUN apk add --no-cache bash
 
 FROM base AS builder
 COPY package*.json ./
-RUN ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci
 COPY . .
 RUN cp prisma/schema.prisma prisma/schema.sqlite.prisma && \
     bash scripts/use-pg-schema.sh && \
