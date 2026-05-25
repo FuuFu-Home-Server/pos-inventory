@@ -1,6 +1,6 @@
 FROM node:22-alpine AS base
 WORKDIR /app
-RUN apk add --no-cache bash
+RUN apk add --no-cache bash openssl
 
 FROM base AS builder
 COPY package*.json ./
@@ -14,7 +14,6 @@ RUN cp prisma/schema.prisma prisma/schema.sqlite.prisma && \
     cp prisma/schema.sqlite.prisma prisma/schema.prisma
 
 FROM base AS runner
-RUN apk add --no-cache openssl
 ENV NODE_ENV=production
 ENV IS_PROD_SERVER=true
 ENV NEXT_TELEMETRY_DISABLED=1
