@@ -26,8 +26,8 @@ ALTER TABLE "PurchaseOrder" ALTER COLUMN "supplierId" DROP NOT NULL;
 ALTER TABLE "ReceiptConfig" ADD COLUMN IF NOT EXISTS "staticQrisImage" TEXT;
 
 -- Convert enum columns to TEXT so Prisma String fields work correctly
-ALTER TABLE "Discount" ALTER COLUMN "type" TYPE TEXT;
-ALTER TABLE "Discount" ALTER COLUMN "scope" TYPE TEXT;
+ALTER TABLE "Discount" ALTER COLUMN "type" TYPE TEXT USING "type"::TEXT;
+ALTER TABLE "Discount" ALTER COLUMN "scope" TYPE TEXT USING "scope"::TEXT;
 ALTER TABLE "Transaction" ALTER COLUMN "status" TYPE TEXT USING "status"::TEXT;
 ALTER TABLE "PurchaseOrder" ALTER COLUMN "status" TYPE TEXT USING "status"::TEXT;
 ALTER TABLE "StockOpname" ALTER COLUMN "status" TYPE TEXT USING "status"::TEXT;
