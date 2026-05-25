@@ -1,10 +1,10 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 WORKDIR /app
 RUN apk add --no-cache bash
 
 FROM base AS builder
 COPY package*.json ./
-RUN npm ci
+RUN ELECTRON_SKIP_BINARY_DOWNLOAD=1 npm ci
 COPY . .
 RUN cp prisma/schema.prisma prisma/schema.sqlite.prisma && \
     bash scripts/use-pg-schema.sh && \
