@@ -21,7 +21,7 @@ import {
 import { useConfirm } from "@/hooks/useConfirm"
 
 export default function ProdukPage() {
-  const { confirm, dialog } = useConfirm()
+  const { confirm } = useConfirm()
   const {
     products,
     total,
