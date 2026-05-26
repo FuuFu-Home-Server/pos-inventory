@@ -14,6 +14,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   const list = await prisma.purchaseList.findUnique({
     where: { id: Number(id) },
     include: {
+      images: { orderBy: { createdAt: "asc" } },
       items: {
         include: { productVariant: { include: { product: { select: { name: true } } } } },
       },
