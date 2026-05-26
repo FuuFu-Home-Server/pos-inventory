@@ -233,19 +233,24 @@ export async function POST(req: NextRequest) {
   try {
     await prisma.$transaction(async (db) => {
       for (const c of categories) {
-        await db.categoryOption.upsert({
-          where: { name: c.name },
-          create: { id: c.id, name: c.name, isActive: c.isActive },
-          update: { isActive: c.isActive },
-        })
+        const existing = await db.categoryOption.findUnique({ where: { name: c.name } })
+        if (existing) {
+          await db.categoryOption.update({
+            where: { id: existing.id },
+            data: { isActive: c.isActive },
+          })
+        } else {
+          await db.categoryOption.create({ data: { name: c.name, isActive: c.isActive } })
+        }
       }
 
       for (const u of units) {
-        await db.unitOption.upsert({
-          where: { name: u.name },
-          create: { id: u.id, name: u.name, isActive: u.isActive },
-          update: { isActive: u.isActive },
-        })
+        const existing = await db.unitOption.findUnique({ where: { name: u.name } })
+        if (existing) {
+          await db.unitOption.update({ where: { id: existing.id }, data: { isActive: u.isActive } })
+        } else {
+          await db.unitOption.create({ data: { name: u.name, isActive: u.isActive } })
+        }
       }
 
       if (receiptConfig) {
@@ -259,12 +264,13 @@ export async function POST(req: NextRequest) {
 
       const roleIdMap = new Map<number, number>()
       for (const r of roles) {
-        const serverRole = await db.role.upsert({
-          where: { name: r.name },
-          create: { id: r.id, name: r.name },
-          update: { name: r.name },
-        })
-        roleIdMap.set(r.id, serverRole.id)
+        const existing = await db.role.findUnique({ where: { name: r.name } })
+        if (existing) {
+          roleIdMap.set(r.id, existing.id)
+        } else {
+          const created = await db.role.create({ data: { name: r.name } })
+          roleIdMap.set(r.id, created.id)
+        }
       }
 
       for (const u of users) {
