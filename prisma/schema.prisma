@@ -209,6 +209,7 @@ model PurchaseList {
   status    String   @default("OPEN")
   createdAt DateTime @default(now())
   items     PurchaseListItem[]
+  images    PurchaseListImage[]
 }
 
 model PurchaseListItem {
@@ -224,6 +225,15 @@ model PurchaseListItem {
   isPurchased      Boolean          @default(false)
   purchaseList     PurchaseList     @relation(fields: [purchaseListId], references: [id], onDelete: Cascade)
   productVariant   ProductVariant?  @relation(fields: [productVariantId], references: [id])
+}
+
+model PurchaseListImage {
+  id             Int          @id @default(autoincrement())
+  purchaseListId Int
+  filename       String       @unique
+  syncStatus     String       @default("PENDING")
+  createdAt      DateTime     @default(now())
+  purchaseList   PurchaseList @relation(fields: [purchaseListId], references: [id], onDelete: Cascade)
 }
 
 model StockOpname {
