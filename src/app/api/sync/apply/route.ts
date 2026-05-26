@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
   await prisma.$transaction(async (db) => {
     for (const r of roles) {
       await db.role.upsert({
-        where: { id: r.id },
+        where: { name: r.name },
         create: { id: r.id, name: r.name },
         update: { name: r.name },
       })
@@ -214,23 +214,23 @@ export async function POST(req: NextRequest) {
 
     for (const c of categories) {
       await db.categoryOption.upsert({
-        where: { id: c.id },
+        where: { name: c.name },
         create: { id: c.id, name: c.name, isActive: c.isActive },
-        update: { name: c.name, isActive: c.isActive },
+        update: { isActive: c.isActive },
       })
     }
 
     for (const u of units) {
       await db.unitOption.upsert({
-        where: { id: u.id },
+        where: { name: u.name },
         create: { id: u.id, name: u.name, isActive: u.isActive },
-        update: { name: u.name, isActive: u.isActive },
+        update: { isActive: u.isActive },
       })
     }
 
     for (const u of users) {
       await db.user.upsert({
-        where: { id: u.id },
+        where: { email: u.email },
         create: {
           id: u.id,
           name: u.name,
@@ -287,9 +287,9 @@ export async function POST(req: NextRequest) {
 
     for (const pm of paymentMethods) {
       await db.paymentMethod.upsert({
-        where: { id: pm.id },
+        where: { name: pm.name },
         create: { id: pm.id, name: pm.name, isActive: pm.isActive },
-        update: { name: pm.name, isActive: pm.isActive },
+        update: { isActive: pm.isActive },
       })
     }
 
