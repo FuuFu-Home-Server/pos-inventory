@@ -24,7 +24,10 @@ export type PurchaseList = {
   purchasedCount: number
   _count: { items: number }
 }
-export type PurchaseListDetail = PurchaseList & { items: ListItem[] }
+export type PurchaseListDetail = PurchaseList & {
+  items: ListItem[]
+  images?: { id: number; filename: string; createdAt: string }[]
+}
 export type LowStockVariant = {
   id: number
   variantName: string
@@ -282,6 +285,27 @@ export function usePurchaseList(
     }
   }
 
+  async function reloadDetail(id: number) {
+    const res = await fetch(`/api/purchase-lists/${id}`)
+    if (!res.ok) return
+    const data = await res.json()
+    setDetails((prev) => ({ ...prev, [id]: data }))
+  }
+
+  async function uploadImage(listId: number, file: File) {
+    const { compressImage } = await import("@/lib/image-compress")
+    const compressed = await compressImage(file)
+    const form = new FormData()
+    form.append("file", compressed, file.name.replace(/\.[^.]+$/, ".jpg"))
+    await fetch(`/api/purchase-lists/${listId}/images`, { method: "POST", body: form })
+    await reloadDetail(listId)
+  }
+
+  async function deleteImage(listId: number, imageId: number) {
+    await fetch(`/api/purchase-lists/${listId}/images/${imageId}`, { method: "DELETE" })
+    await reloadDetail(listId)
+  }
+
   return {
     lists,
     expandedId,
@@ -304,5 +328,8 @@ export function usePurchaseList(
     completeToPO,
     createProductForList,
     createVariantForList,
+    reloadDetail,
+    uploadImage,
+    deleteImage,
   }
 }
