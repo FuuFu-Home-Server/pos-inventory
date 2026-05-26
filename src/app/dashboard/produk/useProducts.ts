@@ -63,7 +63,9 @@ function productToEditForm(p: Product) {
   }
 }
 
-export function useProducts(confirm: (msg: string) => Promise<boolean>) {
+export function useProducts(
+  confirm: (msg: string | { message: string; description?: string }) => Promise<boolean>,
+) {
   const [products, setProducts] = useState<Product[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)

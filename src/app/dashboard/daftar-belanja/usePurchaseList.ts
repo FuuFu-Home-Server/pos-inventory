@@ -35,7 +35,9 @@ export type LowStockVariant = {
   product: { name: string }
 }
 
-export function usePurchaseList(confirm: (msg: string) => Promise<boolean>) {
+export function usePurchaseList(
+  confirm: (msg: string | { message: string; description?: string }) => Promise<boolean>,
+) {
   const [lists, setLists] = useState<PurchaseList[]>([])
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [details, setDetails] = useState<Record<number, PurchaseListDetail>>({})

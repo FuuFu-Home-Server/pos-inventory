@@ -12,7 +12,9 @@ export type Customer = {
 
 const emptyForm = { name: "", phone: "", address: "" }
 
-export function useCustomer(confirm: (msg: string) => Promise<boolean>) {
+export function useCustomer(
+  confirm: (msg: string | { message: string; description?: string }) => Promise<boolean>,
+) {
   const [customers, setCustomers] = useState<Customer[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)

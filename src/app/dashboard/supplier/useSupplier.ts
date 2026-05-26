@@ -12,7 +12,9 @@ export type Supplier = {
 
 const emptyForm = { name: "", phone: "", address: "", contactPerson: "" }
 
-export function useSupplier(confirm: (msg: string) => Promise<boolean>) {
+export function useSupplier(
+  confirm: (msg: string | { message: string; description?: string }) => Promise<boolean>,
+) {
   const [suppliers, setSuppliers] = useState<Supplier[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)

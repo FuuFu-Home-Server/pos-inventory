@@ -14,7 +14,9 @@ export type Discount = {
 }
 export type Product = { id: number; name: string }
 
-export function useDiscounts(confirm: (msg: string) => Promise<boolean>) {
+export function useDiscounts(
+  confirm: (msg: string | { message: string; description?: string }) => Promise<boolean>,
+) {
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [products, setProducts] = useState<Product[]>([])
   const [modalOpen, setModalOpen] = useState(false)
