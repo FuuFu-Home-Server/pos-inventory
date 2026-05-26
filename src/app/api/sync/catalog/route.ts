@@ -24,6 +24,7 @@ export async function GET(req: NextRequest) {
     purchaseOrders,
     purchaseLists,
     stockOpnames,
+    purchaseListImages,
   ] = await Promise.all([
     prisma.role.findMany(),
     prisma.productVariant.findMany({
@@ -65,6 +66,7 @@ export async function GET(req: NextRequest) {
       ...(sinceDate ? { where: { createdAt: { gt: sinceDate } } } : {}),
       include: { items: true },
     }),
+    prisma.purchaseListImage.findMany(),
   ])
 
   return NextResponse.json({
@@ -82,6 +84,7 @@ export async function GET(req: NextRequest) {
     purchaseOrders,
     purchaseLists,
     stockOpnames,
+    purchaseListImages,
     syncedAt: new Date().toISOString(),
   })
 }

@@ -143,6 +143,17 @@ const applySchema = z.object({
       }),
     )
     .default([]),
+  purchaseListImages: z
+    .array(
+      z.object({
+        id: z.number().int(),
+        purchaseListId: z.number().int(),
+        filename: z.string(),
+        syncStatus: z.string(),
+        createdAt: z.string(),
+      }),
+    )
+    .default([]),
   users: z
     .array(
       z.object({
@@ -198,6 +209,7 @@ export async function POST(req: NextRequest) {
     transactions,
     purchaseOrders,
     purchaseLists,
+    purchaseListImages,
     stockOpnames,
     receiptConfig,
     syncedAt,
@@ -483,6 +495,20 @@ export async function POST(req: NextRequest) {
           },
         })
       }
+    }
+
+    for (const img of purchaseListImages) {
+      await db.purchaseListImage.upsert({
+        where: { id: img.id },
+        create: {
+          id: img.id,
+          purchaseListId: img.purchaseListId,
+          filename: img.filename,
+          syncStatus: "SYNCED",
+          createdAt: new Date(img.createdAt),
+        },
+        update: { purchaseListId: img.purchaseListId },
+      })
     }
 
     for (const so of stockOpnames) {
