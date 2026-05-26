@@ -9,33 +9,8 @@ export async function GET(req: NextRequest) {
   const since = req.nextUrl.searchParams.get("since")
   const sinceDate = since ? new Date(since) : null
 
-  const [variants, paymentMethods, discounts, customers, receiptConfig, users, suppliers] =
-    await Promise.all([
-      prisma.productVariant.findMany({
-        ...(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : {}),
-        include: { product: { select: { name: true, category: true } } },
-      }),
-      prisma.paymentMethod.findMany(
-        sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined,
-      ),
-      prisma.discount.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
-      prisma.customer.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
-      prisma.receiptConfig.findUnique({ where: { id: 1 } }),
-      prisma.user.findMany({
-        where: { isActive: true },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          roleId: true,
-          isActive: true,
-          createdAt: true,
-        },
-      }),
-      prisma.supplier.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
-    ])
-
-  return NextResponse.json({
+  const [
+    roles,
     variants,
     paymentMethods,
     discounts,
@@ -43,6 +18,70 @@ export async function GET(req: NextRequest) {
     receiptConfig,
     users,
     suppliers,
+    categories,
+    units,
+    transactions,
+    purchaseOrders,
+    purchaseLists,
+    stockOpnames,
+  ] = await Promise.all([
+    prisma.role.findMany(),
+    prisma.productVariant.findMany({
+      ...(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : {}),
+      include: { product: { select: { name: true, category: true } } },
+    }),
+    prisma.paymentMethod.findMany(
+      sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined,
+    ),
+    prisma.discount.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
+    prisma.customer.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
+    prisma.receiptConfig.findUnique({ where: { id: 1 } }),
+    prisma.user.findMany({
+      ...(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : {}),
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        passwordHash: true,
+        roleId: true,
+        isActive: true,
+        isDefaultCredential: true,
+        createdAt: true,
+      },
+    }),
+    prisma.supplier.findMany(sinceDate ? { where: { updatedAt: { gt: sinceDate } } } : undefined),
+    prisma.categoryOption.findMany(),
+    prisma.unitOption.findMany(),
+    prisma.transaction.findMany({
+      ...(sinceDate ? { where: { createdAt: { gt: sinceDate } } } : {}),
+      include: { items: true },
+    }),
+    prisma.purchaseOrder.findMany({
+      ...(sinceDate ? { where: { createdAt: { gt: sinceDate } } } : {}),
+      include: { items: true },
+    }),
+    prisma.purchaseList.findMany({ include: { items: true } }),
+    prisma.stockOpname.findMany({
+      ...(sinceDate ? { where: { createdAt: { gt: sinceDate } } } : {}),
+      include: { items: true },
+    }),
+  ])
+
+  return NextResponse.json({
+    roles,
+    variants,
+    paymentMethods,
+    discounts,
+    customers,
+    receiptConfig,
+    users,
+    suppliers,
+    categories,
+    units,
+    transactions,
+    purchaseOrders,
+    purchaseLists,
+    stockOpnames,
     syncedAt: new Date().toISOString(),
   })
 }

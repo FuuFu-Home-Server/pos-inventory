@@ -3,17 +3,21 @@
 import { useState, useCallback } from "react"
 import { AlertTriangle } from "lucide-react"
 
-type ConfirmState = {
+type ConfirmOptions = {
   message: string
-  resolve: (value: boolean) => void
-} | null
+  description?: string
+}
+
+type ConfirmState = (ConfirmOptions & { resolve: (value: boolean) => void }) | null
 
 export function useConfirm() {
   const [state, setState] = useState<ConfirmState>(null)
 
-  const confirm = useCallback((message: string): Promise<boolean> => {
+  const confirm = useCallback((messageOrOptions: string | ConfirmOptions): Promise<boolean> => {
     return new Promise((resolve) => {
-      setState({ message, resolve })
+      const opts =
+        typeof messageOrOptions === "string" ? { message: messageOrOptions } : messageOrOptions
+      setState({ ...opts, resolve })
     })
   }, [])
 
@@ -23,25 +27,33 @@ export function useConfirm() {
   }
 
   const dialog = state ? (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/40" onClick={() => handleClose(false)} />
-      <div className="relative bg-white rounded-xl shadow-xl max-w-sm w-full mx-4 p-6">
-        <div className="flex items-start gap-3 mb-4">
-          <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center shrink-0">
-            <AlertTriangle size={18} className="text-red-600" />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/30 backdrop-blur-[2px]"
+        onClick={() => handleClose(false)}
+      />
+      <div className="relative bg-white rounded-2xl shadow-lg max-w-xs w-full overflow-hidden">
+        <div className="px-6 pt-6 pb-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center shrink-0">
+              <AlertTriangle size={15} className="text-red-500" />
+            </div>
+            <p className="text-sm font-semibold text-gray-800">{state.message}</p>
           </div>
-          <p className="text-sm text-gray-700 leading-relaxed pt-1.5">{state.message}</p>
+          {state.description && (
+            <p className="text-xs text-gray-500 leading-relaxed mb-4 pl-0">{state.description}</p>
+          )}
         </div>
-        <div className="flex justify-end gap-2">
+        <div className="border-t border-gray-100 px-6 py-3 flex justify-end gap-2">
           <button
             onClick={() => handleClose(false)}
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+            className="px-4 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-100 rounded-lg transition-colors"
           >
             Batal
           </button>
           <button
             onClick={() => handleClose(true)}
-            className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+            className="px-4 py-1.5 text-sm font-medium text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
           >
             Ya, Lanjutkan
           </button>

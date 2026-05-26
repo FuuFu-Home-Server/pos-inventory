@@ -214,7 +214,14 @@ export function useProducts(confirm: (msg: string) => Promise<boolean>) {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus produk ini dan semua variannya?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus produk ini?",
+        description:
+          "Semua varian produk akan ikut terhapus. Jika ada riwayat transaksi, varian akan dinonaktifkan.",
+      }))
+    )
+      return
     const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
     const data = await res.json()
     if (data.deactivated) {

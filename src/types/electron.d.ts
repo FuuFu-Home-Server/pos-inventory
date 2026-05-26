@@ -5,6 +5,7 @@ type SyncStatus = {
   failedCount: number
   syncing: boolean
   syncProgress: { done: number; total: number } | null
+  lastError: string | null
 }
 
 type AppInfo = { title: string; description: string }

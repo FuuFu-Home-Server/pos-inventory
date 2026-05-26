@@ -76,7 +76,13 @@ export function useSupplier(confirm: (msg: string) => Promise<boolean>) {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus supplier ini?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus supplier ini?",
+        description: "Data supplier akan dihapus permanen dan tidak dapat dikembalikan.",
+      }))
+    )
+      return
     await fetch(`/api/suppliers/${id}`, { method: "DELETE" })
     load()
   }

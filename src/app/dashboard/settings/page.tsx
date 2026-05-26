@@ -18,6 +18,9 @@ import {
   EyeOff,
   AlertCircle,
   Clock,
+  GitCompare,
+  ArrowUp,
+  ArrowDown,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useConfirm } from "@/hooks/useConfirm"
@@ -200,7 +203,13 @@ export default function SettingsPage() {
 
   async function handleSync() {
     if (!isElectron || syncing) return
-    if (!(await confirm("Jalankan sinkronisasi manual sekarang?"))) return
+    if (
+      !(await confirm({
+        message: "Jalankan sinkronisasi manual?",
+        description: "Transaksi yang belum tersinkronisasi akan dikirim ke server sekarang.",
+      }))
+    )
+      return
     setSyncing(true)
     await window.electronAPI!.triggerSync()
     const updated = await window.electronAPI!.getSyncStatus()
@@ -214,12 +223,42 @@ export default function SettingsPage() {
   const [mirroringPull, setMirroringPull] = useState(false)
   const [mirroringPush, setMirroringPush] = useState(false)
 
+  type DiffRow = { local: number; server: number; delta: number; match: boolean }
+  const [diffResult, setDiffResult] = useState<{
+    diff: Record<string, DiffRow>
+    hasDifferences: boolean
+  } | null>(null)
+  const [diffLoading, setDiffLoading] = useState(false)
+
+  async function handleDiff() {
+    if (!isElectron || diffLoading) return
+    setDiffLoading(true)
+    setDiffResult(null)
+    try {
+      const res = await fetch(
+        `/api/sync/diff?remoteUrl=${encodeURIComponent(remoteUrl)}&secret=${encodeURIComponent(syncSecret)}`,
+      )
+      const data = await res.json()
+      if (!res.ok) {
+        showToast(data.error ?? "Gagal mengambil diff", "error")
+        return
+      }
+      setDiffResult(data)
+    } catch {
+      showToast("Gagal terhubung ke server", "error")
+    } finally {
+      setDiffLoading(false)
+    }
+  }
+
   async function handlePullMirror() {
     if (!isElectron || mirroringPull || mirroringPush || syncing) return
     if (
-      !(await confirm(
-        "Pull dari server akan menghapus semua katalog lokal (produk, diskon, dll) dan menggantinya penuh dari server. Lanjutkan?",
-      ))
+      !(await confirm({
+        message: "Pull katalog dari server?",
+        description:
+          "Semua katalog lokal (produk, diskon, dll) akan dihapus dan diganti penuh dari data server. Tindakan ini tidak dapat dibatalkan.",
+      }))
     )
       return
     setMirroringPull(true)
@@ -233,9 +272,11 @@ export default function SettingsPage() {
   async function handlePushMirror() {
     if (!isElectron || mirroringPull || mirroringPush || syncing) return
     if (
-      !(await confirm(
-        "Push ke server akan menghapus semua katalog server dan menggantinya penuh dari data lokal. Lanjutkan?",
-      ))
+      !(await confirm({
+        message: "Push katalog ke server?",
+        description:
+          "Semua katalog di server akan dihapus dan diganti penuh dari data lokal. Tindakan ini tidak dapat dibatalkan.",
+      }))
     )
       return
     setMirroringPush(true)
@@ -527,11 +568,18 @@ export default function SettingsPage() {
                 Terakhir sinkron: {new Date(syncStatus.lastSyncAt).toLocaleString("id-ID")}
               </p>
             )}
+            {syncStatus?.lastError && (
+              <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 font-mono break-all">
+                {syncStatus.lastError}
+              </p>
+            )}
 
             <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-800">Sinkronisasi Manual</p>
-                <p className="text-xs text-gray-400 mt-0.5">Kirim transaksi pending ke server</p>
+                <p className="text-sm font-medium text-gray-800">Backup ke Server</p>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Kirim semua perubahan lokal ke server
+                </p>
               </div>
               <Button
                 onClick={handleSync}
@@ -545,7 +593,7 @@ export default function SettingsPage() {
                   </>
                 ) : (
                   <>
-                    <RefreshCw size={14} /> Sinkronisasi
+                    <RefreshCw size={14} /> Backup
                   </>
                 )}
               </Button>
@@ -554,9 +602,61 @@ export default function SettingsPage() {
             <div className="border-t border-gray-100 pt-4 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Pull dari Server</p>
+                  <p className="text-sm font-medium text-gray-800">Cek Perbedaan</p>
+                  <p className="text-xs text-gray-400 mt-0.5">Bandingkan data lokal vs server</p>
+                </div>
+                <Button
+                  onClick={handleDiff}
+                  loading={diffLoading}
+                  variant="secondary"
+                  className="flex items-center gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                >
+                  <GitCompare size={14} /> Cek
+                </Button>
+              </div>
+
+              {diffResult && (
+                <div className="rounded-xl border border-gray-100 overflow-hidden">
+                  {diffResult.hasDifferences ? (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border-b border-amber-100">
+                      <AlertCircle size={13} className="text-amber-500" />
+                      <span className="text-xs font-medium text-amber-700">Ada perbedaan data</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border-b border-emerald-100">
+                      <Check size={13} className="text-emerald-500" />
+                      <span className="text-xs font-medium text-emerald-700">Data sinkron</span>
+                    </div>
+                  )}
+                  <div className="divide-y divide-gray-50">
+                    {Object.entries(diffResult.diff).map(([table, row]) => (
+                      <div key={table} className="flex items-center justify-between px-3 py-1.5">
+                        <span className="text-xs text-gray-500 w-32 capitalize">{table}</span>
+                        <div className="flex items-center gap-4 text-xs">
+                          <span className="text-gray-600 w-12 text-right">{row.local} lokal</span>
+                          <span className="text-gray-400">·</span>
+                          <span className="text-gray-600 w-14 text-right">{row.server} server</span>
+                          {!row.match && (
+                            <span
+                              className={`flex items-center gap-0.5 font-medium ${row.delta > 0 ? "text-amber-600" : "text-red-500"}`}
+                            >
+                              {row.delta > 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                              {Math.abs(row.delta)}
+                            </span>
+                          )}
+                          {row.match && <Check size={11} className="text-emerald-500" />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-800">Restore dari Server</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Ganti katalog lokal penuh dengan data server
+                    Ganti semua data lokal dengan data server
                   </p>
                 </div>
                 <Button
@@ -565,14 +665,14 @@ export default function SettingsPage() {
                   variant="secondary"
                   className="flex items-center gap-2 text-amber-600 border-amber-200 hover:bg-amber-50"
                 >
-                  <RefreshCw size={14} /> Pull
+                  <ArrowDown size={14} /> Restore
                 </Button>
               </div>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-800">Push ke Server</p>
+                  <p className="text-sm font-medium text-gray-800">Backup Penuh ke Server</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    Ganti katalog server penuh dengan data lokal
+                    Timpa server penuh dengan data lokal
                   </p>
                 </div>
                 <Button
@@ -581,7 +681,7 @@ export default function SettingsPage() {
                   variant="secondary"
                   className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
                 >
-                  <RefreshCw size={14} /> Push
+                  <ArrowUp size={14} /> Push
                 </Button>
               </div>
             </div>

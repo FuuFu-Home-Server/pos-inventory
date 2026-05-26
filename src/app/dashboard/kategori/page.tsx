@@ -51,7 +51,14 @@ export default function KategoriPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus kategori ini?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus kategori ini?",
+        description:
+          "Kategori akan dihapus permanen. Produk dalam kategori ini tidak ikut terhapus.",
+      }))
+    )
+      return
     await fetch(`/api/categories/${id}`, { method: "DELETE" })
     load()
   }

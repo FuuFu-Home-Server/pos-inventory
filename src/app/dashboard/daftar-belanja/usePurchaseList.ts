@@ -160,7 +160,13 @@ export function usePurchaseList(confirm: (msg: string) => Promise<boolean>) {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus daftar belanja ini?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus daftar belanja ini?",
+        description: "Daftar belanja dan semua item di dalamnya akan dihapus permanen.",
+      }))
+    )
+      return
     await fetch(`/api/purchase-lists/${id}`, { method: "DELETE" })
     load()
   }

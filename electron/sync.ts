@@ -5,6 +5,7 @@ export type SyncStatus = {
   failedCount: number
   syncing: boolean
   syncProgress: { done: number; total: number } | null
+  lastError: string | null
 }
 
 let status: SyncStatus = {
@@ -14,6 +15,7 @@ let status: SyncStatus = {
   failedCount: 0,
   syncing: false,
   syncProgress: null,
+  lastError: null,
 }
 
 let pingInterval: ReturnType<typeof setInterval> | null = null
@@ -50,21 +52,34 @@ export function setSyncSecret(secret: string) {
 }
 
 export async function triggerSync(): Promise<void> {
-  if (!remoteBaseUrl || status.syncing) return
+  if (!remoteBaseUrl) {
+    status.lastError = "Remote URL belum dikonfigurasi"
+    onStatusChange?.()
+    return
+  }
+  if (status.syncing) return
   await performSync()
 }
 
 export async function triggerPullMirror(): Promise<void> {
-  if (!remoteBaseUrl || status.syncing) return
+  if (!remoteBaseUrl) {
+    status.lastError = "Remote URL belum dikonfigurasi"
+    onStatusChange?.()
+    return
+  }
+  if (status.syncing) return
   status.syncing = true
   status.syncProgress = null
+  status.lastError = null
   onStatusChange?.()
   try {
     await fetch(`${localBaseUrl}/api/sync/mirror`, { method: "POST" })
     await pullCatalog()
     status.lastSyncAt = new Date().toISOString()
-  } catch {
-    // silent
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[sync] triggerPullMirror error:", msg)
+    status.lastError = msg
   } finally {
     status.syncing = false
     status.syncProgress = null
@@ -73,26 +88,36 @@ export async function triggerPullMirror(): Promise<void> {
 }
 
 export async function triggerPushMirror(): Promise<void> {
-  if (!remoteBaseUrl || status.syncing) return
+  if (!remoteBaseUrl) {
+    status.lastError = "Remote URL belum dikonfigurasi"
+    onStatusChange?.()
+    return
+  }
+  if (status.syncing) return
   status.syncing = true
   status.syncProgress = null
+  status.lastError = null
   onStatusChange?.()
   try {
-    await fetch(`${remoteBaseUrl}/api/sync/wipe`, {
+    const wipeRes = await fetch(`${remoteBaseUrl}/api/sync/wipe`, {
       method: "POST",
       headers: { "X-Sync-Secret": syncSecret },
     })
+    if (!wipeRes.ok) throw new Error(`wipe failed: ${wipeRes.status} ${await wipeRes.text()}`)
     const exportRes = await fetch(`${localBaseUrl}/api/sync/export`)
-    if (!exportRes.ok) return
+    if (!exportRes.ok) throw new Error(`export failed: ${exportRes.status}`)
     const payload = await exportRes.json()
-    await fetch(`${remoteBaseUrl}/api/sync/push`, {
+    const pushRes = await fetch(`${remoteBaseUrl}/api/sync/push`, {
       method: "POST",
       headers: { "Content-Type": "application/json", "X-Sync-Secret": syncSecret },
       body: JSON.stringify(payload),
     })
+    if (!pushRes.ok) throw new Error(`push failed: ${pushRes.status} ${await pushRes.text()}`)
     status.lastSyncAt = new Date().toISOString()
-  } catch {
-    // silent
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[sync] triggerPushMirror error:", msg)
+    status.lastError = msg
   } finally {
     status.syncing = false
     status.syncProgress = null
@@ -120,13 +145,16 @@ async function performSync() {
   if (status.syncing) return
   status.syncing = true
   status.syncProgress = null
+  status.lastError = null
   onStatusChange?.()
   try {
     await flushTransactionQueue()
-    await pullCatalog()
+    await pushCatalogToServer()
     status.lastSyncAt = new Date().toISOString()
-  } catch {
-    // sync error is silent — status.lastSyncAt stays stale, user sees no lastSyncAt update
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[sync] performSync error:", msg)
+    status.lastError = msg
   } finally {
     status.syncing = false
     status.syncProgress = null
@@ -136,7 +164,7 @@ async function performSync() {
 
 async function flushTransactionQueue() {
   const res = await fetch(`${localBaseUrl}/api/sync/pending?limit=100`)
-  if (!res.ok) return
+  if (!res.ok) throw new Error(`pending fetch failed: ${res.status}`)
   const { transactions, purchaseOrders } = await res.json()
   const txList: unknown[] = transactions ?? []
   const poList: unknown[] = purchaseOrders ?? []
@@ -151,7 +179,7 @@ async function flushTransactionQueue() {
     headers: { "Content-Type": "application/json", "X-Sync-Secret": syncSecret },
     body: JSON.stringify({ transactions: txList, purchaseOrders: poList }),
   })
-  if (!flushRes.ok) return
+  if (!flushRes.ok) throw new Error(`flush failed: ${flushRes.status} ${await flushRes.text()}`)
 
   const result: {
     synced: string[]
@@ -173,6 +201,30 @@ async function flushTransactionQueue() {
   status.failedCount = (status.failedCount ?? 0) + result.failed.length + result.failedPo.length
 }
 
+async function pushCatalogToServer() {
+  const metaRes = await fetch(`${localBaseUrl}/api/sync/meta`)
+  const meta = metaRes.ok ? await metaRes.json() : {}
+  const since = meta.lastPushAt ? `?since=${encodeURIComponent(meta.lastPushAt)}` : ""
+
+  const exportRes = await fetch(`${localBaseUrl}/api/sync/export${since}`)
+  if (!exportRes.ok) throw new Error(`export failed: ${exportRes.status}`)
+  const payload = await exportRes.json()
+
+  const pushRes = await fetch(`${remoteBaseUrl}/api/sync/push`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Sync-Secret": syncSecret },
+    body: JSON.stringify(payload),
+  })
+  if (!pushRes.ok) throw new Error(`push failed: ${pushRes.status} ${await pushRes.text()}`)
+
+  const syncedAt = new Date().toISOString()
+  await fetch(`${localBaseUrl}/api/sync/meta`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ storeName: "catalog-push", syncedAt }),
+  })
+}
+
 async function pullCatalog() {
   const metaRes = await fetch(`${localBaseUrl}/api/sync/meta`)
   const meta = metaRes.ok ? await metaRes.json() : {}
@@ -181,7 +233,8 @@ async function pullCatalog() {
   const catalogRes = await fetch(`${remoteBaseUrl}/api/sync/catalog${since}`, {
     headers: { "X-Sync-Secret": syncSecret },
   })
-  if (!catalogRes.ok) return
+  if (!catalogRes.ok)
+    throw new Error(`catalog fetch failed: ${catalogRes.status} ${await catalogRes.text()}`)
   const catalog = await catalogRes.json()
 
   await fetch(`${localBaseUrl}/api/sync/apply`, {

@@ -50,7 +50,13 @@ export default function SatuanPage() {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus satuan ini?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus satuan ini?",
+        description: "Satuan yang terhapus tidak dapat dikembalikan.",
+      }))
+    )
+      return
     await fetch(`/api/units/${id}`, { method: "DELETE" })
     load()
   }

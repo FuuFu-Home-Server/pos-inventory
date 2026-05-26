@@ -77,7 +77,13 @@ export function useDiscounts(confirm: (msg: string) => Promise<boolean>) {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus diskon ini?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus diskon ini?",
+        description: "Diskon akan dihapus permanen dan tidak lagi berlaku untuk transaksi baru.",
+      }))
+    )
+      return
     await fetch(`/api/discounts/${id}`, { method: "DELETE" })
     load()
   }

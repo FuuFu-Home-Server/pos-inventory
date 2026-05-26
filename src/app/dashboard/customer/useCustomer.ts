@@ -69,7 +69,13 @@ export function useCustomer(confirm: (msg: string) => Promise<boolean>) {
   }
 
   async function handleDelete(id: number) {
-    if (!(await confirm("Hapus pelanggan ini?"))) return
+    if (
+      !(await confirm({
+        message: "Hapus pelanggan ini?",
+        description: "Data pelanggan akan dihapus permanen dan tidak dapat dikembalikan.",
+      }))
+    )
+      return
     await fetch(`/api/customers/${id}`, { method: "DELETE" })
     load()
   }
