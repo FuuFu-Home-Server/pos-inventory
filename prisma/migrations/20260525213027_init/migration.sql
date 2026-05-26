@@ -1,187 +1,203 @@
 -- CreateTable
 CREATE TABLE "Role" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-    "name" TEXT NOT NULL
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+
+    CONSTRAINT "Role_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "User" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "passwordHash" TEXT NOT NULL,
     "roleId" INTEGER NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
     "isDefaultCredential" BOOLEAN NOT NULL DEFAULT false,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Supplier" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "phone" TEXT,
     "address" TEXT,
     "contactPerson" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Supplier_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Customer" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "phone" TEXT,
     "address" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "CategoryOption" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "CategoryOption_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "UnitOption" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
-    "isActive" BOOLEAN NOT NULL DEFAULT true
+    "isActive" BOOLEAN NOT NULL DEFAULT true,
+
+    CONSTRAINT "UnitOption_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Product" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "category" TEXT NOT NULL,
     "supplierId" INTEGER,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Product_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ProductVariant" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "productId" INTEGER NOT NULL,
     "variantName" TEXT NOT NULL,
     "barcode" TEXT,
-    "price" DECIMAL NOT NULL,
-    "costPrice" DECIMAL,
+    "price" DECIMAL(12,2) NOT NULL,
+    "costPrice" DECIMAL(12,2),
     "stock" INTEGER NOT NULL DEFAULT 0,
     "lowStockThreshold" INTEGER NOT NULL DEFAULT 5,
     "unit" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "ProductVariant_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ProductVariant_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PaymentMethod" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "PaymentMethod_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Discount" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "name" TEXT NOT NULL,
     "type" TEXT NOT NULL,
-    "value" DECIMAL NOT NULL,
+    "value" DECIMAL(12,2) NOT NULL,
     "scope" TEXT NOT NULL,
     "productId" INTEGER,
-    "minPurchase" DECIMAL,
+    "minPurchase" DECIMAL(12,2),
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "validFrom" DATETIME,
-    "validUntil" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
-    CONSTRAINT "Discount_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+    "validFrom" TIMESTAMP(3),
+    "validUntil" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Discount_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "Transaction" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "customerId" INTEGER,
     "discountId" INTEGER,
     "paymentMethodId" INTEGER NOT NULL,
-    "discountAmount" DECIMAL NOT NULL DEFAULT 0,
-    "subtotal" DECIMAL NOT NULL,
-    "total" DECIMAL NOT NULL,
-    "paymentAmount" DECIMAL NOT NULL,
-    "changeAmount" DECIMAL NOT NULL DEFAULT 0,
+    "discountAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "subtotal" DECIMAL(12,2) NOT NULL,
+    "total" DECIMAL(12,2) NOT NULL,
+    "paymentAmount" DECIMAL(12,2) NOT NULL,
+    "changeAmount" DECIMAL(12,2) NOT NULL DEFAULT 0,
     "midtransOrderId" TEXT,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "syncStatus" TEXT NOT NULL DEFAULT 'SYNCED',
     "syncFailReason" TEXT,
     "localId" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Transaction_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Transaction_discountId_fkey" FOREIGN KEY ("discountId") REFERENCES "Discount" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "Transaction_paymentMethodId_fkey" FOREIGN KEY ("paymentMethodId") REFERENCES "PaymentMethod" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Transaction_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "TransactionItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "transactionId" INTEGER NOT NULL,
     "productVariantId" INTEGER NOT NULL,
     "qty" INTEGER NOT NULL,
-    "unitPrice" DECIMAL NOT NULL,
-    "itemDiscountAmt" DECIMAL NOT NULL DEFAULT 0,
-    "subtotal" DECIMAL NOT NULL,
-    CONSTRAINT "TransactionItem_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "Transaction" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "TransactionItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "unitPrice" DECIMAL(12,2) NOT NULL,
+    "itemDiscountAmt" DECIMAL(12,2) NOT NULL DEFAULT 0,
+    "subtotal" DECIMAL(12,2) NOT NULL,
+
+    CONSTRAINT "TransactionItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PurchaseOrder" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "supplierId" INTEGER,
     "userId" INTEGER NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'DRAFT',
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "receivedAt" DATETIME,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "receivedAt" TIMESTAMP(3),
     "syncStatus" TEXT NOT NULL DEFAULT 'PENDING',
     "localId" TEXT,
-    CONSTRAINT "PurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier" ("id") ON DELETE SET NULL ON UPDATE CASCADE,
-    CONSTRAINT "PurchaseOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "PurchaseOrder_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PurchaseOrderItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "purchaseOrderId" INTEGER NOT NULL,
     "productVariantId" INTEGER NOT NULL,
     "qty" INTEGER NOT NULL,
-    "unitCost" DECIMAL NOT NULL,
-    "subtotal" DECIMAL NOT NULL,
-    CONSTRAINT "PurchaseOrderItem_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "PurchaseOrderItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "unitCost" DECIMAL(12,2) NOT NULL,
+    "subtotal" DECIMAL(12,2) NOT NULL,
+
+    CONSTRAINT "PurchaseOrderItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PurchaseList" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "title" TEXT NOT NULL,
     "notes" TEXT,
     "status" TEXT NOT NULL DEFAULT 'OPEN',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "PurchaseList_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "PurchaseListItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "purchaseListId" INTEGER NOT NULL,
     "productVariantId" INTEGER,
     "productName" TEXT NOT NULL,
@@ -189,37 +205,38 @@ CREATE TABLE "PurchaseListItem" (
     "unit" TEXT NOT NULL,
     "qty" INTEGER NOT NULL,
     "qtyPerUnit" INTEGER NOT NULL DEFAULT 1,
-    "unitCost" DECIMAL NOT NULL,
+    "unitCost" DECIMAL(12,2) NOT NULL,
     "isPurchased" BOOLEAN NOT NULL DEFAULT false,
-    CONSTRAINT "PurchaseListItem_purchaseListId_fkey" FOREIGN KEY ("purchaseListId") REFERENCES "PurchaseList" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "PurchaseListItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+
+    CONSTRAINT "PurchaseListItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "StockOpname" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "status" TEXT NOT NULL DEFAULT 'DRAFT',
     "notes" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "StockOpname_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "StockOpname_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "StockOpnameItem" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "opnameId" INTEGER NOT NULL,
     "productVariantId" INTEGER NOT NULL,
     "systemQty" INTEGER NOT NULL,
     "physicalQty" INTEGER NOT NULL DEFAULT 0,
     "difference" INTEGER NOT NULL DEFAULT 0,
-    CONSTRAINT "StockOpnameItem_opnameId_fkey" FOREIGN KEY ("opnameId") REFERENCES "StockOpname" ("id") ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT "StockOpnameItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+
+    CONSTRAINT "StockOpnameItem_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ReceiptConfig" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT DEFAULT 1,
+    "id" INTEGER NOT NULL DEFAULT 1,
     "storeName" TEXT NOT NULL DEFAULT 'Toko Saya',
     "address" TEXT,
     "phone" TEXT,
@@ -229,25 +246,30 @@ CREATE TABLE "ReceiptConfig" (
     "showCashier" BOOLEAN NOT NULL DEFAULT true,
     "paperWidth" INTEGER NOT NULL DEFAULT 80,
     "staticQrisImage" TEXT,
-    "updatedAt" DATETIME NOT NULL
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "ReceiptConfig_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "ImportLog" (
-    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "id" SERIAL NOT NULL,
     "userId" INTEGER NOT NULL,
     "filename" TEXT NOT NULL,
     "recordsImported" INTEGER NOT NULL DEFAULT 0,
     "status" TEXT NOT NULL DEFAULT 'PENDING',
     "errorMessage" TEXT,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "ImportLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ImportLog_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "SyncMeta" (
-    "storeName" TEXT NOT NULL PRIMARY KEY,
-    "lastSyncAt" DATETIME
+    "storeName" TEXT NOT NULL,
+    "lastSyncAt" TIMESTAMP(3),
+
+    CONSTRAINT "SyncMeta_pkey" PRIMARY KEY ("storeName")
 );
 
 -- CreateIndex
@@ -308,10 +330,70 @@ CREATE INDEX "Transaction_syncStatus_idx" ON "Transaction"("syncStatus");
 CREATE INDEX "TransactionItem_transactionId_idx" ON "TransactionItem"("transactionId");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PurchaseOrder_localId_key" ON "PurchaseOrder"("localId");
-
--- CreateIndex
 CREATE INDEX "PurchaseOrder_status_createdAt_idx" ON "PurchaseOrder"("status", "createdAt");
 
 -- CreateIndex
 CREATE INDEX "PurchaseOrder_syncStatus_idx" ON "PurchaseOrder"("syncStatus");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "PurchaseOrder_localId_key" ON "PurchaseOrder"("localId");
+
+-- AddForeignKey
+ALTER TABLE "User" ADD CONSTRAINT "User_roleId_fkey" FOREIGN KEY ("roleId") REFERENCES "Role"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Product" ADD CONSTRAINT "Product_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProductVariant" ADD CONSTRAINT "ProductVariant_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Discount" ADD CONSTRAINT "Discount_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_customerId_fkey" FOREIGN KEY ("customerId") REFERENCES "Customer"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_discountId_fkey" FOREIGN KEY ("discountId") REFERENCES "Discount"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Transaction" ADD CONSTRAINT "Transaction_paymentMethodId_fkey" FOREIGN KEY ("paymentMethodId") REFERENCES "PaymentMethod"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_transactionId_fkey" FOREIGN KEY ("transactionId") REFERENCES "Transaction"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "TransactionItem" ADD CONSTRAINT "TransactionItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_supplierId_fkey" FOREIGN KEY ("supplierId") REFERENCES "Supplier"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrder" ADD CONSTRAINT "PurchaseOrder_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_purchaseOrderId_fkey" FOREIGN KEY ("purchaseOrderId") REFERENCES "PurchaseOrder"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseOrderItem" ADD CONSTRAINT "PurchaseOrderItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseListItem" ADD CONSTRAINT "PurchaseListItem_purchaseListId_fkey" FOREIGN KEY ("purchaseListId") REFERENCES "PurchaseList"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "PurchaseListItem" ADD CONSTRAINT "PurchaseListItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockOpname" ADD CONSTRAINT "StockOpname_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockOpnameItem" ADD CONSTRAINT "StockOpnameItem_opnameId_fkey" FOREIGN KEY ("opnameId") REFERENCES "StockOpname"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "StockOpnameItem" ADD CONSTRAINT "StockOpnameItem_productVariantId_fkey" FOREIGN KEY ("productVariantId") REFERENCES "ProductVariant"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ImportLog" ADD CONSTRAINT "ImportLog_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
