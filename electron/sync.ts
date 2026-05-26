@@ -19,15 +19,20 @@ let status: SyncStatus = {
 }
 
 let pingInterval: ReturnType<typeof setInterval> | null = null
+let pushInterval: ReturnType<typeof setInterval> | null = null
 let onStatusChange: (() => void) | null = null
 let remoteBaseUrl = ""
 let syncSecret = ""
 const localBaseUrl = "http://localhost:3000"
+const PUSH_INTERVAL_MS = 15 * 60 * 1000
 
 export function startSync(onUpdate: () => void, secret?: string) {
   onStatusChange = onUpdate
   if (secret) syncSecret = secret
   pingInterval = setInterval(checkConnectivity, 30000)
+  pushInterval = setInterval(() => {
+    if (status.isOnline && remoteBaseUrl) performSync()
+  }, PUSH_INTERVAL_MS)
   checkConnectivity()
 }
 
@@ -35,6 +40,10 @@ export function stopSync() {
   if (pingInterval) {
     clearInterval(pingInterval)
     pingInterval = null
+  }
+  if (pushInterval) {
+    clearInterval(pushInterval)
+    pushInterval = null
   }
   onStatusChange = null
 }
