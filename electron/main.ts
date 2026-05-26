@@ -123,6 +123,7 @@ function startNextServer(): Promise<void> {
       NEXTAUTH_SECRET: authSecret,
       NEXTAUTH_URL: `http://127.0.0.1:${PORT}`,
       SYNC_SECRET: syncSecret,
+      ELECTRON_USER_DATA: app.getPath("userData"),
       PORT: String(PORT),
       HOSTNAME: "127.0.0.1",
       NODE_ENV: (isDev ? "development" : "production") as "development" | "production",
@@ -230,6 +231,7 @@ function createWindow() {
 }
 
 app.whenReady().then(async () => {
+  fs.mkdirSync(path.join(app.getPath("userData"), "uploads", "purchase-lists"), { recursive: true })
   try {
     await runPrismaPush()
     if (!isDev) await startNextServer()
