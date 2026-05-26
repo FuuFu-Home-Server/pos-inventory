@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -e
-git checkout prisma/schema.prisma prisma/migrations/migration_lock.toml
+git checkout prisma/schema.prisma
 echo "Restored SQLite schema."
