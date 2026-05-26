@@ -275,7 +275,8 @@ app.whenReady().then(async () => {
 
   createWindow()
 
-  const { startSync, setRemoteUrl } = await import("./sync")
+  const { startSync, setRemoteUrl, setUserDataPath } = await import("./sync")
+  setUserDataPath(app.getPath("userData"))
   const savedRemoteUrl = (store.get("remoteUrl") as string | undefined) ?? ""
   if (savedRemoteUrl) setRemoteUrl(savedRemoteUrl)
   startSync(() => mainWindow?.webContents.send("sync:status"), store.get("syncSecret") as string)

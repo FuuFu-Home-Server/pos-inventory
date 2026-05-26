@@ -1,3 +1,6 @@
+import { readFile, writeFile, mkdir } from "fs/promises"
+import path from "path"
+
 export type SyncStatus = {
   isOnline: boolean
   lastSyncAt: string | null
@@ -23,6 +26,7 @@ let pushInterval: ReturnType<typeof setInterval> | null = null
 let onStatusChange: (() => void) | null = null
 let remoteBaseUrl = ""
 let syncSecret = ""
+let userDataPath = ""
 const localBaseUrl = "http://localhost:3000"
 const PUSH_INTERVAL_MS = 15 * 60 * 1000
 
@@ -58,6 +62,10 @@ export function setRemoteUrl(url: string) {
 
 export function setSyncSecret(secret: string) {
   syncSecret = secret
+}
+
+export function setUserDataPath(p: string) {
+  userDataPath = p
 }
 
 export async function triggerSync(): Promise<void> {
@@ -159,6 +167,8 @@ async function performSync() {
   try {
     await flushTransactionQueue()
     await pushCatalogToServer()
+    await pushPendingImages()
+    await pullMissingImages()
     status.lastSyncAt = new Date().toISOString()
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
@@ -232,6 +242,65 @@ async function pushCatalogToServer() {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ storeName: "catalog-push", syncedAt }),
   })
+}
+
+async function pushPendingImages() {
+  if (!userDataPath || !remoteBaseUrl) return
+
+  const res = await fetch(`${localBaseUrl}/api/sync/images`)
+  if (!res.ok) return
+  const pending: { id: number; filename: string }[] = await res.json()
+  if (pending.length === 0) return
+
+  for (const img of pending) {
+    try {
+      const filePath = path.join(userDataPath, "uploads", "purchase-lists", img.filename)
+      const buffer = await readFile(filePath)
+      const formData = new FormData()
+      formData.append("filename", img.filename)
+      formData.append("file", new Blob([buffer]), img.filename)
+
+      const uploadRes = await fetch(`${remoteBaseUrl}/api/sync/images`, {
+        method: "POST",
+        headers: { "X-Sync-Secret": syncSecret },
+        body: formData,
+      })
+
+      if (uploadRes.ok) {
+        await fetch(`${localBaseUrl}/api/sync/images/${img.id}/mark-synced`, {
+          method: "PATCH",
+        })
+      }
+    } catch {
+      // Skip failed image, will retry next sync cycle
+    }
+  }
+}
+
+async function pullMissingImages() {
+  if (!userDataPath || !remoteBaseUrl) return
+
+  const res = await fetch(`${localBaseUrl}/api/sync/images/missing`)
+  if (!res.ok) return
+  const missing: string[] = await res.json()
+  if (missing.length === 0) return
+
+  const dir = path.join(userDataPath, "uploads", "purchase-lists")
+  await mkdir(dir, { recursive: true })
+
+  for (const filename of missing) {
+    try {
+      const fileRes = await fetch(`${remoteBaseUrl}/api/sync/images/${filename}`, {
+        headers: { "X-Sync-Secret": syncSecret },
+      })
+      if (!fileRes.ok) continue
+
+      const buffer = Buffer.from(await fileRes.arrayBuffer())
+      await writeFile(path.join(dir, filename), buffer)
+    } catch {
+      // Skip, will retry next sync cycle
+    }
+  }
 }
 
 async function pullCatalog() {
