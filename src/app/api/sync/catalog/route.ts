@@ -66,7 +66,9 @@ export async function GET(req: NextRequest) {
       ...(sinceDate ? { where: { createdAt: { gt: sinceDate } } } : {}),
       include: { items: true },
     }),
-    prisma.purchaseListImage.findMany(),
+    prisma.purchaseListImage.findMany(
+      sinceDate ? { where: { createdAt: { gt: sinceDate } } } : undefined,
+    ),
   ])
 
   return NextResponse.json({

@@ -5,9 +5,13 @@ type Params = { params: Promise<{ id: string }> }
 
 export async function PATCH(_req: NextRequest, { params }: Params) {
   const { id } = await params
-  await prisma.purchaseListImage.update({
-    where: { id: Number(id) },
-    data: { syncStatus: "SYNCED" },
-  })
+  try {
+    await prisma.purchaseListImage.update({
+      where: { id: Number(id) },
+      data: { syncStatus: "SYNCED" },
+    })
+  } catch {
+    // Record may not exist (already deleted) — not fatal
+  }
   return NextResponse.json({ ok: true })
 }
