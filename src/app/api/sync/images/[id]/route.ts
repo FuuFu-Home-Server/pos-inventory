@@ -3,7 +3,7 @@ import { getUploadsDir } from "@/lib/uploads"
 import { readFile } from "fs/promises"
 import path from "path"
 
-type Params = { params: Promise<{ filename: string }> }
+type Params = { params: Promise<{ id: string }> }
 
 export async function GET(req: NextRequest, { params }: Params) {
   const secret = req.headers.get("x-sync-secret")
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
-  const { filename } = await params
+  const { id: filename } = await params
   if (filename.includes("/") || filename.includes("..")) {
     return NextResponse.json({ error: "Invalid" }, { status: 400 })
   }
