@@ -21,6 +21,8 @@ import {
   GitCompare,
   ArrowUp,
   ArrowDown,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react"
 import { useSession } from "next-auth/react"
 import { useConfirm } from "@/hooks/useConfirm"
@@ -222,6 +224,7 @@ export default function SettingsPage() {
 
   const [mirroringPull, setMirroringPull] = useState(false)
   const [mirroringPush, setMirroringPush] = useState(false)
+  const [advancedOpen, setAdvancedOpen] = useState(false)
 
   type DiffRow = { local: number; server: number; delta: number; match: boolean }
   const [diffResult, setDiffResult] = useState<{
@@ -509,64 +512,43 @@ export default function SettingsPage() {
             </form>
 
             {syncStatus && (
-              <div className="grid grid-cols-3 gap-2">
-                <div
-                  className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 border ${syncStatus.isOnline ? "bg-emerald-50 border-emerald-100" : "bg-gray-50 border-gray-100"}`}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span
+                  className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${syncStatus.isOnline ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-500"}`}
                 >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${syncStatus.isOnline ? "bg-emerald-500" : "bg-gray-400"}`}
-                  >
-                    <Check size={11} className="text-white" />
-                  </div>
-                  <p
-                    className={`text-xs font-semibold ${syncStatus.isOnline ? "text-emerald-700" : "text-gray-500"}`}
-                  >
-                    {syncStatus.isOnline ? "Online" : "Offline"}
-                  </p>
-                </div>
-                <div
-                  className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 border ${syncStatus.pendingCount > 0 ? "bg-amber-50 border-amber-100" : "bg-emerald-50 border-emerald-100"}`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${syncStatus.pendingCount > 0 ? "bg-amber-400" : "bg-emerald-500"}`}
-                  >
-                    {syncStatus.pendingCount > 0 ? (
-                      <Clock size={11} className="text-white" />
-                    ) : (
-                      <Check size={11} className="text-white" />
-                    )}
-                  </div>
-                  <p
-                    className={`text-xs font-semibold ${syncStatus.pendingCount > 0 ? "text-amber-700" : "text-emerald-700"}`}
-                  >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${syncStatus.isOnline ? "bg-emerald-500" : "bg-gray-400"}`}
+                  />
+                  {syncStatus.isOnline ? "Online" : "Offline"}
+                </span>
+                {syncStatus.pendingCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-amber-50 text-amber-700">
+                    <Clock size={11} />
                     {syncStatus.pendingCount} pending
-                  </p>
-                </div>
-                <div
-                  className={`flex flex-col items-center gap-1 rounded-xl px-3 py-2.5 border ${syncStatus.failedCount > 0 ? "bg-red-50 border-red-100" : "bg-emerald-50 border-emerald-100"}`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center ${syncStatus.failedCount > 0 ? "bg-red-500" : "bg-emerald-500"}`}
-                  >
-                    {syncStatus.failedCount > 0 ? (
-                      <AlertCircle size={11} className="text-white" />
-                    ) : (
-                      <Check size={11} className="text-white" />
-                    )}
-                  </div>
-                  <p
-                    className={`text-xs font-semibold ${syncStatus.failedCount > 0 ? "text-red-600" : "text-emerald-700"}`}
-                  >
+                  </span>
+                )}
+                {syncStatus.failedCount > 0 && (
+                  <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full bg-red-50 text-red-600">
+                    <AlertCircle size={11} />
                     {syncStatus.failedCount} gagal
-                  </p>
-                </div>
+                  </span>
+                )}
+                {syncStatus.lastSyncAt && (
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <Clock size={10} />
+                    {new Date(syncStatus.lastSyncAt).toLocaleString("id-ID")}
+                  </span>
+                )}
+                <Button
+                  onClick={handleSync}
+                  loading={syncing}
+                  variant="secondary"
+                  className="ml-auto flex items-center gap-1.5 text-xs py-1 px-3"
+                >
+                  {syncDone ? <Check size={13} /> : <RefreshCw size={13} />}
+                  {syncDone ? "Selesai" : "Sinkron"}
+                </Button>
               </div>
-            )}
-            {syncStatus?.lastSyncAt && (
-              <p className="text-xs text-gray-400 flex items-center gap-1.5">
-                <Clock size={11} />
-                Terakhir sinkron: {new Date(syncStatus.lastSyncAt).toLocaleString("id-ID")}
-              </p>
             )}
             {syncStatus?.lastError && (
               <p className="text-xs text-red-500 bg-red-50 border border-red-100 rounded-lg px-3 py-2 font-mono break-all">
@@ -574,116 +556,112 @@ export default function SettingsPage() {
               </p>
             )}
 
-            <div className="border-t border-gray-100 pt-4 flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-800">Backup ke Server</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  Kirim semua perubahan lokal ke server
-                </p>
-              </div>
-              <Button
-                onClick={handleSync}
-                loading={syncing}
-                variant="secondary"
-                className="flex items-center gap-2"
+            <div className="border-t border-gray-100 pt-3">
+              <button
+                onClick={() => setAdvancedOpen((v) => !v)}
+                className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-gray-700 transition-colors"
               >
-                {syncDone ? (
-                  <>
-                    <Check size={14} /> Selesai
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw size={14} /> Backup
-                  </>
-                )}
-              </Button>
-            </div>
+                {advancedOpen ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+                Operasi Lanjutan
+              </button>
 
-            <div className="border-t border-gray-100 pt-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Cek Perbedaan</p>
-                  <p className="text-xs text-gray-400 mt-0.5">Bandingkan data lokal vs server</p>
-                </div>
-                <Button
-                  onClick={handleDiff}
-                  loading={diffLoading}
-                  variant="secondary"
-                  className="flex items-center gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
-                >
-                  <GitCompare size={14} /> Cek
-                </Button>
-              </div>
-
-              {diffResult && (
-                <div className="rounded-xl border border-gray-100 overflow-hidden">
-                  {diffResult.hasDifferences ? (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border-b border-amber-100">
-                      <AlertCircle size={13} className="text-amber-500" />
-                      <span className="text-xs font-medium text-amber-700">Ada perbedaan data</span>
+              {advancedOpen && (
+                <div className="mt-3 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Cek Perbedaan</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Bandingkan data lokal vs server
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border-b border-emerald-100">
-                      <Check size={13} className="text-emerald-500" />
-                      <span className="text-xs font-medium text-emerald-700">Data sinkron</span>
+                    <Button
+                      onClick={handleDiff}
+                      loading={diffLoading}
+                      variant="secondary"
+                      className="flex items-center gap-2 text-indigo-600 border-indigo-200 hover:bg-indigo-50"
+                    >
+                      <GitCompare size={14} /> Cek
+                    </Button>
+                  </div>
+
+                  {diffResult && (
+                    <div className="rounded-xl border border-gray-100 overflow-hidden">
+                      {diffResult.hasDifferences ? (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 border-b border-amber-100">
+                          <AlertCircle size={13} className="text-amber-500" />
+                          <span className="text-xs font-medium text-amber-700">
+                            Ada perbedaan data
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 px-3 py-2 bg-emerald-50 border-b border-emerald-100">
+                          <Check size={13} className="text-emerald-500" />
+                          <span className="text-xs font-medium text-emerald-700">Data sinkron</span>
+                        </div>
+                      )}
+                      <div className="divide-y divide-gray-50">
+                        {Object.entries(diffResult.diff).map(([table, row]) => (
+                          <div
+                            key={table}
+                            className="flex items-center justify-between px-3 py-1.5"
+                          >
+                            <span className="text-xs text-gray-500 w-32 capitalize">{table}</span>
+                            <div className="flex items-center gap-4 text-xs">
+                              <span className="text-gray-600 w-12 text-right">
+                                {row.local} lokal
+                              </span>
+                              <span className="text-gray-400">·</span>
+                              <span className="text-gray-600 w-14 text-right">
+                                {row.server} server
+                              </span>
+                              {!row.match && (
+                                <span
+                                  className={`flex items-center gap-0.5 font-medium ${row.delta > 0 ? "text-amber-600" : "text-red-500"}`}
+                                >
+                                  {row.delta > 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
+                                  {Math.abs(row.delta)}
+                                </span>
+                              )}
+                              {row.match && <Check size={11} className="text-emerald-500" />}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
-                  <div className="divide-y divide-gray-50">
-                    {Object.entries(diffResult.diff).map(([table, row]) => (
-                      <div key={table} className="flex items-center justify-between px-3 py-1.5">
-                        <span className="text-xs text-gray-500 w-32 capitalize">{table}</span>
-                        <div className="flex items-center gap-4 text-xs">
-                          <span className="text-gray-600 w-12 text-right">{row.local} lokal</span>
-                          <span className="text-gray-400">·</span>
-                          <span className="text-gray-600 w-14 text-right">{row.server} server</span>
-                          {!row.match && (
-                            <span
-                              className={`flex items-center gap-0.5 font-medium ${row.delta > 0 ? "text-amber-600" : "text-red-500"}`}
-                            >
-                              {row.delta > 0 ? <ArrowUp size={11} /> : <ArrowDown size={11} />}
-                              {Math.abs(row.delta)}
-                            </span>
-                          )}
-                          {row.match && <Check size={11} className="text-emerald-500" />}
-                        </div>
-                      </div>
-                    ))}
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Restore dari Server</p>
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Ganti data lokal dengan data server
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handlePullMirror}
+                      loading={mirroringPull}
+                      variant="secondary"
+                      className="flex items-center gap-2 text-amber-600 border-amber-200 hover:bg-amber-50"
+                    >
+                      <ArrowDown size={14} /> Restore
+                    </Button>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-800">Push Penuh ke Server</p>
+                      <p className="text-xs text-gray-400 mt-0.5">Timpa server dengan data lokal</p>
+                    </div>
+                    <Button
+                      onClick={handlePushMirror}
+                      loading={mirroringPush}
+                      variant="secondary"
+                      className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
+                    >
+                      <ArrowUp size={14} /> Push
+                    </Button>
                   </div>
                 </div>
               )}
-
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Restore dari Server</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Ganti semua data lokal dengan data server
-                  </p>
-                </div>
-                <Button
-                  onClick={handlePullMirror}
-                  loading={mirroringPull}
-                  variant="secondary"
-                  className="flex items-center gap-2 text-amber-600 border-amber-200 hover:bg-amber-50"
-                >
-                  <ArrowDown size={14} /> Restore
-                </Button>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">Backup Penuh ke Server</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Timpa server penuh dengan data lokal
-                  </p>
-                </div>
-                <Button
-                  onClick={handlePushMirror}
-                  loading={mirroringPush}
-                  variant="secondary"
-                  className="flex items-center gap-2 text-red-600 border-red-200 hover:bg-red-50"
-                >
-                  <ArrowUp size={14} /> Push
-                </Button>
-              </div>
             </div>
           </div>
         )}
