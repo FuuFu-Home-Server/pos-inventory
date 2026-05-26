@@ -14,6 +14,7 @@ import { useConfirm } from "@/hooks/useConfirm"
 export default function DaftarBelanjaPage() {
   const { confirm, dialog } = useConfirm()
   const [completing, setCompleting] = useState<number | null>(null)
+  const [lightbox, setLightbox] = useState<string | null>(null)
   const {
     lists,
     expandedId,
@@ -35,6 +36,8 @@ export default function DaftarBelanjaPage() {
     completeToPO,
     createProductForList,
     createVariantForList,
+    uploadImage,
+    deleteImage,
   } = usePurchaseList(confirm)
 
   return (
@@ -154,70 +157,117 @@ export default function DaftarBelanjaPage() {
                       Memuat...
                     </div>
                   ) : detail ? (
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="text-gray-400 border-b border-indigo-100">
-                          <th className="text-left font-semibold pb-2 w-8"></th>
-                          <th className="text-left font-semibold pb-2">Produk</th>
-                          <th className="text-center font-semibold pb-2">Jumlah</th>
-                          <th className="text-right font-semibold pb-2">Harga / Satuan</th>
-                          <th className="text-right font-semibold pb-2">Subtotal</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-indigo-100/60">
-                        {detail.items.map((item) => (
-                          <tr key={item.id} className={item.isPurchased ? "opacity-50" : ""}>
-                            <td className="py-2 pr-3">
-                              <Toggle
-                                checked={item.isPurchased}
-                                onChange={(v) => toggleItemPurchased(list.id, item.id, v)}
-                                size="sm"
-                                disabled={list.status !== "OPEN"}
-                              />
-                            </td>
+                    <>
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-gray-400 border-b border-indigo-100">
+                            <th className="text-left font-semibold pb-2 w-8"></th>
+                            <th className="text-left font-semibold pb-2">Produk</th>
+                            <th className="text-center font-semibold pb-2">Jumlah</th>
+                            <th className="text-right font-semibold pb-2">Harga / Satuan</th>
+                            <th className="text-right font-semibold pb-2">Subtotal</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-indigo-100/60">
+                          {detail.items.map((item) => (
+                            <tr key={item.id} className={item.isPurchased ? "opacity-50" : ""}>
+                              <td className="py-2 pr-3">
+                                <Toggle
+                                  checked={item.isPurchased}
+                                  onChange={(v) => toggleItemPurchased(list.id, item.id, v)}
+                                  size="sm"
+                                  disabled={list.status !== "OPEN"}
+                                />
+                              </td>
+                              <td
+                                className={`py-2 font-medium ${item.isPurchased ? "line-through text-gray-400" : "text-gray-800"}`}
+                              >
+                                {item.productName}{" "}
+                                <span className="text-gray-500">{item.variantName}</span>
+                              </td>
+                              <td className="py-2 text-center text-gray-600">
+                                {item.qty} {item.unit}
+                                {item.qtyPerUnit > 1 && (
+                                  <span className="block text-[10px] text-indigo-500">
+                                    = {item.qty * item.qtyPerUnit} pcs
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-2 text-right text-gray-600 tabular-nums">
+                                {formatRupiah(Number(item.unitCost))}
+                              </td>
+                              <td className="py-2 text-right font-semibold tabular-nums">
+                                {formatRupiah(Number(item.unitCost) * item.qty)}
+                              </td>
+                            </tr>
+                          ))}
+                          <tr className="border-t border-indigo-200">
                             <td
-                              className={`py-2 font-medium ${item.isPurchased ? "line-through text-gray-400" : "text-gray-800"}`}
+                              colSpan={4}
+                              className="pt-2 font-black text-gray-900 text-right pr-3"
                             >
-                              {item.productName}{" "}
-                              <span className="text-gray-500">{item.variantName}</span>
+                              Total
                             </td>
-                            <td className="py-2 text-center text-gray-600">
-                              {item.qty} {item.unit}
-                              {item.qtyPerUnit > 1 && (
-                                <span className="block text-[10px] text-indigo-500">
-                                  = {item.qty * item.qtyPerUnit} pcs
-                                </span>
+                            <td className="pt-2 text-right font-black text-gray-900 tabular-nums">
+                              {formatRupiah(
+                                detail.items
+                                  .filter((i) => i.isPurchased)
+                                  .reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
                               )}
-                            </td>
-                            <td className="py-2 text-right text-gray-600 tabular-nums">
-                              {formatRupiah(Number(item.unitCost))}
-                            </td>
-                            <td className="py-2 text-right font-semibold tabular-nums">
-                              {formatRupiah(Number(item.unitCost) * item.qty)}
+                              <span className="text-gray-400 font-normal">
+                                {" "}
+                                /{" "}
+                                {formatRupiah(
+                                  detail.items.reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
+                                )}
+                              </span>
                             </td>
                           </tr>
-                        ))}
-                        <tr className="border-t border-indigo-200">
-                          <td colSpan={4} className="pt-2 font-black text-gray-900 text-right pr-3">
-                            Total
-                          </td>
-                          <td className="pt-2 text-right font-black text-gray-900 tabular-nums">
-                            {formatRupiah(
-                              detail.items
-                                .filter((i) => i.isPurchased)
-                                .reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
-                            )}
-                            <span className="text-gray-400 font-normal">
-                              {" "}
-                              /{" "}
-                              {formatRupiah(
-                                detail.items.reduce((s, i) => s + Number(i.unitCost) * i.qty, 0),
-                              )}
-                            </span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                        </tbody>
+                      </table>
+                      {/* Foto Struk */}
+                      <div className="px-5 py-3 border-t border-gray-100">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                            Foto Struk
+                          </span>
+                          <label className="cursor-pointer text-xs text-indigo-600 hover:text-indigo-800 font-medium">
+                            + Tambah Foto
+                            <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              onChange={(e) => {
+                                const files = Array.from(e.target.files ?? [])
+                                files.forEach((f) => uploadImage(list.id, f))
+                                e.target.value = ""
+                              }}
+                            />
+                          </label>
+                        </div>
+                        {detail?.images && detail.images.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {detail.images.map((img) => (
+                              <div key={img.id} className="relative group">
+                                <img
+                                  src={`/api/purchase-lists/images/${img.filename}`}
+                                  className="w-16 h-16 object-cover rounded cursor-pointer border border-gray-200"
+                                  onClick={() => setLightbox(img.filename)}
+                                  alt="Foto struk"
+                                />
+                                <button
+                                  onClick={() => deleteImage(list.id, img.id)}
+                                  className="absolute -top-1.5 -right-1.5 bg-red-500 text-white rounded-full w-4 h-4 text-xs hidden group-hover:flex items-center justify-center leading-none"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </>
                   ) : null}
                 </div>
               )}
@@ -226,6 +276,23 @@ export default function DaftarBelanjaPage() {
         })}
       </div>
 
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center"
+          onClick={() => setLightbox(null)}
+          onKeyDown={(e) => e.key === "Escape" && setLightbox(null)}
+          role="dialog"
+          aria-modal
+          tabIndex={-1}
+        >
+          <img
+            src={`/api/purchase-lists/images/${lightbox}`}
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded shadow-2xl"
+            alt="Foto struk"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       {dialog}
       <PurchaseModal
         open={modalOpen}
