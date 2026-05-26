@@ -230,358 +230,364 @@ export async function POST(req: NextRequest) {
     suppliers,
   } = parsed.data
 
-  await prisma.$transaction(async (db) => {
-    for (const c of categories) {
-      await db.categoryOption.upsert({
-        where: { name: c.name },
-        create: { id: c.id, name: c.name, isActive: c.isActive },
-        update: { isActive: c.isActive },
-      })
-    }
+  try {
+    await prisma.$transaction(async (db) => {
+      for (const c of categories) {
+        await db.categoryOption.upsert({
+          where: { name: c.name },
+          create: { id: c.id, name: c.name, isActive: c.isActive },
+          update: { isActive: c.isActive },
+        })
+      }
 
-    for (const u of units) {
-      await db.unitOption.upsert({
-        where: { name: u.name },
-        create: { id: u.id, name: u.name, isActive: u.isActive },
-        update: { isActive: u.isActive },
-      })
-    }
+      for (const u of units) {
+        await db.unitOption.upsert({
+          where: { name: u.name },
+          create: { id: u.id, name: u.name, isActive: u.isActive },
+          update: { isActive: u.isActive },
+        })
+      }
 
-    if (receiptConfig) {
-      const { id: _id, updatedAt: _updatedAt, ...rest } = receiptConfig as Record<string, unknown>
-      await db.receiptConfig.upsert({
-        where: { id: 1 },
-        create: { id: 1, ...rest },
-        update: rest,
-      })
-    }
+      if (receiptConfig) {
+        const { id: _id, updatedAt: _updatedAt, ...rest } = receiptConfig as Record<string, unknown>
+        await db.receiptConfig.upsert({
+          where: { id: 1 },
+          create: { id: 1, ...rest },
+          update: rest,
+        })
+      }
 
-    const roleIdMap = new Map<number, number>()
-    for (const r of roles) {
-      const serverRole = await db.role.upsert({
-        where: { name: r.name },
-        create: { id: r.id, name: r.name },
-        update: { name: r.name },
-      })
-      roleIdMap.set(r.id, serverRole.id)
-    }
+      const roleIdMap = new Map<number, number>()
+      for (const r of roles) {
+        const serverRole = await db.role.upsert({
+          where: { name: r.name },
+          create: { id: r.id, name: r.name },
+          update: { name: r.name },
+        })
+        roleIdMap.set(r.id, serverRole.id)
+      }
 
-    for (const u of users) {
-      const serverRoleId = roleIdMap.get(u.roleId) ?? u.roleId
-      await db.user.upsert({
-        where: { email: u.email },
-        create: {
-          id: u.id,
-          name: u.name,
-          email: u.email,
-          passwordHash: u.passwordHash,
-          roleId: serverRoleId,
-          isActive: u.isActive,
-          isDefaultCredential: u.isDefaultCredential,
-          createdAt: new Date(u.createdAt),
-        },
-        update: {
-          name: u.name,
-          email: u.email,
-          passwordHash: u.passwordHash,
-          roleId: serverRoleId,
-          isActive: u.isActive,
-          isDefaultCredential: u.isDefaultCredential,
-        },
-      })
-    }
+      for (const u of users) {
+        const serverRoleId = roleIdMap.get(u.roleId) ?? u.roleId
+        await db.user.upsert({
+          where: { email: u.email },
+          create: {
+            id: u.id,
+            name: u.name,
+            email: u.email,
+            passwordHash: u.passwordHash,
+            roleId: serverRoleId,
+            isActive: u.isActive,
+            isDefaultCredential: u.isDefaultCredential,
+            createdAt: new Date(u.createdAt),
+          },
+          update: {
+            name: u.name,
+            email: u.email,
+            passwordHash: u.passwordHash,
+            roleId: serverRoleId,
+            isActive: u.isActive,
+            isDefaultCredential: u.isDefaultCredential,
+          },
+        })
+      }
 
-    for (const p of products) {
-      const existing = await db.product.findUnique({
-        where: { id: p.id },
-        select: { updatedAt: true },
-      })
-      if (!existing || new Date(p.updatedAt) >= existing.updatedAt) {
-        await db.product.upsert({
+      for (const p of products) {
+        const existing = await db.product.findUnique({
           where: { id: p.id },
-          create: { id: p.id, name: p.name, category: p.category, supplierId: p.supplierId },
-          update: { name: p.name, category: p.category, supplierId: p.supplierId },
+          select: { updatedAt: true },
         })
+        if (!existing || new Date(p.updatedAt) >= existing.updatedAt) {
+          await db.product.upsert({
+            where: { id: p.id },
+            create: { id: p.id, name: p.name, category: p.category, supplierId: p.supplierId },
+            update: { name: p.name, category: p.category, supplierId: p.supplierId },
+          })
+        }
       }
-    }
 
-    for (const v of variants) {
-      const existing = await db.productVariant.findUnique({
-        where: { id: v.id },
-        select: { updatedAt: true },
-      })
-      if (!existing || new Date(v.updatedAt) >= existing.updatedAt) {
-        await db.productVariant.upsert({
+      for (const v of variants) {
+        const existing = await db.productVariant.findUnique({
           where: { id: v.id },
-          create: {
-            id: v.id,
-            productId: v.productId,
-            variantName: v.variantName,
-            barcode: v.barcode,
-            price: v.price,
-            costPrice: v.costPrice ?? null,
-            stock: v.stock,
-            lowStockThreshold: v.lowStockThreshold,
-            unit: v.unit,
-            isActive: v.isActive,
-          },
-          update: {
-            variantName: v.variantName,
-            barcode: v.barcode,
-            price: v.price,
-            costPrice: v.costPrice ?? null,
-            stock: v.stock,
-            lowStockThreshold: v.lowStockThreshold,
-            unit: v.unit,
-            isActive: v.isActive,
-          },
+          select: { updatedAt: true },
         })
+        if (!existing || new Date(v.updatedAt) >= existing.updatedAt) {
+          await db.productVariant.upsert({
+            where: { id: v.id },
+            create: {
+              id: v.id,
+              productId: v.productId,
+              variantName: v.variantName,
+              barcode: v.barcode,
+              price: v.price,
+              costPrice: v.costPrice ?? null,
+              stock: v.stock,
+              lowStockThreshold: v.lowStockThreshold,
+              unit: v.unit,
+              isActive: v.isActive,
+            },
+            update: {
+              variantName: v.variantName,
+              barcode: v.barcode,
+              price: v.price,
+              costPrice: v.costPrice ?? null,
+              stock: v.stock,
+              lowStockThreshold: v.lowStockThreshold,
+              unit: v.unit,
+              isActive: v.isActive,
+            },
+          })
+        }
       }
-    }
 
-    for (const pm of paymentMethods) {
-      const existing = await db.paymentMethod.findUnique({
-        where: { id: pm.id },
-        select: { updatedAt: true },
-      })
-      if (!existing || new Date(pm.updatedAt) >= existing.updatedAt) {
-        await db.paymentMethod.upsert({
+      for (const pm of paymentMethods) {
+        const existing = await db.paymentMethod.findUnique({
           where: { id: pm.id },
-          create: { id: pm.id, name: pm.name, isActive: pm.isActive },
-          update: { name: pm.name, isActive: pm.isActive },
+          select: { updatedAt: true },
         })
+        if (!existing || new Date(pm.updatedAt) >= existing.updatedAt) {
+          await db.paymentMethod.upsert({
+            where: { id: pm.id },
+            create: { id: pm.id, name: pm.name, isActive: pm.isActive },
+            update: { name: pm.name, isActive: pm.isActive },
+          })
+        }
       }
-    }
 
-    for (const d of discounts) {
-      const existing = await db.discount.findUnique({
-        where: { id: d.id },
-        select: { updatedAt: true },
-      })
-      if (!existing || new Date(d.updatedAt) >= existing.updatedAt) {
-        await db.discount.upsert({
+      for (const d of discounts) {
+        const existing = await db.discount.findUnique({
           where: { id: d.id },
-          create: {
-            id: d.id,
-            name: d.name,
-            type: d.type,
-            value: d.value,
-            scope: d.scope,
-            productId: d.productId ?? null,
-            minPurchase: d.minPurchase ?? null,
-            isActive: d.isActive,
-          },
-          update: {
-            name: d.name,
-            type: d.type,
-            value: d.value,
-            scope: d.scope,
-            productId: d.productId ?? null,
-            minPurchase: d.minPurchase ?? null,
-            isActive: d.isActive,
-          },
+          select: { updatedAt: true },
         })
+        if (!existing || new Date(d.updatedAt) >= existing.updatedAt) {
+          await db.discount.upsert({
+            where: { id: d.id },
+            create: {
+              id: d.id,
+              name: d.name,
+              type: d.type,
+              value: d.value,
+              scope: d.scope,
+              productId: d.productId ?? null,
+              minPurchase: d.minPurchase ?? null,
+              isActive: d.isActive,
+            },
+            update: {
+              name: d.name,
+              type: d.type,
+              value: d.value,
+              scope: d.scope,
+              productId: d.productId ?? null,
+              minPurchase: d.minPurchase ?? null,
+              isActive: d.isActive,
+            },
+          })
+        }
       }
-    }
 
-    for (const c of customers) {
-      const existing = await db.customer.findUnique({
-        where: { id: c.id },
-        select: { updatedAt: true },
-      })
-      if (!existing || new Date(c.updatedAt) >= existing.updatedAt) {
-        await db.customer.upsert({
+      for (const c of customers) {
+        const existing = await db.customer.findUnique({
           where: { id: c.id },
-          create: { id: c.id, name: c.name, phone: c.phone ?? null, address: c.address ?? null },
-          update: { name: c.name, phone: c.phone ?? null, address: c.address ?? null },
+          select: { updatedAt: true },
         })
+        if (!existing || new Date(c.updatedAt) >= existing.updatedAt) {
+          await db.customer.upsert({
+            where: { id: c.id },
+            create: { id: c.id, name: c.name, phone: c.phone ?? null, address: c.address ?? null },
+            update: { name: c.name, phone: c.phone ?? null, address: c.address ?? null },
+          })
+        }
       }
-    }
 
-    for (const s of suppliers) {
-      const existing = await db.supplier.findUnique({
-        where: { id: s.id },
-        select: { updatedAt: true },
-      })
-      if (!existing || new Date(s.updatedAt) >= existing.updatedAt) {
-        await db.supplier.upsert({
+      for (const s of suppliers) {
+        const existing = await db.supplier.findUnique({
           where: { id: s.id },
+          select: { updatedAt: true },
+        })
+        if (!existing || new Date(s.updatedAt) >= existing.updatedAt) {
+          await db.supplier.upsert({
+            where: { id: s.id },
+            create: {
+              id: s.id,
+              name: s.name,
+              phone: s.phone ?? null,
+              address: s.address ?? null,
+              contactPerson: s.contactPerson ?? null,
+            },
+            update: {
+              name: s.name,
+              phone: s.phone ?? null,
+              address: s.address ?? null,
+              contactPerson: s.contactPerson ?? null,
+            },
+          })
+        }
+      }
+
+      for (const t of transactions) {
+        await db.transaction.upsert({
+          where: { id: t.id },
           create: {
-            id: s.id,
-            name: s.name,
-            phone: s.phone ?? null,
-            address: s.address ?? null,
-            contactPerson: s.contactPerson ?? null,
+            id: t.id,
+            userId: t.userId,
+            customerId: t.customerId ?? null,
+            discountId: t.discountId ?? null,
+            paymentMethodId: t.paymentMethodId,
+            discountAmount: t.discountAmount,
+            subtotal: t.subtotal,
+            total: t.total,
+            paymentAmount: t.paymentAmount,
+            changeAmount: t.changeAmount,
+            midtransOrderId: t.midtransOrderId ?? null,
+            status: t.status,
+            syncStatus: t.syncStatus,
+            syncFailReason: t.syncFailReason ?? null,
+            localId: t.localId ?? null,
+            createdAt: new Date(t.createdAt),
           },
           update: {
-            name: s.name,
-            phone: s.phone ?? null,
-            address: s.address ?? null,
-            contactPerson: s.contactPerson ?? null,
+            status: t.status,
+            syncStatus: t.syncStatus,
+            syncFailReason: t.syncFailReason ?? null,
           },
         })
+        for (const item of t.items) {
+          await db.transactionItem.upsert({
+            where: { id: item.id },
+            create: {
+              id: item.id,
+              transactionId: t.id,
+              productVariantId: item.productVariantId,
+              qty: item.qty,
+              unitPrice: item.unitPrice,
+              itemDiscountAmt: item.itemDiscountAmt,
+              subtotal: item.subtotal,
+            },
+            update: {
+              qty: item.qty,
+              unitPrice: item.unitPrice,
+              itemDiscountAmt: item.itemDiscountAmt,
+              subtotal: item.subtotal,
+            },
+          })
+        }
       }
-    }
 
-    for (const t of transactions) {
-      await db.transaction.upsert({
-        where: { id: t.id },
-        create: {
-          id: t.id,
-          userId: t.userId,
-          customerId: t.customerId ?? null,
-          discountId: t.discountId ?? null,
-          paymentMethodId: t.paymentMethodId,
-          discountAmount: t.discountAmount,
-          subtotal: t.subtotal,
-          total: t.total,
-          paymentAmount: t.paymentAmount,
-          changeAmount: t.changeAmount,
-          midtransOrderId: t.midtransOrderId ?? null,
-          status: t.status,
-          syncStatus: t.syncStatus,
-          syncFailReason: t.syncFailReason ?? null,
-          localId: t.localId ?? null,
-          createdAt: new Date(t.createdAt),
-        },
-        update: {
-          status: t.status,
-          syncStatus: t.syncStatus,
-          syncFailReason: t.syncFailReason ?? null,
-        },
-      })
-      for (const item of t.items) {
-        await db.transactionItem.upsert({
-          where: { id: item.id },
+      for (const po of purchaseOrders) {
+        await db.purchaseOrder.upsert({
+          where: { id: po.id },
           create: {
-            id: item.id,
-            transactionId: t.id,
-            productVariantId: item.productVariantId,
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            itemDiscountAmt: item.itemDiscountAmt,
-            subtotal: item.subtotal,
+            id: po.id,
+            supplierId: po.supplierId ?? null,
+            userId: po.userId,
+            status: po.status,
+            notes: po.notes ?? null,
+            createdAt: new Date(po.createdAt),
+            receivedAt: po.receivedAt ? new Date(po.receivedAt) : null,
+            syncStatus: po.syncStatus,
+            localId: po.localId ?? null,
           },
           update: {
-            qty: item.qty,
-            unitPrice: item.unitPrice,
-            itemDiscountAmt: item.itemDiscountAmt,
-            subtotal: item.subtotal,
+            status: po.status,
+            notes: po.notes ?? null,
+            receivedAt: po.receivedAt ? new Date(po.receivedAt) : null,
+            syncStatus: po.syncStatus,
           },
         })
+        for (const item of po.items) {
+          await db.purchaseOrderItem.upsert({
+            where: { id: item.id },
+            create: {
+              id: item.id,
+              purchaseOrderId: po.id,
+              productVariantId: item.productVariantId,
+              qty: item.qty,
+              unitCost: item.unitCost,
+              subtotal: item.subtotal,
+            },
+            update: { qty: item.qty, unitCost: item.unitCost, subtotal: item.subtotal },
+          })
+        }
       }
-    }
 
-    for (const po of purchaseOrders) {
-      await db.purchaseOrder.upsert({
-        where: { id: po.id },
-        create: {
-          id: po.id,
-          supplierId: po.supplierId ?? null,
-          userId: po.userId,
-          status: po.status,
-          notes: po.notes ?? null,
-          createdAt: new Date(po.createdAt),
-          receivedAt: po.receivedAt ? new Date(po.receivedAt) : null,
-          syncStatus: po.syncStatus,
-          localId: po.localId ?? null,
-        },
-        update: {
-          status: po.status,
-          notes: po.notes ?? null,
-          receivedAt: po.receivedAt ? new Date(po.receivedAt) : null,
-          syncStatus: po.syncStatus,
-        },
-      })
-      for (const item of po.items) {
-        await db.purchaseOrderItem.upsert({
-          where: { id: item.id },
+      for (const pl of purchaseLists) {
+        await db.purchaseList.upsert({
+          where: { id: pl.id },
           create: {
-            id: item.id,
-            purchaseOrderId: po.id,
-            productVariantId: item.productVariantId,
-            qty: item.qty,
-            unitCost: item.unitCost,
-            subtotal: item.subtotal,
+            id: pl.id,
+            title: pl.title,
+            notes: pl.notes ?? null,
+            status: pl.status,
+            createdAt: new Date(pl.createdAt),
           },
-          update: { qty: item.qty, unitCost: item.unitCost, subtotal: item.subtotal },
+          update: { title: pl.title, notes: pl.notes ?? null, status: pl.status },
         })
+        for (const item of pl.items) {
+          await db.purchaseListItem.upsert({
+            where: { id: item.id },
+            create: {
+              id: item.id,
+              purchaseListId: pl.id,
+              productVariantId: item.productVariantId ?? null,
+              productName: item.productName,
+              variantName: item.variantName,
+              unit: item.unit,
+              qty: item.qty,
+              qtyPerUnit: item.qtyPerUnit,
+              unitCost: item.unitCost,
+              isPurchased: item.isPurchased,
+            },
+            update: {
+              productVariantId: item.productVariantId ?? null,
+              productName: item.productName,
+              variantName: item.variantName,
+              unit: item.unit,
+              qty: item.qty,
+              qtyPerUnit: item.qtyPerUnit,
+              unitCost: item.unitCost,
+              isPurchased: item.isPurchased,
+            },
+          })
+        }
       }
-    }
 
-    for (const pl of purchaseLists) {
-      await db.purchaseList.upsert({
-        where: { id: pl.id },
-        create: {
-          id: pl.id,
-          title: pl.title,
-          notes: pl.notes ?? null,
-          status: pl.status,
-          createdAt: new Date(pl.createdAt),
-        },
-        update: { title: pl.title, notes: pl.notes ?? null, status: pl.status },
-      })
-      for (const item of pl.items) {
-        await db.purchaseListItem.upsert({
-          where: { id: item.id },
+      for (const so of stockOpnames) {
+        await db.stockOpname.upsert({
+          where: { id: so.id },
           create: {
-            id: item.id,
-            purchaseListId: pl.id,
-            productVariantId: item.productVariantId ?? null,
-            productName: item.productName,
-            variantName: item.variantName,
-            unit: item.unit,
-            qty: item.qty,
-            qtyPerUnit: item.qtyPerUnit,
-            unitCost: item.unitCost,
-            isPurchased: item.isPurchased,
+            id: so.id,
+            userId: so.userId,
+            status: so.status,
+            notes: so.notes ?? null,
+            createdAt: new Date(so.createdAt),
           },
-          update: {
-            productVariantId: item.productVariantId ?? null,
-            productName: item.productName,
-            variantName: item.variantName,
-            unit: item.unit,
-            qty: item.qty,
-            qtyPerUnit: item.qtyPerUnit,
-            unitCost: item.unitCost,
-            isPurchased: item.isPurchased,
-          },
+          update: { status: so.status, notes: so.notes ?? null },
         })
+        for (const item of so.items) {
+          await db.stockOpnameItem.upsert({
+            where: { id: item.id },
+            create: {
+              id: item.id,
+              opnameId: so.id,
+              productVariantId: item.productVariantId,
+              systemQty: item.systemQty,
+              physicalQty: item.physicalQty,
+              difference: item.difference,
+            },
+            update: {
+              systemQty: item.systemQty,
+              physicalQty: item.physicalQty,
+              difference: item.difference,
+            },
+          })
+        }
       }
-    }
-
-    for (const so of stockOpnames) {
-      await db.stockOpname.upsert({
-        where: { id: so.id },
-        create: {
-          id: so.id,
-          userId: so.userId,
-          status: so.status,
-          notes: so.notes ?? null,
-          createdAt: new Date(so.createdAt),
-        },
-        update: { status: so.status, notes: so.notes ?? null },
-      })
-      for (const item of so.items) {
-        await db.stockOpnameItem.upsert({
-          where: { id: item.id },
-          create: {
-            id: item.id,
-            opnameId: so.id,
-            productVariantId: item.productVariantId,
-            systemQty: item.systemQty,
-            physicalQty: item.physicalQty,
-            difference: item.difference,
-          },
-          update: {
-            systemQty: item.systemQty,
-            physicalQty: item.physicalQty,
-            difference: item.difference,
-          },
-        })
-      }
-    }
-  })
+    })
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[sync/push] transaction failed:", msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
 
   return NextResponse.json({ ok: true })
 }
