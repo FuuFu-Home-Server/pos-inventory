@@ -204,12 +204,14 @@ export async function POST(req: NextRequest) {
   } = parsed.data
 
   await prisma.$transaction(async (db) => {
+    const roleIdMap = new Map<number, number>()
     for (const r of roles) {
-      await db.role.upsert({
+      const serverRole = await db.role.upsert({
         where: { name: r.name },
         create: { id: r.id, name: r.name },
         update: { name: r.name },
       })
+      roleIdMap.set(r.id, serverRole.id)
     }
 
     for (const c of categories) {
@@ -229,6 +231,7 @@ export async function POST(req: NextRequest) {
     }
 
     for (const u of users) {
+      const serverRoleId = roleIdMap.get(u.roleId) ?? u.roleId
       await db.user.upsert({
         where: { email: u.email },
         create: {
@@ -236,7 +239,7 @@ export async function POST(req: NextRequest) {
           name: u.name,
           email: u.email,
           passwordHash: u.passwordHash,
-          roleId: u.roleId,
+          roleId: serverRoleId,
           isActive: u.isActive,
           isDefaultCredential: u.isDefaultCredential,
           createdAt: new Date(u.createdAt),
@@ -245,7 +248,7 @@ export async function POST(req: NextRequest) {
           name: u.name,
           email: u.email,
           passwordHash: u.passwordHash,
-          roleId: u.roleId,
+          roleId: serverRoleId,
           isActive: u.isActive,
           isDefaultCredential: u.isDefaultCredential,
         },
