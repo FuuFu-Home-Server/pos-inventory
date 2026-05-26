@@ -10,6 +10,7 @@ const defaultStatus: SyncStatus = {
   failedCount: 0,
   syncing: false,
   syncProgress: null,
+  lastError: null,
 }
 
 export function useSyncStatus() {
